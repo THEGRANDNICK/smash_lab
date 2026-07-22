@@ -451,23 +451,6 @@ export const strings: StringItem[] = [
     stringCost: 7.9,
     productUrl: 'https://www.victor-europe.eu/en/product-page/victor-vbs-66n',
   },
-  {
-    id: 'victor-vbs63',
-    brand: 'Victor',
-    name: 'VBS-63',
-    category: 'repulsion',
-    repulsion: 9,
-    durability: 7,
-    hittingSound: 7,
-    shockAbsorption: null,
-    control: 7,
-    stock: 'unavailable',
-    setsAvailable: null,
-    notes: "This string is suitable for the players who prefer good placement and high control.",
-    tension: { gauge: 0.63 },
-    stringCost: 7.9,
-    productUrl: 'https://www.victor-europe.eu/en/product-page/victor-vbs-66n',
-  },
 ]
 
 export function getString(id: string): StringItem | undefined {
