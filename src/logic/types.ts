@@ -5,6 +5,8 @@ export type TensionUnit = 'kg' | 'lbs'
 export interface QuizAnswers {
   level?: string
   style?: string
+  /** Self-assessed power generation: do they need the string/racket to help, or do they already hit hard themselves? */
+  powerGeneration?: string
   priority?: string
   durabilityImportance?: string
   hittingFeel?: string

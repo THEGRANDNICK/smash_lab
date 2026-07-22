@@ -97,6 +97,28 @@ body {
   border-radius: 0.5rem;
 }
 
+/*
+ * Native <option> popups don't reliably inherit Tailwind's dark: utility
+ * classes from their parent <select> — some browsers render the open
+ * option list with a UA-default (often light) background while text still
+ * inherits the page's light-on-dark color, producing near-invisible text.
+ * Force an explicit, opaque background + text color pairing for both
+ * themes directly on select/option so the open list is always readable.
+ */
+select {
+  color-scheme: light dark;
+}
+select option {
+  background-color: var(--color-shuttle-50);
+  color: var(--color-ink-900);
+}
+@media (prefers-color-scheme: dark) {
+  select option {
+    background-color: #0c1210;
+    color: var(--color-shuttle-50);
+  }
+}
+
 ::selection {
   background: var(--color-shuttle-400);
   color: var(--color-court-900);

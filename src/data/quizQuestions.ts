@@ -40,6 +40,16 @@ export const quizQuestions: QuizQuestionDef[] = [
     ],
   },
   {
+    id: 'powerGeneration',
+    title: 'How would you describe your own power generation?',
+    subtitle: 'Be honest about your swing, not your playing style — this is about how you hit, not what shots you play.',
+    options: [
+      { id: 'needsHelp', label: 'I want help generating easier power', emoji: '🌊', blurb: "My technique is still developing, or I don't naturally hit that hard" },
+      { id: 'balanced', label: 'Balanced — I generate decent power myself', emoji: '⚖️', blurb: 'A comfortable mix, nothing extreme either way' },
+      { id: 'ownPower', label: 'I generate plenty of power / I hit hard', emoji: '💪', blurb: 'Strong technique, fast swing — the string just needs to keep up' },
+    ],
+  },
+  {
     id: 'priority',
     title: 'What matters most to you in a string?',
     options: [
@@ -62,12 +72,13 @@ export const quizQuestions: QuizQuestionDef[] = [
   },
   {
     id: 'hittingFeel',
-    title: 'What hitting feel do you prefer?',
+    title: 'What kind of stringbed feel do you prefer?',
+    subtitle: "This is about how the string responds under your racket arm, not your playing style.",
     options: [
-      { id: 'hardCrisp', label: 'Hard / crisp / direct', emoji: '🔨' },
-      { id: 'mediumBalanced', label: 'Medium / balanced', emoji: '🎚️' },
-      { id: 'softComfortable', label: 'Soft / comfortable', emoji: '☁️' },
-      { id: 'dontKnow', label: "I don't know", emoji: '🤷' },
+      { id: 'hardCrisp', label: 'Hard & direct / crisp', emoji: '🔨', blurb: 'Crisp feedback, precision, and a more connected feel' },
+      { id: 'mediumBalanced', label: 'Balanced / medium', emoji: '🎚️', blurb: 'A mix of comfort, feedback and response' },
+      { id: 'softComfortable', label: 'Soft & forgiving', emoji: '☁️', blurb: 'Comfortable, easier power, less harsh feedback' },
+      { id: 'dontKnow', label: "Not sure", emoji: '🤷', blurb: "No strong preference — we won't lean on this too heavily" },
     ],
   },
   {

@@ -1,5 +1,6 @@
 import type { StringItem } from '../data/strings'
 import { calculateTotal, formatEuro } from '../logic/pricing'
+import { buildRequestMailto } from '../logic/contactMessage'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
 
@@ -23,17 +24,29 @@ export default function StringCard({ item }: { item: StringItem }) {
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
           <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">{CATEGORY_LABEL[item.category]}</p>
+          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
+            {CATEGORY_LABEL[item.category]}
+            {item.tension?.gauge != null && <> · {item.tension.gauge}mm</>}
+          </p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <StockBadge stock={item.stock} />
-          {item.popularityRank != null && (
+          {item.popularityRank === 1 ? (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-600 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
-              title="Popular with players I string for at my club"
+              className="inline-flex items-center gap-1 rounded-full bg-shuttle-500 text-court-900 px-2.5 py-1 text-xs font-semibold"
+              title="Most popular with players I string for at my club"
             >
-              ★ Popular
+              ★ #1 Club Favorite
             </span>
+          ) : (
+            item.popularityRank != null && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-600 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
+                title="Popular with players I string for at my club"
+              >
+                ★ Popular
+              </span>
+            )
           )}
         </div>
       </div>
@@ -51,7 +64,7 @@ export default function StringCard({ item }: { item: StringItem }) {
         </div>
         {orderable ? (
           <a
-            href="#contact"
+            href={buildRequestMailto(item.name)}
             className="focus-ring shrink-0 rounded-full bg-court-800 text-white text-sm font-semibold px-4 py-2 hover:bg-court-700 transition-colors cursor-pointer"
           >
             Request this
