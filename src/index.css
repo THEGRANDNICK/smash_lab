@@ -1,0 +1,103 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  --color-court-900: #0b3d2e;
+  --color-court-800: #0f4d3a;
+  --color-court-700: #146349;
+  --color-court-600: #1a7d5c;
+
+  --color-shuttle-50: #fff9f0;
+  --color-shuttle-100: #fff2dc;
+  --color-shuttle-400: #ffce6b;
+  --color-shuttle-500: #ffb830;
+  --color-shuttle-600: #f39a0e;
+
+  --color-ink-900: #10151a;
+  --color-ink-700: #2a333b;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-drift: drift 3.2s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-14px) rotate(3deg); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(8deg); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-shuttle-50);
+  color: var(--color-ink-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0c1210;
+    color: #eef4f0;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Subtle badminton court line-grid backdrop */
+.court-lines {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* String-grid weave pattern for accents */
+.string-grid {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.12) 0, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 10px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 10px);
+}
+
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 3px solid var(--color-shuttle-500);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+::selection {
+  background: var(--color-shuttle-400);
+  color: var(--color-court-900);
+}
