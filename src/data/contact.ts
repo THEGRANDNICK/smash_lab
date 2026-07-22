@@ -3,8 +3,8 @@
 // "Choose This Setup" prefilled-email links.
 export const CONTACT = {
   name: 'Nico',
-  whatsapp: '+31 6 00 00 00 00',
-  email: 'stringing@example.com',
-  location: 'Local club / drop-off point, City',
-  instagram: '@smashlab.stringing',
+  whatsapp: '+49 (0) 1590 8154825',
+  email: 'nicovogt56@gmail.com',
+  location: 'TSG Rohrbach Badminton Club',
+  instagram: 'Coming Soon',
 }
