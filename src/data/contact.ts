@@ -3,8 +3,8 @@
 // "Choose This Setup" prefilled-email links.
 export const CONTACT = {
   name: 'Nico',
-  whatsapp: '+49 (0) 1590 8154825',
-  email: 'nicovogt56@gmail.com',
+  whatsapp: '+31 00 00 00 00',
+  email: 'email.com',
   location: 'Heidelberg-Rohrbach / TSG Rohrbach by arrangement',
   instagram: 'Coming Soon',
 }
