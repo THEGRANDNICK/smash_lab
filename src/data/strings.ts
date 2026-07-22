@@ -36,6 +36,12 @@ export interface StringItem {
   colors?: string[]
   notes?: string
   tension?: StringTensionMeta
+  /**
+   * Lower number = more popular. Reflects what's actually common among
+   * players at this stringer's own club — not global sales data. Leave
+   * unset for strings with no particular popularity signal.
+   */
+  popularityRank?: number
 }
 
 export const strings: StringItem[] = [
@@ -124,6 +130,7 @@ export const strings: StringItem[] = [
     stock: 'in-stock',
     setsAvailable: 10,
     stringCost: 5.75,
+    popularityRank: 1,
   },
   {
     id: 'yonex-exbolt-65',
@@ -173,6 +180,7 @@ export const strings: StringItem[] = [
     setsAvailable: 10,
     stringCost: 6.5,
     notes: 'Hybrid string (thinner cross strings) tuned for spin and control on net play and flat exchanges.',
+    popularityRank: 2,
   },
   {
     id: 'yonex-aerobite-boost',
@@ -218,6 +226,7 @@ export const strings: StringItem[] = [
     setsAvailable: 10,
     stringCost: 5.75,
     notes: 'A control-first classic with a soft, dependable feel and good all-round durability.',
+    popularityRank: 3,
   },
 
   // --- YONEX: DURABILITY ---
@@ -277,6 +286,7 @@ export const strings: StringItem[] = [
     stringCost: 5.9,
     notes: 'A tough, no-frills workhorse string built to survive frequent play.',
     tension: { gauge: 0.7, tensionAdjustment: -0.25 },
+    popularityRank: 4,
   },
 
   // --- LI-NING ---

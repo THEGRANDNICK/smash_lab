@@ -25,7 +25,17 @@ export default function StringCard({ item }: { item: StringItem }) {
           <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">{CATEGORY_LABEL[item.category]}</p>
         </div>
-        <StockBadge stock={item.stock} />
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <StockBadge stock={item.stock} />
+          {item.popularityRank != null && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-600 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
+              title="Popular with players I string for at my club"
+            >
+              ★ Popular
+            </span>
+          )}
+        </div>
       </div>
 
       <StatBars item={item} compact />

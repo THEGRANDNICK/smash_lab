@@ -18,8 +18,24 @@ const FAQS = [
     a: 'Yes — Yonex, Victor, Li-Ning and most other brands are no problem.',
   },
   {
-    q: "What if a string I want is unavailable?",
-    a: "Unavailable strings are shown for reference so you know what exists, but I'll help you find the closest currently available alternative.",
+    q: "What if the string I want isn't available?",
+    a: "Just ask me. I can usually order other strings as well, although this may take a little longer and an individually purchased set can cost more than the strings I regularly keep in stock on reels. You're also welcome to bring your own string — in that case you only pay for the stringing service (€15), with no separate string cost.",
+  },
+  {
+    q: 'Do you check the racket and grommets?',
+    a: "Yes. While restringing, I also keep an eye on the racket's grommets. Where useful, I rotate worn grommets so the string doesn't keep pressing against exactly the same worn spot. If a grommet is broken and needs replacing, I replace it where possible before stringing.",
+  },
+  {
+    q: 'What does your stringing process look like?',
+    a: "I aim to use a careful, consistent stringing process and follow professional badminton stringing practices as closely as possible, including techniques used by professional Yonex stringers — correct mounting, a proper stringing pattern, and careful handling throughout. To be clear, I'm not an official Yonex Stringing Team member or Yonex-certified, and this isn't a Yonex-endorsed service — it's simply the standard I hold my own work to.",
+  },
+  {
+    q: 'What machine do you use?',
+    a: "A Pro's Pro Hornet MT-250 — a dedicated electronic stringing machine, used for consistent tension and careful racket mounting.",
+  },
+  {
+    q: 'How much stringing experience do you have?',
+    a: "I've been stringing rackets for around 2½ years, with badminton as my main focus. In that time I've worked on many different rackets across a wide range of brands and models, and occasionally string tennis rackets too. My goal isn't just to put new strings in a racket, but to give each one careful attention — from string choice and tension to the grommets and final result.",
   },
 ]
 
