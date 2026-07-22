@@ -94,7 +94,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           rel="noopener noreferrer"
           className="focus-ring self-start text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
         >
-          View on Yonex ↗
+          View on {item.brand} ↗
         </a>
       )}
 
