@@ -1,11 +1,4 @@
-// Contact details are placeholders — edit freely, this is the only place they live.
-const CONTACT = {
-  name: 'Nick',
-  whatsapp: '+49 (0) 1590 8154825',
-  email: 'nicovogt56@gmail.com',
-  location: 'TSG Rohrbach Badminton Club / drop-off point, City',
-  instagram: 'Coming Soon',
-}
+import { CONTACT } from '../data/contact'
 
 export default function Contact() {
   return (

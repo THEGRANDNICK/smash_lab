@@ -16,7 +16,18 @@ interface StringFinderProps {
 }
 
 function buildSteps(answers: QuizAnswers): string[] {
-  const steps = ['level', 'style', 'priority', 'durabilityImportance', 'hittingFeel', 'frequency', 'breakStrings', 'racketGoal', 'currentTensionKnown']
+  const steps = [
+    'level',
+    'style',
+    'powerGeneration',
+    'priority',
+    'durabilityImportance',
+    'hittingFeel',
+    'frequency',
+    'breakStrings',
+    'racketGoal',
+    'currentTensionKnown',
+  ]
   if (answers.currentTensionKnown === 'yes') steps.push('currentTensionValue', 'currentTensionFeel')
   steps.push('maxTensionKnown')
   if (answers.maxTensionKnown === 'yes') steps.push('maxTensionValue')

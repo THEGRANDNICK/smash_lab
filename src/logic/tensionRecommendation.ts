@@ -6,6 +6,7 @@
 import {
   LEVEL_BASE_RANGES,
   GOAL_ADJUSTMENTS,
+  POWER_GENERATION_TENSION_ADJUSTMENTS,
   CURRENT_TENSION_FEEL_ADJUSTMENTS,
   UNSURE_BLEND_TOWARD_BASELINE,
   ABSOLUTE_MIN_TENSION,
@@ -69,6 +70,19 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
     reasoning = `Based on typical ranges for a ${levelLabel(level)} player and your preference for ${goalLabel(answers.racketGoal)}, ${round(
       target,
     )} kg is a sensible starting point.`
+  }
+
+  // Small nudge for self-reported power generation — modest by design, see
+  // config/tensionRules.ts. Hard hitters who generate their own power can
+  // often handle a touch more directness; players wanting help generating
+  // power get a touch more forgiveness. Never a big swing on its own.
+  const powerAdjustment = POWER_GENERATION_TENSION_ADJUSTMENTS[answers.powerGeneration ?? 'balanced'] ?? 0
+  if (powerAdjustment !== 0) {
+    target += powerAdjustment
+    reasoning +=
+      answers.powerGeneration === 'ownPower'
+        ? ' Since you generate plenty of power yourself, we nudged it up slightly for a more direct feel.'
+        : ' Since you could use some help generating power, we nudged it down slightly for extra forgiveness.'
   }
 
   // Small, string-specific nudge (thinner/livelier strings can hold a hair more usable tension).

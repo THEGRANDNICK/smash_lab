@@ -131,6 +131,7 @@ export const strings: StringItem[] = [
     setsAvailable: 10,
     stringCost: 5.75,
     popularityRank: 1,
+    tension: { gauge: 0.68 },
   },
   {
     id: 'yonex-exbolt-65',

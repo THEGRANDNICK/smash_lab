@@ -3,6 +3,7 @@ import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { calculateTotal, formatEuro } from '../logic/pricing'
 import { formatKg, formatLbs } from '../logic/units'
+import { buildRequestMailto } from '../logic/contactMessage'
 import type { QuizAnswers } from '../logic/types'
 import StatBars from './StatBars'
 import StockBadge from './StockBadge'
@@ -51,7 +52,15 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
             </div>
 
             <p className="mt-4 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold">{rec.best.string.name}</h2>
+            <h2 className="font-display text-3xl sm:text-4xl font-bold">
+              {rec.best.string.name}
+              {rec.best.string.tension?.gauge != null && (
+                <span className="text-base font-normal text-white/50 ml-2">{rec.best.string.tension.gauge}mm</span>
+              )}
+            </h2>
+            {rec.unavailableStandout && (
+              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best currently available match</p>
+            )}
 
             <div className="flex flex-wrap gap-2 mt-4">
               {rec.best.topDimensions.map((d) => (
@@ -70,9 +79,9 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
               </div>
 
               <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
-                <TensionOption kg={tension.lowerKg} label="More power & forgiving" />
+                <TensionOption kg={tension.lowerKg} label="More forgiving / easier power" />
                 <TensionOption kg={tension.recommendedKg} label="Recommended" highlight />
-                <TensionOption kg={tension.higherKg} label="More direct & control" />
+                <TensionOption kg={tension.higherKg} label="More direct / control" />
               </div>
 
               {tension.wasCappedByRacketMax && (
@@ -84,6 +93,19 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
             </div>
           </div>
         </div>
+
+        {/* Best theoretical match vs. best available, when they differ */}
+        {rec.unavailableStandout && (
+          <div className="mt-6 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5">
+            <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
+              🏆 Best match overall: {rec.unavailableStandout.string.name} ({rec.unavailableStandout.matchPercent}%)
+            </p>
+            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
+              It's currently unavailable, so it isn't shown as your setup above — but since I can often order strings in specifically, ask me if
+              you'd like to go with it anyway. {rec.best.string.name} below is the best match currently in stock.
+            </p>
+          </div>
+        )}
 
         {/* Why this setup */}
         <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6">
@@ -136,17 +158,10 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
           </div>
         )}
 
-        {rec.unavailableStandout && (
-          <p className="mt-4 text-xs text-center text-ink-700/50 dark:text-shuttle-100/50">
-            For reference: {rec.unavailableStandout.string.name} scores {rec.unavailableStandout.matchPercent}% on paper but is currently
-            unavailable, so it isn't recommended as a practical pick today.
-          </p>
-        )}
-
         {/* Actions */}
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <a
-            href="#contact"
+            href={buildRequestMailto(rec.best.string.name, tension.recommendedKg)}
             className="focus-ring text-center rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
           >
             Choose This Setup
