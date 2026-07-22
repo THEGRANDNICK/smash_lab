@@ -282,7 +282,7 @@ export const strings: StringItem[] = [
     hittingSound: 6,
     shockAbsorption: 6,
     control: 6,
-    stock: 'in-stock',
+    stock: 'unavailable',
     stringCost: 5.9,
     notes: 'A tough, no-frills workhorse string built to survive frequent play.',
     tension: { gauge: 0.7, tensionAdjustment: -0.25 },
