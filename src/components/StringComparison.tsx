@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { strings } from '../data/strings'
+import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import StringCard from './StringCard'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
@@ -8,6 +9,7 @@ export default function StringComparison() {
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [brand, setBrand] = useState<string>('all')
   const [availableOnly, setAvailableOnly] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('recommended')
 
   const brands = useMemo(() => Array.from(new Set(strings.map((s) => s.brand))).sort(), [])
 
@@ -17,6 +19,8 @@ export default function StringComparison() {
     if (availableOnly && s.stock === 'unavailable') return false
     return true
   })
+
+  const sorted = sortStrings(filtered, sortBy)
 
   return (
     <section id="strings" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
@@ -63,11 +67,34 @@ export default function StringComparison() {
         </label>
       </div>
 
-      {filtered.length === 0 ? (
+      <div className="flex flex-col items-center gap-2 mb-8">
+        <label className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
+          Sort by
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-4 py-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            aria-label="Sort strings"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {sortBy === 'popularity' && (
+          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+            ★ Popular with players I string for at my club — not a global sales ranking.
+          </p>
+        )}
+      </div>
+
+      {sorted.length === 0 ? (
         <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">No strings match those filters right now.</p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((item) => (
+          {sorted.map((item) => (
             <StringCard key={item.id} item={item} />
           ))}
         </div>

@@ -17,20 +17,40 @@ export default function PricingSection() {
           <p className="font-display text-5xl font-bold text-ink-900 dark:text-shuttle-50 mt-2">€{STRINGING_SERVICE_FEE}</p>
           <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60 mt-2">Flat fee, any racket, any string.</p>
         </div>
-        <div>
-          <p className="font-semibold text-ink-900 dark:text-shuttle-50 mb-2">Example total</p>
-          <div className="rounded-xl bg-court-900/5 dark:bg-white/5 p-4 text-sm">
-            <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80">
-              <span>Yonex Exbolt 65</span>
-              <span>€6</span>
+        <div className="space-y-4">
+          <div>
+            <p className="font-semibold text-ink-900 dark:text-shuttle-50 mb-2 text-sm">Using one of my strings</p>
+            <div className="rounded-xl bg-court-900/5 dark:bg-white/5 p-4 text-sm">
+              <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80">
+                <span>Yonex Exbolt 65</span>
+                <span>€6</span>
+              </div>
+              <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80 mt-1">
+                <span>Stringing</span>
+                <span>€{STRINGING_SERVICE_FEE}</span>
+              </div>
+              <div className="flex justify-between font-bold text-ink-900 dark:text-shuttle-50 mt-2 pt-2 border-t border-court-900/10 dark:border-white/10">
+                <span>Total</span>
+                <span>€21</span>
+              </div>
             </div>
-            <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80 mt-1">
-              <span>Stringing</span>
-              <span>€{STRINGING_SERVICE_FEE}</span>
-            </div>
-            <div className="flex justify-between font-bold text-ink-900 dark:text-shuttle-50 mt-2 pt-2 border-t border-court-900/10 dark:border-white/10">
-              <span>Total</span>
-              <span>€21</span>
+          </div>
+
+          <div>
+            <p className="font-semibold text-ink-900 dark:text-shuttle-50 mb-2 text-sm">Bringing your own string</p>
+            <div className="rounded-xl bg-court-900/5 dark:bg-white/5 p-4 text-sm">
+              <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80">
+                <span>String</span>
+                <span>Customer supplied</span>
+              </div>
+              <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80 mt-1">
+                <span>Stringing</span>
+                <span>€{STRINGING_SERVICE_FEE}</span>
+              </div>
+              <div className="flex justify-between font-bold text-ink-900 dark:text-shuttle-50 mt-2 pt-2 border-t border-court-900/10 dark:border-white/10">
+                <span>Total</span>
+                <span>€{STRINGING_SERVICE_FEE}</span>
+              </div>
             </div>
           </div>
         </div>
