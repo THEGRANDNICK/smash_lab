@@ -84,6 +84,7 @@ export const strings: StringItem[] = [
     notes:
       'One of Yonex\'s thinnest, most explosive repulsion strings — extremely crisp and lively, but fragile. Best suited to players chasing maximum feel over lifespan, not durability.',
     tension: { gauge: 0.61, tensionAdjustment: 0.5, tensionNotes: 'Very thin & lively — feels tight even at moderate tension.' },
+    productUrl: 'https://www.yonex.com/badminton/strings/bgas',
   },
   {
     id: 'yonex-bg66-force',
@@ -101,7 +102,7 @@ export const strings: StringItem[] = [
     // Yonex markets this around a thin, repulsion-focused gauge with strong control for heavy attacking smashes.
     notes: 'Yonex positions this as a thin, repulsion-focused string with unusually good control for its category — built for heavy, attacking smashes without giving up much precision.',
     tension: { gauge: 0.65, tensionAdjustment: 0.25 },
-    productUrl: 'https://www.yonex.com/bg66f',
+    productUrl: 'https://www.yonex.com/badminton/strings/bg66f',
   },
   {
     id: 'yonex-bg66-ultimax',
@@ -119,7 +120,7 @@ export const strings: StringItem[] = [
     // Yonex describes this as an ultra-thin, all-round repulsion string with a clear hitting sound.
     notes: "Yonex's ultra-thin, all-round repulsion string — a clear, crisp hitting sound with a lively, connected feel that still holds up reasonably well for how thin it is.",
     tension: { gauge: 0.65, tensionAdjustment: 0.25, tensionNotes: 'Crisp hitting sound with a lively, all-round response.' },
-    productUrl: 'https://www.yonex.com/bg66um',
+    productUrl: 'https://www.yonex.com/badminton/strings/bg66um',
   },
   {
     id: 'yonex-nanogy-98',
@@ -148,6 +149,8 @@ export const strings: StringItem[] = [
     stock: 'unavailable',
     stringCost: null,
     notes: 'A power-oriented sibling to BG80 with a similarly crisp, direct feel — like BG80, it suits players who generate their own pace rather than relying on the string for easy power.',
+    tension: { gauge: 0.68 },
+    productUrl: 'https://www.yonex.com/badminton/strings/bg80p',
   },
   {
     id: 'yonex-bg80',
@@ -173,7 +176,7 @@ export const strings: StringItem[] = [
     notes:
       "One of Yonex's longest-standing performance strings — a 0.68mm Vectran-braided construction that Yonex positions around quick repulsion, a crisp hitting sound, and strong tension retention. Its five-axis ratings look modest next to newer, thinner Exbolt-series strings, but it remains a go-to choice for players who generate their own power: the direct, connected feel rewards a strong swing rather than doing the work for you. In practice, many hard-hitting attacking players still prefer it over thinner modern strings for the extra control and feedback, even if it's not the easiest string for generating power from scratch.",
     tension: { gauge: 0.68 },
-    productUrl: 'https://www.yonex.com/bg80',
+    productUrl: 'https://www.yonex.com/badminton/strings/bg80',
   },
   {
     id: 'yonex-exbolt-65',
@@ -192,6 +195,7 @@ export const strings: StringItem[] = [
     notes:
       'A well-rounded performance string: fast, controlled, and holds up better than most thin repulsion strings. Yonex adds an extra outer layer over the Exbolt 63\'s core construction specifically for more shuttle hold and control.',
     tension: { gauge: 0.65, tensionAdjustment: 0.25, recommendedMin: 9, recommendedMax: 12 },
+    productUrl: 'https://www.yonex.com/badminton/strings/bgxb65',
   },
   {
     id: 'yonex-exbolt-63',
@@ -209,7 +213,7 @@ export const strings: StringItem[] = [
     notes:
       "Thinner gauge than Exbolt 65 for even more explosive repulsion and crisper feedback, at some cost to durability — Yonex's liveliest string in the Exbolt lineup.",
     tension: { gauge: 0.63, tensionAdjustment: 0.5, recommendedMin: 9, recommendedMax: 12 },
-    productUrl: 'https://www.yonex.com/bgxb63',
+    productUrl: 'https://www.yonex.com/badminton/strings/bgxb63',
   },
 
   // --- YONEX: CONTROL ---
@@ -226,12 +230,13 @@ export const strings: StringItem[] = [
     stock: 'in-stock',
     setsAvailable: 10,
     stringCost: 6.5,
+    popularityRank: 2,
     // Yonex's hybrid concept: a thicker 0.67mm main string for power/durability with a
     // thinner 0.61mm cross string for extra spin/shuttle grip (gauges via retailer listings).
     notes:
       "Yonex's hybrid string — thinner cross strings tuned for spin and shuttle grip on net play and flat exchanges, paired with a slightly thicker main string for power and durability.",
     tension: { gauge: 0.67 },
-    popularityRank: 2,
+    productUrl: 'https://www.yonex.com/badminton/strings/bgab',
   },
   {
     id: 'yonex-aerobite-boost',
@@ -247,6 +252,7 @@ export const strings: StringItem[] = [
     setsAvailable: 1,
     stringCost: 10.9,
     notes: "A control-leaning variant of AeroBite's hybrid concept — the same spin-friendly thinner cross strings, tuned further toward control over outright repulsion.",
+    productUrl: 'https://www.yonex.com/badminton/strings/bgabbt',
   },
   {
     id: 'yonex-skyarc',
@@ -263,6 +269,7 @@ export const strings: StringItem[] = [
     stringCost: 10.9,
     notes: 'The most arm-friendly string in the lineup — exceptional shock absorption without sacrificing control.',
     tension: { gauge: 0.69, tensionAdjustment: -0.25, tensionNotes: 'Soft, cushioned feel — often paired with slightly lower tension for maximum comfort.' },
+    productUrl: 'https://www.yonex.com/badminton/strings/bgsky',
   },
   {
     id: 'yonex-nanogy-99',
@@ -280,7 +287,7 @@ export const strings: StringItem[] = [
     // Yonex's control-oriented coating gives it a slightly textured, grippy surface — commonly
     // described as helping "bite" the shuttle on net shots, slices and deceptive drops.
     notes:
-      "A control-first classic with a soft, dependable feel. Its slightly textured coating helps grip the shuttle for precise net play, slices and deceptive drops, at some cost to outright repulsion.",
+      "A control-first classic with a soft, dependable feel. Its slightly textured coating helps grip the shuttle for precise net play, slices and deceptive drops, at some cost to outright repulsion. And quite durable due to it's thickness.",
     tension: { gauge: 0.69 },
     popularityRank: 3,
   },
@@ -336,6 +343,8 @@ export const strings: StringItem[] = [
     stock: 'unavailable',
     stringCost: null,
     notes: 'A titanium-coated variant of BG65 aimed at extra durability and a slightly firmer feel — largely phased out of the current lineup.',
+    tension: { gauge: 0.7 },
+    productUrl: 'https://www.yonex.com/badminton/strings/bg65ti',
   },
   {
     id: 'yonex-bg65',
@@ -352,6 +361,7 @@ export const strings: StringItem[] = [
     notes: 'A tough, no-frills workhorse string built to survive frequent play.',
     tension: { gauge: 0.7, tensionAdjustment: -0.25 },
     popularityRank: 4,
+    productUrl: 'https://www.yonex.com/badminton/strings/bg65',
   },
 
   // --- LI-NING ---
@@ -373,6 +383,7 @@ export const strings: StringItem[] = [
     notes:
       "Excellent performance-per-euro — strong repulsion and a crisp sound at a very friendly price. Li-Ning's braided construction gives it a bit more durability than its gauge alone would suggest.",
     tension: { gauge: 0.65 },
+    productUrl: 'https://li-ning-europe.eu/products/badmintonsaite-no-1-im-10m-set-verschiedene-farben-axjj018',
   },
   {
     id: 'lining-no1-boost',
@@ -387,8 +398,41 @@ export const strings: StringItem[] = [
     stock: 'unavailable',
     stringCost: null,
     notes: "A higher-performance sibling to Li-Ning's No.1, with a livelier repulsion and hitting sound — currently out of stock.",
+    productUrl: 'https://li-ning-europe.eu/products/badmintonsaite-no-5-10m-set-verschiedene-farben-axjj006',
   },
-
+  {
+    id: 'lining-no5',
+    brand: 'Li-Ning',
+    name: 'No.5',
+    category: 'durability',
+    repulsion: 8,
+    durability: 8,
+    hittingSound: 7,
+    shockAbsorption: 7,
+    control: 8,
+    stock: 'unavailable',
+    stringCost: null,
+    notes: "This all-round string with a titanium hybrid casing impresses with its excellent durability and rebound.",
+    tension: { gauge: 0.69 },
+    productUrl: 'https://li-ning-europe.eu/products/badmintonsaite-no-5-10m-set-verschiedene-farben-axjj006',
+  },
+  {
+    id: 'lining-no7',
+    brand: 'Li-Ning',
+    name: 'No.7',
+    category: 'durability',
+    repulsion: 8,
+    durability: 10,
+    hittingSound: 7,
+    shockAbsorption: 8,
+    control: 8,
+    stock: 'unavailable',
+    stringCost: null,
+    notes: "The most durable string in the Li-Ning range.",
+    tension: { gauge: 0.7 },
+    productUrl: 'https://li-ning-europe.eu/products/badmintonsaite-no-7-10m-set-verschiedene-farben-axjj014',
+  },
+  
   // --- VICTOR ---
   {
     id: 'victor-vbs66-nano',
@@ -405,6 +449,24 @@ export const strings: StringItem[] = [
     notes: "Victor's nanotechnology-core string — a lively, medium-feel all-rounder with solid repulsion and durability for its gauge.",
     tension: { gauge: 0.66 },
     stringCost: 7.9,
+    productUrl: 'https://www.victor-europe.eu/en/product-page/victor-vbs-66n',
+  },
+  {
+    id: 'victor-vbs63',
+    brand: 'Victor',
+    name: 'VBS-63',
+    category: 'repulsion',
+    repulsion: 9,
+    durability: 7,
+    hittingSound: 7,
+    shockAbsorption: null,
+    control: 7,
+    stock: 'unavailable',
+    setsAvailable: null,
+    notes: "This string is suitable for the players who prefer good placement and high control.",
+    tension: { gauge: 0.63 },
+    stringCost: 7.9,
+    productUrl: 'https://www.victor-europe.eu/en/product-page/victor-vbs-66n',
   },
 ]
 
