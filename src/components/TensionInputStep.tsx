@@ -21,7 +21,7 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
       onChange(undefined)
       return
     }
-    const num = Number(raw)
+    const num = Number(raw.replace(',', '.'))
     if (Number.isNaN(num)) return
     onChange(unit === 'kg' ? num : lbsToKg(num))
   }
@@ -40,11 +40,8 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-6">
         <div className="flex items-stretch gap-3 max-w-sm">
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.1"
-            min={unit === 'kg' ? min : round1(kgToLbs(min))}
-            max={unit === 'kg' ? max : round1(kgToLbs(max))}
             value={displayValue}
             onChange={(e) => handleInput(e.target.value)}
             placeholder={unit === 'kg' ? 'e.g. 10' : 'e.g. 22'}
