@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion'
 import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
-import { calculateTotal, formatEuro } from '../logic/pricing'
 import { formatKg, formatLbs } from '../logic/units'
 import { buildRequestMailto } from '../logic/contactMessage'
+import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
 import StatBars from './StatBars'
 import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
+import SpecialistPanel from './SpecialistPanel'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -26,7 +27,7 @@ const STRENGTH_EMOJI: Record<string, string> = {
 export default function RecommendationResult({ answers, onRetake, onCompare }: RecommendationResultProps) {
   const rec = recommendStrings(answers)
   const tension = recommendTension(answers, rec.best.string)
-  const price = calculateTotal(rec.best.string.stringCost)
+  const bestSpecialist = getSpecialistProfile(rec.best.string.id)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -58,8 +59,8 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
                 <span className="text-base font-normal text-white/50 ml-2">{rec.best.string.tension.gauge}mm</span>
               )}
             </h2>
-            {rec.unavailableStandout && (
-              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best currently available match</p>
+            {rec.bestAvailable && (
+              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
             )}
 
             <div className="flex flex-wrap gap-2 mt-4">
@@ -94,67 +95,60 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
           </div>
         </div>
 
-        {/* Best theoretical match vs. best available, when they differ */}
-        {rec.unavailableStandout && (
+        {/* Best available now, shown separately when the best overall match isn't in stock */}
+        {rec.bestAvailable && (
           <div className="mt-6 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5">
-            <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
-              🏆 Best match overall: {rec.unavailableStandout.string.name} ({rec.unavailableStandout.matchPercent}%)
-            </p>
-            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
-              It's currently unavailable, so it isn't shown as your setup above — but since I can often order strings in specifically, ask me if
-              you'd like to go with it anyway. {rec.best.string.name} below is the best match currently in stock.
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
+                ✅ Best Available Alternative — {rec.bestAvailable.string.name} ({rec.bestAvailable.matchPercent}% Match)
+              </p>
+              <StockBadge stock={rec.bestAvailable.string.stock} />
+            </div>
+            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.bestAvailable}</p>
           </div>
         )}
 
         {/* Why this setup */}
         <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6">
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">Why this setup?</h3>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">Why this setup?</h3>
+            <StockBadge stock={rec.best.string.stock} />
+          </div>
           <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.best}</p>
           <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">{tension.explanation}</p>
 
           <div className="mt-5">
             <StatBars item={rec.best.string} />
           </div>
-        </div>
 
-        {/* Price */}
-        <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6">
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50 mb-3">Price</h3>
-          <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80">
-            <span>String ({rec.best.string.name})</span>
-            <span>{formatEuro(price.stringCost)}</span>
-          </div>
-          <div className="flex justify-between text-ink-700/80 dark:text-shuttle-100/80 mt-1">
-            <span>Stringing service</span>
-            <span>{formatEuro(price.serviceFee)}</span>
-          </div>
-          <div className="flex justify-between font-display font-bold text-lg text-ink-900 dark:text-shuttle-50 mt-3 pt-3 border-t border-court-900/10 dark:border-white/10">
-            <span>Total</span>
-            <span>{formatEuro(price.total)}</span>
-          </div>
-          <div className="mt-3">
-            <StockBadge stock={rec.best.string.stock} />
-          </div>
-        </div>
-
-        {/* Runner up */}
-        {rec.runnerUp && (
-          <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6">
-            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">🥈 Runner-up</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">{rec.runnerUp.string.name}</h4>
-              <span className="text-shuttle-600 font-bold">{rec.runnerUp.matchPercent}% Match</span>
+          {bestSpecialist && (
+            <div className="mt-5">
+              <SpecialistPanel profile={bestSpecialist} />
             </div>
-            <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.runnerUp}</p>
+          )}
+        </div>
+
+        {/* Cross-brand alternative */}
+        {rec.crossBrandAlternative && (
+          <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6">
+            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">🌐 Cross-Brand Alternative</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
+                {rec.crossBrandAlternative.string.brand} {rec.crossBrandAlternative.string.name}
+              </h4>
+              <span className="text-shuttle-600 font-bold">{rec.crossBrandAlternative.matchPercent}% Match</span>
+            </div>
+            <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.crossBrandAlternative}</p>
           </div>
         )}
 
-        {/* Third pick */}
-        {rec.thirdPick && (
+        {/* Specialist choice */}
+        {rec.specialistChoice && (
           <div className="mt-4 rounded-2xl border border-court-900/10 dark:border-white/10 bg-white/40 dark:bg-white/5 p-5">
-            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">Worth considering — {rec.thirdPick.matchPercent}% Match</p>
-            <p className="mt-1 text-ink-700/80 dark:text-shuttle-100/80 text-sm">{rec.explanations.thirdPick}</p>
+            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">
+              ⭐ Specialist Choice — {rec.specialistChoice.string.name} ({rec.specialistChoice.matchPercent}% Match)
+            </p>
+            <p className="mt-1 text-ink-700/80 dark:text-shuttle-100/80 text-sm">{rec.explanations.specialistChoice}</p>
           </div>
         )}
 

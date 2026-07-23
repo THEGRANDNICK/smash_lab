@@ -16,18 +16,9 @@ interface StringFinderProps {
 }
 
 function buildSteps(answers: QuizAnswers): string[] {
-  const steps = [
-    'level',
-    'style',
-    'powerGeneration',
-    'priority',
-    'durabilityImportance',
-    'hittingFeel',
-    'frequency',
-    'breakStrings',
-    'racketGoal',
-    'currentTensionKnown',
-  ]
+  const steps = ['level', 'playStyles', 'powerGeneration', 'priorities', 'hittingFeel', 'frequency']
+  if (answers.priorities?.includes('durability')) steps.push('restringReason')
+  steps.push('racketGoal', 'currentTensionKnown')
   if (answers.currentTensionKnown === 'yes') steps.push('currentTensionValue', 'currentTensionFeel')
   steps.push('maxTensionKnown')
   if (answers.maxTensionKnown === 'yes') steps.push('maxTensionValue')
@@ -52,21 +43,41 @@ export default function StringFinder({ onExit, onCompare }: StringFinderProps) {
     }
   }
 
-  function handleSelect(questionId: string, optionId: string) {
-    const nextAnswers: QuizAnswers = { ...answers, [questionId]: optionId }
-    setAnswers(nextAnswers)
-    const nextSteps = buildSteps(nextAnswers)
-    setDirection(1)
-    window.setTimeout(() => {
-      if (stepIndex + 1 >= nextSteps.length) {
-        setPhase('calculating')
+  /** Single-select: replace the answer and auto-advance. Multi-select: toggle within the array and wait for an explicit Continue. */
+  function handleToggle(questionId: string, optionId: string) {
+    const question = getQuestion(questionId)
+    const maxSelect = question?.maxSelect
+
+    if (maxSelect == null) {
+      const nextAnswers: QuizAnswers = { ...answers, [questionId]: optionId }
+      setAnswers(nextAnswers)
+      const nextSteps = buildSteps(nextAnswers)
+      setDirection(1)
+      window.setTimeout(() => {
+        if (stepIndex + 1 >= nextSteps.length) {
+          setPhase('calculating')
+        } else {
+          setStepIndex(stepIndex + 1)
+        }
+      }, 220)
+      return
+    }
+
+    setAnswers((prev) => {
+      const current = ((prev as Record<string, unknown>)[questionId] as string[] | undefined) ?? []
+      let next: string[]
+      if (current.includes(optionId)) {
+        next = current.filter((id) => id !== optionId)
+      } else if (current.length < maxSelect) {
+        next = [...current, optionId]
       } else {
-        setStepIndex(stepIndex + 1)
+        next = current
       }
-    }, 220)
+      return { ...prev, [questionId]: next }
+    })
   }
 
-  function handleTensionContinue() {
+  function handleContinue() {
     goToIndex(stepIndex + 1, 1)
   }
 
@@ -120,7 +131,7 @@ export default function StringFinder({ onExit, onCompare }: StringFinderProps) {
             exit={{ opacity: 0, x: direction * -40 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           >
-            <StepContent stepId={currentStepId} answers={answers} onSelect={handleSelect} onTensionContinue={handleTensionContinue} setAnswers={setAnswers} />
+            <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} setAnswers={setAnswers} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -131,12 +142,12 @@ export default function StringFinder({ onExit, onCompare }: StringFinderProps) {
 interface StepContentProps {
   stepId: string
   answers: QuizAnswers
-  onSelect: (questionId: string, optionId: string) => void
-  onTensionContinue: () => void
+  onToggle: (questionId: string, optionId: string) => void
+  onContinue: () => void
   setAnswers: React.Dispatch<React.SetStateAction<QuizAnswers>>
 }
 
-function StepContent({ stepId, answers, onSelect, onTensionContinue, setAnswers }: StepContentProps) {
+function StepContent({ stepId, answers, onToggle, onContinue, setAnswers }: StepContentProps) {
   if (stepId === 'currentTensionValue') {
     return (
       <div>
@@ -146,7 +157,7 @@ function StepContent({ stepId, answers, onSelect, onTensionContinue, setAnswers 
           valueKg={answers.currentTensionValue}
           onChange={(kg) => setAnswers((a) => ({ ...a, currentTensionValue: kg }))}
         />
-        <ContinueButton onClick={onTensionContinue} disabled={answers.currentTensionValue == null} />
+        <ContinueButton onClick={onContinue} disabled={answers.currentTensionValue == null} />
       </div>
     )
   }
@@ -160,7 +171,7 @@ function StepContent({ stepId, answers, onSelect, onTensionContinue, setAnswers 
           valueKg={answers.maxTensionValue}
           onChange={(kg) => setAnswers((a) => ({ ...a, maxTensionValue: kg }))}
         />
-        <ContinueButton onClick={onTensionContinue} disabled={answers.maxTensionValue == null} />
+        <ContinueButton onClick={onContinue} disabled={answers.maxTensionValue == null} />
       </div>
     )
   }
@@ -168,12 +179,15 @@ function StepContent({ stepId, answers, onSelect, onTensionContinue, setAnswers 
   const question = getQuestion(stepId)
   if (!question) return null
 
+  const raw = (answers as Record<string, unknown>)[stepId]
+  const isMulti = question.maxSelect != null
+  const selected: string[] = isMulti ? ((raw as string[] | undefined) ?? []) : raw ? [raw as string] : []
+
   return (
-    <QuizQuestion
-      question={question}
-      selectedId={(answers as Record<string, string | undefined>)[stepId]}
-      onSelect={(optionId) => onSelect(stepId, optionId)}
-    />
+    <div>
+      <QuizQuestion question={question} selected={selected} onToggle={(optionId) => onToggle(stepId, optionId)} />
+      {isMulti && <ContinueButton onClick={onContinue} disabled={selected.length === 0} />}
+    </div>
   )
 }
 

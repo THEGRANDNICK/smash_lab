@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "What if the string I want isn't available?",
-    a: "Just ask me. I can usually order other strings as well, although this may take a little longer and an individually purchased set can cost more than the strings I regularly keep in stock on reels. You're also welcome to bring your own string — in that case you only pay for the stringing service (€15), with no separate string cost.",
+    a: "Just ask me. I can usually order other strings as well, although this may take a little longer and an individually purchased set can cost more than the strings I regularly keep in stock on reels. You're also welcome to bring your own string — in that case you only pay for the stringing service, with no separate string cost.",
   },
   {
     q: 'Do you check the racket and grommets?',

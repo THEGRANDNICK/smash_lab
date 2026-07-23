@@ -3,7 +3,6 @@ import Nav from './components/Nav'
 import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import StringComparison from './components/StringComparison'
-import PricingSection from './components/PricingSection'
 import WhyUs from './components/WhyUs'
 import FAQ from './components/FAQ'
 import Contact from './components/Contact'
@@ -43,7 +42,6 @@ function App() {
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
             <StringComparison />
-            <PricingSection />
             <WhyUs />
             <FAQ />
             <Contact />

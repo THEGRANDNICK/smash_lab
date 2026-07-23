@@ -18,9 +18,6 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           <button type="button" onClick={onOpenCompare} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50 cursor-pointer">
             Strings
           </button>
-          <a href="#pricing" className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
-            Pricing
-          </a>
           <a href="#faq" className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
             FAQ
           </a>
