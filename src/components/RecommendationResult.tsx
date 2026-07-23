@@ -59,8 +59,8 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
                 <span className="text-base font-normal text-white/50 ml-2">{rec.best.string.tension.gauge}mm</span>
               )}
             </h2>
-            {rec.unavailableStandout && (
-              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best currently available match</p>
+            {rec.bestAvailable && (
+              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
             )}
 
             <div className="flex flex-wrap gap-2 mt-4">
@@ -95,16 +95,16 @@ export default function RecommendationResult({ answers, onRetake, onCompare }: R
           </div>
         </div>
 
-        {/* Best theoretical match vs. best available, when they differ */}
-        {rec.unavailableStandout && (
+        {/* Best available now, shown separately when the best overall match isn't in stock */}
+        {rec.bestAvailable && (
           <div className="mt-6 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5">
-            <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
-              🏆 Best match overall: {rec.unavailableStandout.string.name} ({rec.unavailableStandout.matchPercent}%)
-            </p>
-            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
-              It's currently unavailable, so it isn't shown as your setup above — but since I can often order strings in specifically, ask me if
-              you'd like to go with it anyway. {rec.best.string.name} below is the best match currently in stock.
-            </p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
+                ✅ Best Available Alternative — {rec.bestAvailable.string.name} ({rec.bestAvailable.matchPercent}% Match)
+              </p>
+              <StockBadge stock={rec.bestAvailable.string.stock} />
+            </div>
+            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.bestAvailable}</p>
           </div>
         )}
 

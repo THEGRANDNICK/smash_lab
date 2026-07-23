@@ -16,7 +16,7 @@
 //      Strings with no specialist profile are scored on manufacturer data
 //      alone — they are never penalized for lacking one.
 
-import { strings as allStrings, type StringItem, type StockLevel } from '../data/strings'
+import { strings as allStrings, type StringItem } from '../data/strings'
 import {
   getSpecialistProfile,
   type StringSpecialistProfile,
@@ -41,16 +41,18 @@ export interface ScoredString {
 }
 
 export interface StringRecommendation {
+  /** The objectively best-fitting string for this player, regardless of stock — availability is presentation, not a compatibility filter. */
   best: ScoredString
-  /** Best-scoring available string from a different brand than `best`, if one is credibly close. */
+  /** Set only when `best` is unavailable: the best-scoring string a player can actually get right now. */
+  bestAvailable?: ScoredString
+  /** Best-scoring string from a different brand than `best`, if one is credibly close — chosen on fit alone, ignoring stock. */
   crossBrandAlternative?: ScoredString
-  /** An optional, genuinely differentiated third option — never forced if nothing fits. */
+  /** An optional, genuinely differentiated third option — never forced if nothing fits. Chosen on fit alone, ignoring stock. */
   specialistChoice?: ScoredString
-  /** Set when the objectively top-scoring string is unavailable and meaningfully better than `best`. */
-  unavailableStandout?: ScoredString
   profile: DimensionWeights
   explanations: {
     best: string
+    bestAvailable?: string
     crossBrandAlternative?: string
     specialistChoice?: string
   }
@@ -83,12 +85,6 @@ const ALL_SPECIALIST_KEYS: SpecialistDimensionKey[] = [
   'value',
   'allRoundSuitability',
 ]
-
-const AVAILABILITY_RANK_MULTIPLIER: Record<StockLevel, number> = {
-  'in-stock': 1,
-  'low-stock': 0.97,
-  unavailable: 0.82,
-}
 
 // ---------------------------------------------------------------------------
 // Layer 1: manufacturer-data preference profile (unchanged in spirit from
@@ -265,12 +261,12 @@ function optionLabels(questionId: string, selected: string[] | undefined): strin
 }
 
 function availabilityNote(item: StringItem): string {
-  if (item.stock === 'unavailable') return ` Note: this string is currently unavailable, so treat it as a reference point rather than something to order today.`
+  if (item.stock === 'unavailable') return ` It isn't in stock right now, but it can be ordered in specifically if you'd like to go with it.`
   if (item.stock === 'low-stock') return ` Only a limited quantity is in stock right now, so grab it soon if you want it.`
   return ''
 }
 
-type ExplanationRole = 'best' | 'crossBrand' | 'specialist'
+type ExplanationRole = 'best' | 'bestAvailable' | 'crossBrand' | 'specialist'
 
 function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: ExplanationRole): string {
   const { string: s } = scored
@@ -279,14 +275,23 @@ function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: Expl
   const leadIn =
     role === 'best'
       ? `You're looking for ${playerAskPhrase(answers)}.`
-      : role === 'crossBrand'
-        ? `${s.brand} isn't the same brand as our top pick, but`
-        : `As a specialist alternative worth knowing about,`
+      : role === 'bestAvailable'
+        ? `Of what's actually in stock right now,`
+        : role === 'crossBrand'
+          ? `${s.brand} isn't the same brand as our top pick, but`
+          : `As a specialist alternative worth knowing about,`
 
   if (profile && (profile.strengths?.length || profile.subjectiveNotes)) {
     const [first, second] = profile.strengths ?? []
     let text = `${leadIn} ${s.name} `
-    text += role === 'best' ? 'is a strong fit' : role === 'crossBrand' ? 'is the strongest cross-brand alternative' : 'is worth considering'
+    text +=
+      role === 'best'
+        ? 'is a strong fit'
+        : role === 'bestAvailable'
+          ? 'is the best fit you can get today'
+          : role === 'crossBrand'
+            ? 'is the strongest cross-brand alternative'
+            : 'is worth considering'
     if (first) {
       text += `: ${lowerFirst(first)}`
       if (second) text += `, and ${lowerFirst(second)}`
@@ -306,9 +311,11 @@ function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: Expl
   let text =
     role === 'best'
       ? `${leadIn} ${s.name} is a strong fit because it delivers on ${strengths}.`
-      : role === 'crossBrand'
-        ? `${leadIn} ${s.name} is the strongest cross-brand alternative, leaning into ${strengths}.`
-        : `${leadIn} ${s.name} leans into ${strengths}.`
+      : role === 'bestAvailable'
+        ? `${leadIn} ${s.name} is the best fit you can get today, leaning into ${strengths}.`
+        : role === 'crossBrand'
+          ? `${leadIn} ${s.name} is the strongest cross-brand alternative, leaning into ${strengths}.`
+          : `${leadIn} ${s.name} leans into ${strengths}.`
 
   const topSet = new Set(scored.topDimensions)
   const weakestDim = [...DIMENSIONS].filter((d) => !topSet.has(d)).sort((a, b) => (s[a] ?? 11) - (s[b] ?? 11))[0]
@@ -336,36 +343,37 @@ export function recommendStrings(answers: QuizAnswers, pool: StringItem[] = allS
 
   const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget))
 
-  const byPerformance = [...scored].sort((a, b) => b.matchPercent - a.matchPercent)
-  const byPractical = [...scored].sort(
-    (a, b) => b.matchPercent * AVAILABILITY_RANK_MULTIPLIER[b.string.stock] - a.matchPercent * AVAILABILITY_RANK_MULTIPLIER[a.string.stock],
-  )
+  // Ranked purely on how well each string fits this player — stock never
+  // enters scoring or eligibility. We can order in strings we don't
+  // currently hold, so the objectively best-fitting string should always
+  // be able to win, be the cross-brand pick, or be the specialist choice.
+  const byPerformance = [...scored].sort((a, b) => b.matchPercent - a.matchPercent || a.string.id.localeCompare(b.string.id))
 
-  const availableRanked = byPractical.filter((s) => s.string.stock !== 'unavailable')
-  const best = availableRanked[0] ?? byPerformance[0]
+  const best = byPerformance[0]
 
-  const topOverall = byPerformance[0]
-  const unavailableStandout =
-    topOverall.string.stock === 'unavailable' && topOverall.matchPercent - best.matchPercent >= 3 && topOverall.string.id !== best.string.id
-      ? topOverall
-      : undefined
+  // Availability is surfaced separately, never as a filter: if the best
+  // match happens to be unavailable, show what's actually orderable today
+  // as an additional, clearly-labeled option — not a replacement.
+  const bestAvailable = best.string.stock === 'unavailable' ? byPerformance.find((s) => s.string.stock !== 'unavailable') : undefined
 
-  // Cross-brand alternative: best-scoring available string from a different
-  // brand, only surfaced if it's still credibly close — never forced.
-  const crossBrandCandidates = availableRanked.filter((s) => s.string.id !== best.string.id && s.string.brand !== best.string.brand)
+  // Cross-brand alternative: best-scoring string from a different brand,
+  // chosen on fit alone (ignoring stock), only surfaced if it's still
+  // credibly close — never forced.
+  const crossBrandCandidates = byPerformance.filter((s) => s.string.id !== best.string.id && s.string.brand !== best.string.brand)
   const crossBrandAlternative = crossBrandCandidates.find((s) => best.matchPercent - s.matchPercent <= CROSS_BRAND_WINDOW)
 
   // Specialist choice: a genuinely differentiated third option, identified
   // by its specialist-dimension identity differing from both picks above.
   // Falls back to the old differentiated-category/best-value heuristic when
   // specialist data doesn't clearly differentiate anything (e.g. a small
-  // synthetic test pool with little specialist coverage).
+  // synthetic test pool with little specialist coverage). Chosen on fit
+  // alone — stock never filters it out.
   let specialistChoice: ScoredString | undefined
-  if (availableRanked.length >= CANDIDATE_MIN_POOL - 1) {
+  if (byPerformance.length >= CANDIDATE_MIN_POOL - 1) {
     const usedIds = new Set([best.string.id, crossBrandAlternative?.string.id])
     const bestTop = best.topSpecialistDims[0]
     const crossTop = crossBrandAlternative?.topSpecialistDims[0]
-    const remaining = availableRanked.filter((s) => !usedIds.has(s.string.id))
+    const remaining = byPerformance.filter((s) => !usedIds.has(s.string.id))
 
     const differentiatedSpecialist = remaining.find(
       (s) => s.topSpecialistDims.length > 0 && s.topSpecialistDims[0] !== bestTop && s.topSpecialistDims[0] !== crossTop && best.matchPercent - s.matchPercent <= SPECIALIST_CHOICE_WINDOW,
@@ -383,12 +391,13 @@ export function recommendStrings(answers: QuizAnswers, pool: StringItem[] = allS
 
   return {
     best,
+    bestAvailable,
     crossBrandAlternative,
     specialistChoice,
-    unavailableStandout,
     profile,
     explanations: {
       best: buildExplanation(best, answers, 'best'),
+      bestAvailable: bestAvailable ? buildExplanation(bestAvailable, answers, 'bestAvailable') : undefined,
       crossBrandAlternative: crossBrandAlternative ? buildExplanation(crossBrandAlternative, answers, 'crossBrand') : undefined,
       specialistChoice: specialistChoice ? buildExplanation(specialistChoice, answers, 'specialist') : undefined,
     },
