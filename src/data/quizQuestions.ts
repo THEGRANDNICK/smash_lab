@@ -1,6 +1,7 @@
 // Quiz content — the words the player sees. Edit freely to change copy,
 // add options, or add whole new questions (then wire the option's scoring
-// impact in config/recommendationWeights.ts and/or config/tensionRules.ts).
+// impact in config/recommendationWeights.ts and/or config/specialistWeights.ts,
+// and config/tensionRules.ts for tension-related questions).
 
 export interface QuizOption {
   id: string
@@ -14,6 +15,8 @@ export interface QuizQuestionDef {
   title: string
   subtitle?: string
   options: QuizOption[]
+  /** Set for multi-select questions — the player can pick up to this many options. Omit for classic single-select. */
+  maxSelect?: number
 }
 
 export const quizQuestions: QuizQuestionDef[] = [
@@ -29,8 +32,10 @@ export const quizQuestions: QuizQuestionDef[] = [
     ],
   },
   {
-    id: 'style',
+    id: 'playStyles',
     title: "What best describes your playing style?",
+    subtitle: 'Choose up to 2.',
+    maxSelect: 2,
     options: [
       { id: 'aggressive', label: 'Aggressive attacking / smashing', emoji: '💥', blurb: 'Live for the kill shot' },
       { id: 'fastDoubles', label: 'Fast doubles / drives / counterattacking', emoji: '⚡', blurb: 'Quick hands at the net and mid-court' },
@@ -50,24 +55,21 @@ export const quizQuestions: QuizQuestionDef[] = [
     ],
   },
   {
-    id: 'priority',
+    id: 'priorities',
     title: 'What matters most to you in a string?',
+    subtitle: 'Choose up to 3.',
+    maxSelect: 3,
     options: [
-      { id: 'repulsion', label: 'Power / repulsion', emoji: '🚀' },
-      { id: 'control', label: 'Control', emoji: '🎯' },
-      { id: 'durability', label: 'Durability', emoji: '🧵' },
-      { id: 'feel', label: 'Crisp hitting feel / sound', emoji: '🔊' },
-      { id: 'comfort', label: 'Comfort / shock absorption', emoji: '🤲' },
-      { id: 'balanced', label: 'Balanced performance', emoji: '⚖️' },
-    ],
-  },
-  {
-    id: 'durabilityImportance',
-    title: 'How important is durability to you?',
-    options: [
-      { id: 'veryImportant', label: 'Very important', emoji: '🛠️', blurb: "I hate breaking strings" },
-      { id: 'somewhat', label: 'Somewhat important', emoji: '🙂' },
-      { id: 'performanceFirst', label: 'Performance matters more', emoji: '🚀', blurb: "I'll restring if I have to" },
+      { id: 'easyPower', label: 'Easy power / repulsion', emoji: '🚀' },
+      { id: 'hardAttack', label: 'Hard-hitting attack', emoji: '💥' },
+      { id: 'fastDrives', label: 'Fast drives / doubles', emoji: '⚡' },
+      { id: 'directPrecision', label: 'Direct precision', emoji: '🎯' },
+      { id: 'shuttleGrip', label: 'Shuttle grip / hold', emoji: '🤏', blurb: 'A rougher texture that "bites" the shuttle for slices and spin' },
+      { id: 'netTechnical', label: 'Net / technical play', emoji: '🕸️' },
+      { id: 'durability', label: 'Maximum durability', emoji: '🧵' },
+      { id: 'comfort', label: 'Comfort / softer feel', emoji: '🤲' },
+      { id: 'tensionRetention', label: 'Long-lasting tension / feel', emoji: '⏳', blurb: 'Stays lively instead of going dead after a few sessions' },
+      { id: 'sound', label: 'Sound / crisp feedback', emoji: '🔊' },
     ],
   },
   {
@@ -91,12 +93,15 @@ export const quizQuestions: QuizQuestionDef[] = [
     ],
   },
   {
-    id: 'breakStrings',
-    title: 'Do you frequently break strings?',
+    id: 'restringReason',
+    title: 'What usually makes you restring?',
+    subtitle: "You picked durability as a priority — this helps us figure out what kind of durability you actually need.",
     options: [
-      { id: 'yes', label: 'Yes', emoji: '💔' },
-      { id: 'sometimes', label: 'Sometimes', emoji: '😅' },
-      { id: 'rarely', label: 'Rarely / never', emoji: '😌' },
+      { id: 'wearFraying', label: 'Strings gradually wear/fray and eventually break', emoji: '🪢' },
+      { id: 'mishitBreakage', label: 'I often break strings from mishits', emoji: '💥', blurb: 'A single bad off-centre hit snaps it' },
+      { id: 'tensionLoss', label: 'They lose tension/feel before they break', emoji: '⏳' },
+      { id: 'rarelyBreak', label: "I rarely break strings — I just want them to last", emoji: '😌' },
+      { id: 'notSure', label: 'Not sure', emoji: '🤷' },
     ],
   },
   {

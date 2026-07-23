@@ -6,7 +6,7 @@ const POINTS = [
   { emoji: '🎯', title: 'Careful, consistent process', text: 'Careful mounting and a consistent stringing pattern, restring after restring.' },
   { emoji: '🧵', title: 'Wide string selection', text: 'A solid lineup of performance strings covering repulsion, control and durability.' },
   { emoji: '📦', title: 'Can order other strings', text: "Don't see what you want in the lineup? I can usually order it in for you." },
-  { emoji: '🎒', title: 'Bring your own string', text: 'Prefer to supply your own string? Then you only pay the €15 stringing fee.' },
+  { emoji: '🎒', title: 'Bring your own string', text: 'Prefer to supply your own string? Then you only pay the stringing fee.' },
 ]
 
 export default function WhyUs() {

@@ -1,10 +1,11 @@
 import type { StringItem } from '../data/strings'
-import { calculateTotal, formatEuro } from '../logic/pricing'
 import { buildRequestMailto } from '../logic/contactMessage'
+import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
 import RadarChart from './RadarChart'
+import SpecialistPanel from './SpecialistPanel'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
   repulsion: 'Quick Repulsion',
@@ -23,8 +24,8 @@ interface StringCardProps {
 }
 
 export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare }: StringCardProps) {
-  const price = calculateTotal(item.stringCost)
   const orderable = item.stock !== 'unavailable'
+  const specialistProfile = getSpecialistProfile(item.id)
 
   return (
     <div
@@ -87,6 +88,8 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
 
       {item.notes && <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">{item.notes}</p>}
 
+      {specialistProfile && <SpecialistPanel profile={specialistProfile} />}
+
       {item.productUrl && (
         <a
           href={item.productUrl}
@@ -98,42 +101,34 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
         </a>
       )}
 
-      <div className="mt-auto pt-3 border-t border-court-900/10 dark:border-white/10 flex items-end justify-between gap-2">
-        <div className="text-sm">
-          <p className="text-ink-700/60 dark:text-shuttle-100/60">
-            String {formatEuro(item.stringCost)} + €15 stringing
-          </p>
-          <p className="font-display font-semibold text-ink-900 dark:text-shuttle-50">Total {formatEuro(price.total)}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {onToggleCompare && (
-            <button
-              type="button"
-              onClick={() => onToggleCompare(item.id)}
-              disabled={compareDisabled && !compareSelected}
-              aria-pressed={compareSelected}
-              className={`focus-ring rounded-full border-2 text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
-                compareSelected
-                  ? 'border-shuttle-500 bg-shuttle-500 text-court-900'
-                  : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
-              }`}
-            >
-              {compareSelected ? '✓ Comparing' : '+ Compare'}
-            </button>
-          )}
-          {orderable ? (
-            <a
-              href={buildRequestMailto(item.name)}
-              className="focus-ring shrink-0 rounded-full bg-court-800 text-white text-sm font-semibold px-4 py-2 hover:bg-court-700 transition-colors cursor-pointer"
-            >
-              Request this
-            </a>
-          ) : (
-            <span className="shrink-0 rounded-full bg-court-900/5 dark:bg-white/5 text-ink-700/40 dark:text-shuttle-100/40 text-sm font-semibold px-4 py-2 select-none">
-              Unavailable
-            </span>
-          )}
-        </div>
+      <div className="mt-auto pt-3 border-t border-court-900/10 dark:border-white/10 flex items-center justify-end gap-2">
+        {onToggleCompare && (
+          <button
+            type="button"
+            onClick={() => onToggleCompare(item.id)}
+            disabled={compareDisabled && !compareSelected}
+            aria-pressed={compareSelected}
+            className={`focus-ring rounded-full border-2 text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+              compareSelected
+                ? 'border-shuttle-500 bg-shuttle-500 text-court-900'
+                : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
+            }`}
+          >
+            {compareSelected ? '✓ Comparing' : '+ Compare'}
+          </button>
+        )}
+        {orderable ? (
+          <a
+            href={buildRequestMailto(item.name)}
+            className="focus-ring shrink-0 rounded-full bg-court-800 text-white text-sm font-semibold px-4 py-2 hover:bg-court-700 transition-colors cursor-pointer"
+          >
+            Request this
+          </a>
+        ) : (
+          <span className="shrink-0 rounded-full bg-court-900/5 dark:bg-white/5 text-ink-700/40 dark:text-shuttle-100/40 text-sm font-semibold px-4 py-2 select-none">
+            Unavailable
+          </span>
+        )}
       </div>
     </div>
   )
