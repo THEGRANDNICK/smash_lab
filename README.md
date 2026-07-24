@@ -55,3 +55,10 @@ src/
 - Availability nudges ranking (in-stock > low-stock > unavailable) but never overrides a clearly better performance match by more than a few points, per the spec.
 - No price weighting is baked into the match score itself, so expensive strings never get an automatic edge — the "worth considering" third pick can surface a cheaper alternative when it's a meaningfully different fit.
 - Tension is stored internally in kg everywhere and converted to lbs only for display.
+
+## Copyright
+
+© 2026 Nicolas Vogt. All rights reserved.
+
+This project is proprietary and is not distributed under an open-source
+license. See [COPYRIGHT.md](./COPYRIGHT.md) for details.
