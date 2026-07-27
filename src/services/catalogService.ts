@@ -75,17 +75,21 @@ export function sortByCanonicalOrder(items: StringItem[]): StringItem[] {
   })
 }
 
-const VALID_CATEGORIES: readonly StringCategory[] = ['repulsion', 'control', 'durability']
-const RATING_MIN = 0
-const RATING_MAX = 11
+// Exported so services/catalogAdminService.ts (Phase 5's create/edit form
+// validation) enforces exactly the same rules as this read-path validator —
+// one source of truth for what counts as a valid catalog row, whether it
+// came from a live fetch or an admin form submission.
+export const VALID_CATEGORIES: readonly StringCategory[] = ['repulsion', 'control', 'durability']
+export const RATING_MIN = 0
+export const RATING_MAX = 11
 /** Only http(s) accepted — rejects javascript:/data: schemes so a malformed row can never become a clickable script link. */
-const SAFE_URL_PATTERN = /^https?:\/\//i
+export const SAFE_URL_PATTERN = /^https?:\/\//i
 
-function isFiniteNumber(v: unknown): v is number {
+export function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
-function inRange(v: number, min: number, max: number): boolean {
+export function inRange(v: number, min: number, max: number): boolean {
   return v >= min && v <= max
 }
 
