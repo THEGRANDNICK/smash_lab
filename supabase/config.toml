@@ -1,0 +1,10 @@
+# Minimal config for the Supabase CLI (https://supabase.com/docs/guides/cli).
+# This only exists so `supabase link` / `supabase db push` know where to find
+# supabase/migrations/ — it does not start any local Supabase stack and does
+# not require Docker for the normal `npm run build`/`npm run dev` workflow.
+#
+# `project_id` below is a placeholder. Running:
+#   supabase link --project-ref <your-real-project-ref>
+# updates it automatically to match your actual project — you don't need to
+# edit this by hand.
+project_id = "smash-lab"
