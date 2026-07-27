@@ -1,13 +1,33 @@
+import { useEffect, useState } from 'react'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import AdminLogin from './AdminLogin'
 import InventoryAdminPage from './InventoryAdminPage'
+import CatalogAdminPage from './CatalogAdminPage'
 
 interface AdminAppProps {
   onExit: () => void
 }
 
+type AdminSection = 'inventory' | 'catalog'
+
+function sectionFromHash(): AdminSection {
+  return window.location.hash.replace('#', '') === 'admin/catalog' ? 'catalog' : 'inventory'
+}
+
 export default function AdminApp({ onExit }: AdminAppProps) {
   const { status, session, error, signIn, signOut } = useAdminAuth()
+  const [section, setSection] = useState<AdminSection>(sectionFromHash)
+
+  useEffect(() => {
+    const onHashChange = () => setSection(sectionFromHash())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  function goToSection(next: AdminSection) {
+    window.location.hash = next === 'inventory' ? 'admin/inventory' : 'admin/catalog'
+    setSection(next)
+  }
 
   if (status === 'checking') {
     return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-20">Checking session…</p>
@@ -46,11 +66,11 @@ export default function AdminApp({ onExit }: AdminAppProps) {
 
   // authenticated-admin
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b-2 border-court-900/10 dark:border-white/10">
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-court-900/10 dark:border-white/10">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Smash Lab Admin</p>
-          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">Inventory</h1>
+          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">{section === 'inventory' ? 'Inventory' : 'Catalog'}</h1>
         </div>
         <div className="flex items-center gap-4 text-sm font-semibold">
           <button
@@ -70,7 +90,37 @@ export default function AdminApp({ onExit }: AdminAppProps) {
         </div>
       </div>
 
-      <InventoryAdminPage />
+      <nav className="flex items-center gap-2 mb-8" aria-label="Admin sections">
+        <button
+          type="button"
+          onClick={() => goToSection('inventory')}
+          aria-current={section === 'inventory' ? 'page' : undefined}
+          className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+            section === 'inventory' ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
+          }`}
+        >
+          Inventory
+        </button>
+        <button
+          type="button"
+          onClick={() => goToSection('catalog')}
+          aria-current={section === 'catalog' ? 'page' : undefined}
+          className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+            section === 'catalog' ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
+          }`}
+        >
+          Catalog
+        </button>
+        <span
+          aria-disabled="true"
+          title="Coming in a later phase"
+          className="rounded-full px-4 py-1.5 text-sm font-semibold border-2 border-court-900/10 dark:border-white/10 text-ink-700/30 dark:text-shuttle-100/30 cursor-not-allowed select-none"
+        >
+          Dashboard
+        </span>
+      </nav>
+
+      {section === 'inventory' ? <InventoryAdminPage /> : <CatalogAdminPage />}
     </div>
   )
 }

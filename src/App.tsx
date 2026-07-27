@@ -20,7 +20,7 @@ function viewFromHash(): View {
   // Not linked from the public nav — a direct URL is the entry point.
   // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
   // this route being hard to find.
-  if (hash === 'admin' || hash === 'admin/inventory') return 'admin'
+  if (hash === 'admin' || hash === 'admin/inventory' || hash === 'admin/catalog') return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
   // by Vite, so this branch (and the SupabaseDebugPage import) is dead
   // code eliminated from production builds entirely.

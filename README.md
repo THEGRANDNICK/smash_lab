@@ -150,25 +150,33 @@ It's only ever used by local, one-off, server-side scripts (e.g. a future migrat
 **Phase 4** — catalog goes live (see "Catalog loading" below for full detail):
 - ✅ The public site's catalog (brand, name, category, ratings, gauge, cost, description, tension metadata, popularity rank, product/image URLs, colors) now loads from `public.strings`, with `strings.ts` retained as the validated fallback/rollback reference — not the normal live source anymore.
 - ✅ `src/services/catalogService.ts`: fetches, validates, and orders the live catalog; falls back to the complete local catalog (never a partial mix) if Supabase is unreachable, misconfigured, returns zero rows, contains invalid rows, or is missing any string `strings.ts` knows about.
-- ❌ Catalog *editing* (an admin UI for `public.strings`), specialist-profile editing, and retailer-price administration are still not implemented — Phase 5+.
+
+**Phase 5** — catalog administration (see "Catalog administration" below for full detail):
+- ✅ `#admin/catalog` — create, edit, and delete `public.strings` rows directly from the admin UI, alongside the existing inventory editor at `#admin/inventory`.
+- ✅ Creating a string automatically creates a matching default inventory row (with a best-effort rollback of the string if that second write fails), so a new string is immediately editable from the inventory tab too. Deleting a string cascades to its inventory row at the database level.
+- ❌ Specialist-profile editing and retailer-price administration are still not implemented — Phase 6+.
 
 Run `npm run verify:supabase` and `npm run verify:catalog` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
 
 **Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live), and the admin area shows a "not configured" state instead of a login form.
 
-### 11. Admin area (inventory editing)
+### 11. Admin area
 
-**URL**: `/#admin` (e.g. `https://<your-username>.github.io/smash_lab/#admin`, or `http://localhost:5173/#admin` in dev). It works with GitHub Pages' `/smash_lab/` base path and survives a direct navigation or a page refresh, since routing is hash-based like the rest of the site. It is not linked from the site's navigation — the URL itself is the only way in. **This is a convenience, not a security boundary**: nothing about the admin area's protection depends on the route being hard to find. The real protection is Supabase Auth (you must sign in) plus Row Level Security (your account must additionally be listed in `public.admin_users`, checked server-side via the `is_admin()` function — the browser never queries `admin_users` directly).
+**URL**: `/#admin` (e.g. `https://<your-username>.github.io/smash_lab/#admin`, or `http://localhost:5173/#admin` in dev) — redirects into `#admin/inventory` by default. There's also `#admin/catalog`. Both work with GitHub Pages' `/smash_lab/` base path and survive a direct navigation or a page refresh, since routing is hash-based like the rest of the site. Neither is linked from the site's navigation — the URL itself is the only way in. **This is a convenience, not a security boundary**: nothing about the admin area's protection depends on the route being hard to find. The real protection is Supabase Auth (you must sign in) plus Row Level Security (your account must additionally be listed in `public.admin_users`, checked server-side via the `is_admin()` function — the browser never queries `admin_users` directly).
 
-**Logging in**: enter the email/password of a Supabase Auth user (the one you created in step 6 above). There's no sign-up form and no password reset in this UI — both are intentionally absent for a single-admin site; manage the Auth user itself from the Supabase dashboard. A wrong password shows a plain "Incorrect email or password" message; a network/Supabase-unavailable failure shows its own distinct error and lets you retry. Signing in with an Auth account that exists but isn't in `admin_users` succeeds (you're a valid authenticated user) but immediately shows an "Access denied" screen with no inventory controls and a sign-out button — being a Supabase Auth user is necessary but not sufficient, you also need the `admin_users` row from step 8.
+**Logging in**: enter the email/password of a Supabase Auth user (the one you created in step 6 above). There's no sign-up form and no password reset in this UI — both are intentionally absent for a single-admin site; manage the Auth user itself from the Supabase dashboard. A wrong password shows a plain "Incorrect email or password" message; a network/Supabase-unavailable failure shows its own distinct error and lets you retry. Signing in with an Auth account that exists but isn't in `admin_users` succeeds (you're a valid authenticated user) but immediately shows an "Access denied" screen with no inventory or catalog controls and a sign-out button — being a Supabase Auth user is necessary but not sufficient, you also need the `admin_users` row from step 8.
 
-**What you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here (they're read from `public.strings` — see "Catalog loading (Phase 4)" below; there's no catalog-editing UI yet). Each row edits independently; saving validates the quantity client-side (whole numbers only, no negatives, blank → "unknown") before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
+**Navigation**: once signed in as an admin, a small tab bar switches between **Inventory** and **Catalog** (each its own real, refreshable `#admin/inventory` / `#admin/catalog` URL). A greyed-out **Dashboard** tab is a disabled placeholder for a future phase — it's not a link to anything yet.
 
-**Why writes are actually safe**: every inventory write goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on `public.inventory` is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write inventory without a real `admin_users` row.
+**Inventory tab — what you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here — see the Catalog tab for that. Each row edits independently; saving validates the quantity client-side before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
 
-### 12. What's next (Phase 5+)
+**Catalog tab — what you can do** (Phase 5): search/filter (by brand, category) and sort (popularity, brand, name) every `public.strings` row; **create**, **edit**, or **delete** a string. Editable fields cover everything Phase 4 reads from the catalog table: brand, name, category, gauge, the five manufacturer ratings, string cost, description, popularity rank, image/product URLs, colors, and tension metadata (adjustment, recommended min/max, notes) in a collapsed "advanced" section. **Not editable here**: inventory fields (stock/quantity/package/color/notes — use the Inventory tab), specialist-profile fields, or anything in `src/logic`/`src/config` (recommendation weights, tension rules) — those remain Git-only, untouched by this phase. See "Catalog administration" below for full CRUD/validation/security detail.
 
-Catalog *editing* (an admin UI for `public.strings`), specialist-profile editing, and retailer-price administration are not implemented yet and are left for later, separate phases. Phase 4 only made the catalog load live — it did not add a way to edit it outside the database directly.
+**Why writes are actually safe**: every write (inventory or catalog) goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on `public.inventory` and `public.strings` is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write either table without a real `admin_users` row.
+
+### 12. What's next (Phase 6+)
+
+Specialist-profile editing, retailer-price administration, and image uploads are not implemented yet and are left for later, separate phases.
 
 ## Catalog loading (Phase 4)
 
@@ -188,9 +196,27 @@ Catalog *editing* (an admin UI for `public.strings`), specialist-profile editing
 
 **Validation and completeness** — every `public.strings` row is checked (non-empty id/brand/name, valid category, ratings within 0–11, non-negative gauge/cost, valid tension metadata shape, safe `http(s)` URLs only, no duplicate ids) before being accepted. The live catalog is only ever trusted **whole**: if it's missing even one string `strings.ts` knows about, contains an invalid row, or returns zero rows, the site uses the complete local catalog instead rather than showing a partial/mixed result. This is intentionally conservative — a half-broken live catalog never reaches visitors. All of this is logged to the console as a warning; the public site itself never shows a database error, only the admin/debug pages do.
 
-**Catalog divergence warning**: after Phase 4, `strings.ts` is the fallback and rollback reference, not the normal editing surface — there's no catalog admin UI yet, so the only way to update live catalog data is directly in Supabase. Editing `strings.ts` alone will change what visitors see **only when the live fetch fails**; it will silently diverge from the live database the rest of the time. Keep them in sync manually until Phase 5 adds real catalog editing, and use `npm run verify:catalog` (below) to check for drift.
+**Catalog divergence warning**: `strings.ts` is the fallback and rollback reference, not the normal editing surface — the normal way to change live catalog data is the `#admin/catalog` admin UI (see "Catalog administration" below), or directly in Supabase. Editing `strings.ts` alone will change what visitors see **only when the live fetch fails**; it will silently diverge from the live database the rest of the time. Keep them in sync manually (or accept the drift as an intentional fallback snapshot), and use `npm run verify:catalog` (below) to check for it.
 
 **Diagnosing live vs. fallback**: visit `#debug-supabase` in dev — it shows whether the catalog source is 🟢 live or 🟡 fallback, the last fetch's accepted/rejected row counts and reasons, the merged pool size, any catalog ids missing an inventory row, and any specialist profile referencing a string id no longer in the catalog.
+
+## Catalog administration (Phase 5)
+
+Builds on "Catalog loading" above — read that first for how the public site actually consumes `public.strings`. This section covers *editing* it, via the `#admin/catalog` tab (see "Admin area" above for how to get there).
+
+**Service**: `src/services/catalogAdminService.ts` is the only place the catalog admin UI touches Supabase — components never call it directly. It reuses the exact same validation constants (`VALID_CATEGORIES`, rating range, safe-URL pattern) that `catalogService.ts` uses for the public read path, so an admin can never save a value the public site would then reject as invalid.
+
+**Create**: the "+ New string" button opens a form with an auto-suggested ID (a slug of brand + name, e.g. "Yonex" + "BG 80 Power" → `yonex-bg-80-power`) that you can still edit before saving — IDs must be lowercase letters/numbers/hyphens and unique. Duplicate **(brand, name)** pairs are only a non-blocking warning, not an error: the database deliberately allows this (a string can legitimately ship in more than one gauge or regional variant under the same display name), so the UI doesn't second-guess that design decision. On success, a default inventory row (`unavailable`, unknown quantity/package) is created in the same operation so the new string is immediately visible and editable from the Inventory tab — if that second write fails, the just-created string is deleted again as a best-effort rollback (Supabase/PostgREST doesn't expose a real cross-table client transaction, so this compensating delete is the closest practical equivalent — verified in local testing, including forcing the failure, that it leaves no orphaned string behind).
+
+**Edit**: same form, prefilled, with the ID field locked (IDs are immutable after creation — string_id is what inventory/specialist-profile foreign keys point at). Saves only touch `public.strings`; inventory is untouched.
+
+**Delete**: requires an explicit "Yes, delete it" confirmation that names the string and states plainly that it disappears from recommendations, the catalog, comparison, and the quiz. `public.inventory`, `public.specialist_profiles`, and `public.retailer_prices` all have `references public.strings(id) on delete cascade`, so a single DELETE atomically removes the matching inventory row too (a real Postgres transaction, not a client-side simulation) — verified directly in testing. **Caveat**: `src/data/stringSpecialistProfiles.ts`'s specialist knowledge is a separate local file, not the (currently unused) `specialist_profiles` table, so deleting a string does *not* remove its local specialist profile entry — it becomes orphaned, and `#debug-supabase` flags that mismatch afterward.
+
+**Validation**: required brand/name/category/ratings; ratings 0–11; gauge/cost/popularity-rank non-negative (popularity rank must also be a whole number); tension adjustment may be negative (it's a +/- nudge) but recommended min must not exceed max; image/product URLs must be `http(s)` — a `javascript:` or other unsafe scheme is rejected outright (verified against a test database with no such constraint of its own, confirming the app layer is the real defense here, not just the database's own CHECK constraints on ratings/enums). Every field is trimmed; blank optional fields become `null`, never an empty string.
+
+**Image handling**: still URL-only — no upload yet (planned for a later phase, see "What's next" above). The image URL field shows a live preview, and a broken/unreachable URL shows a clear placeholder instead of a broken-image icon.
+
+**Current limitations / Phase 6+ scope**: no image upload (URLs only); no bulk edit or CSV import; no specialist-profile editing (still `src/data/stringSpecialistProfiles.ts` only, per this phase's explicit scope); no retailer-price administration; the disabled "Dashboard" nav tab is a placeholder for a future phase, not a hint at what it'll contain.
 
 ### Verifying the catalog
 
@@ -207,6 +233,12 @@ npm run test:catalog
 ```
 
 Plain assertions (no test framework dependency) covering: database-row-to-`StringItem` mapping (round-tripped over every real catalog entry), invalid-row rejection (bad category, out-of-range ratings, negative gauge/cost, malformed tension metadata, unsafe URL schemes), duplicate-id detection, the live/fallback completeness decision, deterministic catalog ordering, inventory-merge behavior, and — most importantly — that `recommendStrings`/`recommendTension` produce byte-identical Best Match / Best Available Alternative / Specialist Choice / tension results whether the pool comes from `strings.ts` directly or from mapping synthetic database rows built from the same data. This is local/automated only — it never touches a real Supabase project.
+
+```bash
+npm run test:catalog-admin
+```
+
+Same style, covering the Phase 5 catalog admin form: required-field validation, duplicate-id rejection, the non-blocking duplicate-(brand,name) warning, every numeric field's range/sign/integer rules, `javascript:`-scheme URL rejection, text trimming/null-handling, and that a catalog row round-trips through the edit form back to an identical payload. Also local/automated only — the actual Supabase create/update/delete calls were verified separately via local integration testing (see the Phase 5 report), not by this script.
 
 ### Verifying your setup
 
@@ -253,9 +285,10 @@ Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see
 ### Testing the admin area locally
 
 1. Complete steps 1–8 above (project created, migration applied, your Auth user created and disable public sign-up, and that same user added to `public.admin_users`).
-2. `npm run dev`, then visit `http://localhost:5173/#admin` and sign in with that account.
-3. To see the "authenticated but not admin" state, create a second Auth user in the dashboard and sign in with it *without* adding it to `admin_users` — you should land on "Access denied" with no inventory controls.
-4. To confirm Row Level Security (not just the UI) is what's actually blocking that second user, you can run the same update it would attempt directly from the browser console while signed in as it — it should affect zero rows rather than erroring, which is RLS silently filtering the row out rather than the UI merely hiding a button.
+2. `npm run dev`, then visit `http://localhost:5173/#admin` and sign in with that account. Switch to the Catalog tab to try creating, editing, and deleting a string.
+3. To see the "authenticated but not admin" state, create a second Auth user in the dashboard and sign in with it *without* adding it to `admin_users` — you should land on "Access denied" with no inventory or catalog controls.
+4. To confirm Row Level Security (not just the UI) is what's actually blocking that second user, you can run the same update/insert/delete it would attempt directly from the browser console while signed in as it — it should affect zero rows rather than erroring, which is RLS silently filtering the row out rather than the UI merely hiding a button.
+5. To see the catalog's create-then-rollback path, temporarily revoke `authenticated`'s `INSERT` on `public.inventory` in the SQL editor, create a string, and confirm both that a clear error appears and that the string itself doesn't linger in the catalog — then re-grant the permission.
 
 Never put a real password, UID, or project ref into a commit, issue, or this file — use throwaway test accounts for step 3.
 
