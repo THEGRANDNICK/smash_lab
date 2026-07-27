@@ -168,11 +168,28 @@ Optionally, set `SUPABASE_TEST_ADMIN_EMAIL` / `SUPABASE_TEST_ADMIN_PASSWORD` in 
 
 ### Migrating inventory into Supabase
 
+`public.inventory.string_id` has a foreign key to `public.strings.id`, so on a fresh project `public.strings` needs a row for every catalog string *before* any inventory row can be inserted. This script handles both steps — it does **not** mean the website reads catalog data from Supabase (it still reads `strings.ts` directly); seeding `public.strings` here is purely to satisfy that foreign key.
+
+Preview what would happen first, with no writes at all:
+
+```bash
+VITE_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run migrate:inventory -- --dry-run
+```
+
+Then run it for real:
+
 ```bash
 VITE_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run migrate:inventory
 ```
 
-One-time backfill: reads the current `stock`/`setsAvailable` values straight from `strings.ts` (nothing hand-typed) and upserts them into `public.inventory`. Safe to re-run — it never deletes rows, and only touches `stock_status`/`quantity`/`package_type` (any `color`/`notes` set later through the admin UI are left alone on a re-run). Needs the service-role key since it must write before `admin_users` necessarily has anyone in it yet; this key is never used by the website itself.
+Prefer setting `SUPABASE_SERVICE_ROLE_KEY` inline in your shell for this one command rather than leaving it sitting in `.env.local` any longer than it needs to — it bypasses Row Level Security entirely.
+
+What it does, in order:
+1. **Seeds `public.strings`** from every field `strings.ts` has a column for (ratings, gauge, description, price, links, etc.) — read programmatically, nothing hand-typed. Fully re-upserted on every run; there's no admin UI for catalog data yet; if seeding fails, it stops here and **`public.inventory` is never touched**.
+2. **Confirms** every string the inventory step is about to reference was actually written (not just attempted) — aborts before touching inventory otherwise.
+3. **Upserts `public.inventory`** from `strings.ts`'s current `stock`/`setsAvailable` values.
+
+Safe to re-run — never deletes rows from either table. Inventory only touches `stock_status`/`quantity`/`package_type`; any `color`/`notes` set later through the admin UI are left alone on a re-run. Reports row counts for both tables when done.
 
 ### `/debug/supabase` (development only)
 
