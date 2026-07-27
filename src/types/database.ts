@@ -150,7 +150,15 @@ export interface Database {
           notes?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'inventory_string_id_fkey'
+            columns: ['string_id']
+            isOneToOne: true
+            referencedRelation: 'strings'
+            referencedColumns: ['id']
+          },
+        ]
       }
 
       specialist_profiles: {
