@@ -10,7 +10,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "verify:supabase": "tsx scripts/verifySupabase.ts",
-    "migrate:inventory": "tsx scripts/migrateInventory.ts"
+    "verify:catalog": "tsx scripts/verifyCatalog.ts",
+    "migrate:inventory": "tsx scripts/migrateInventory.ts",
+    "test:catalog": "tsx scripts/testCatalog.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

@@ -16,18 +16,18 @@
 //      Strings with no specialist profile are scored on manufacturer data
 //      alone — they are never penalized for lacking one.
 
-import { strings as allStrings, type StringItem } from '../data/strings'
+import { strings as allStrings, type StringItem } from '../data/strings.js'
 import {
   getSpecialistProfile,
   type StringSpecialistProfile,
   type SpecialistDimensionKey,
   type SpecialistDimensions,
   type Confidence,
-} from '../data/stringSpecialistProfiles'
-import { DIMENSIONS, ZERO_WEIGHTS, BASELINE_WEIGHT, WEIGHT_CONTRIBUTIONS, type Dimension, type DimensionWeights } from '../config/recommendationWeights'
-import { SPECIALIST_WEIGHT_CONTRIBUTIONS, CONFIDENCE_TRUST, SPECIALIST_MAX_INFLUENCE, type SpecialistWeights } from '../config/specialistWeights'
-import { quizQuestions } from '../data/quizQuestions'
-import type { QuizAnswers } from './types'
+} from '../data/stringSpecialistProfiles.js'
+import { DIMENSIONS, ZERO_WEIGHTS, BASELINE_WEIGHT, WEIGHT_CONTRIBUTIONS, type Dimension, type DimensionWeights } from '../config/recommendationWeights.js'
+import { SPECIALIST_WEIGHT_CONTRIBUTIONS, CONFIDENCE_TRUST, SPECIALIST_MAX_INFLUENCE, type SpecialistWeights } from '../config/specialistWeights.js'
+import { quizQuestions } from '../data/quizQuestions.js'
+import type { QuizAnswers } from './types.js'
 
 export interface ScoredString {
   string: StringItem

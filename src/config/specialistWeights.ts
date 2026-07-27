@@ -11,8 +11,8 @@
 // advantage when the player's answers actually match what that string is
 // specialist-known for — see logic/recommendationEngine.ts for the blend.
 
-import type { SpecialistDimensionKey } from '../data/stringSpecialistProfiles'
-import type { Confidence } from '../data/stringSpecialistProfiles'
+import type { SpecialistDimensionKey } from '../data/stringSpecialistProfiles.js'
+import type { Confidence } from '../data/stringSpecialistProfiles.js'
 
 export type SpecialistWeights = Partial<Record<SpecialistDimensionKey, number>>
 

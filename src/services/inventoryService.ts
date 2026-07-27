@@ -1,15 +1,21 @@
 // Phase 2: the ONLY place that queries Supabase for inventory data.
 // Components never call Supabase directly — they consume the plain
-// StringItem[] this module (via hooks/useLiveStrings.ts) produces.
+// StringItem[] this module (via hooks/useStringPool.ts) produces.
 //
 // The recommendation engine stays completely untouched and stock-blind:
 // this module only ever changes the `.stock` (and `.setsAvailable`)
 // fields already present on each StringItem, purely for presentation
 // (badges, filters, Best Available Alternative). It never affects
 // scoring, weights, or which strings are eligible to be recommended.
+//
+// Phase 4: deliberately decoupled from catalog fetching (see
+// services/catalogService.ts) — this module never assumes the catalog it's
+// merging onto came from strings.ts. mergeInventoryIntoCatalog() takes the
+// resolved catalog (live or local fallback) as an explicit argument.
 
-import { strings as catalog, type StringItem, type StockLevel } from '../data/strings'
-import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase'
+import type { StringItem, StockLevel } from '../data/strings.js'
+import { getLocalFallbackCatalog } from './catalogService.js'
+import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase.js'
 
 export type PackageType = 'reel' | 'set' | 'mixed' | 'unknown'
 
@@ -46,7 +52,7 @@ export function getLastFetchStatus(): FetchStatus | null {
  */
 export function getLocalFallbackInventory(): InventoryMap {
   const map: InventoryMap = {}
-  for (const item of catalog) {
+  for (const item of getLocalFallbackCatalog()) {
     map[item.id] = {
       stockStatus: item.stock,
       quantity: item.setsAvailable ?? null,
@@ -99,17 +105,24 @@ export async function fetchInventoryFromSupabase(): Promise<InventoryMap | null>
 }
 
 /**
- * Merges an inventory map onto the catalog, producing StringItem[] with
- * live stock. Never removes a catalog string. A string present in the
- * catalog but missing from `inventory` (e.g. a brand-new string not yet
- * backfilled) keeps its own existing stock value from strings.ts rather
- * than being forced to "unavailable" — conservative by design, since the
- * catalog's own value is a known-good fallback, not a guess.
+ * Merges an inventory map onto a resolved catalog (live or local fallback —
+ * see catalogService.ts), producing StringItem[] with live stock. Never
+ * removes a catalog string. A string present in the catalog but missing
+ * from `inventory` (e.g. a brand-new string not yet backfilled) keeps its
+ * own existing stock value on the passed-in item rather than being forced
+ * to "unavailable" — conservative by design, since that value is a
+ * known-good fallback (the local catalog's real stock, or the live
+ * catalog's safe placeholder), not a guess.
  */
-export function mergeInventoryIntoCatalog(inventory: InventoryMap): StringItem[] {
-  return catalog.map((item) => {
+export function mergeInventoryIntoCatalog(catalogItems: StringItem[], inventory: InventoryMap): StringItem[] {
+  return catalogItems.map((item) => {
     const entry = inventory[item.id]
     if (!entry) return item
     return { ...item, stock: entry.stockStatus, setsAvailable: entry.quantity ?? undefined }
   })
+}
+
+/** Catalog strings with no corresponding inventory row — a diagnostic for the dev debug page, not a runtime error (mergeInventoryIntoCatalog already handles this safely). */
+export function findMissingInventoryIds(catalogItems: StringItem[], inventory: InventoryMap): string[] {
+  return catalogItems.filter((item) => !(item.id in inventory)).map((item) => item.id)
 }

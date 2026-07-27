@@ -10,7 +10,7 @@ import Footer from './components/Footer'
 import StringFinder from './components/StringFinder'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 import AdminApp from './components/admin/AdminApp'
-import { useLiveStrings } from './hooks/useLiveStrings'
+import { useStringPool } from './hooks/useStringPool'
 
 type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin'
 
@@ -30,7 +30,7 @@ function viewFromHash(): View {
 
 function App() {
   const [view, setView] = useState<View>(viewFromHash)
-  const liveStrings = useLiveStrings()
+  const liveStrings = useStringPool()
 
   useEffect(() => {
     const onHashChange = () => setView(viewFromHash())
