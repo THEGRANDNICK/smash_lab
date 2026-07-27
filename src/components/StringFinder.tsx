@@ -14,7 +14,7 @@ type Phase = 'quiz' | 'calculating' | 'result'
 interface StringFinderProps {
   onExit: () => void
   onCompare: () => void
-  /** Defaults to the full static catalog when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. */
+  /** Defaults to the full static catalog when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
   pool?: StringItem[]
 }
 

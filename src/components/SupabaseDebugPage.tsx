@@ -8,7 +8,9 @@
 import { useEffect, useState } from 'react'
 import { isSupabaseConfigured, getSupabaseClient } from '../lib/supabase'
 import { getSession } from '../lib/auth'
-import { getLastFetchStatus, fetchInventoryFromSupabase } from '../services/inventoryService'
+import { getLastFetchStatus, fetchInventoryFromSupabase, findMissingInventoryIds, getLocalFallbackInventory } from '../services/inventoryService'
+import { getLastCatalogFetchStatus, fetchCatalogFromSupabase } from '../services/catalogService'
+import { STRING_SPECIALIST_PROFILES } from '../data/stringSpecialistProfiles'
 
 type ConnectionStatus = 'checking' | 'connected' | 'unreachable' | 'not-configured'
 
@@ -18,7 +20,10 @@ export default function SupabaseDebugPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | 'unknown'>('unknown')
   const [inventoryCount, setInventoryCount] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // Forces a re-read of getLastFetchStatus() after the effect's fetch resolves.
+  const [missingInventoryIds, setMissingInventoryIds] = useState<string[]>([])
+  const [orphanSpecialistIds, setOrphanSpecialistIds] = useState<string[]>([])
+  const [mergedPoolCount, setMergedPoolCount] = useState<number | null>(null)
+  // Forces a re-read of getLastFetchStatus()/getLastCatalogFetchStatus() after the effect's fetches resolve.
   const [, setLastFetchTick] = useState(0)
 
   useEffect(() => {
@@ -59,10 +64,18 @@ export default function SupabaseDebugPage() {
         setError(err instanceof Error ? err.message : String(err))
       }
 
-      // Also exercise the exact same fetch path the live site uses, so
-      // "Last fetch status" reflects reality rather than a separate check.
-      await fetchInventoryFromSupabase()
-      if (!cancelled) setLastFetchTick((t) => t + 1)
+      // Also exercise the exact same fetch + merge path the live site uses
+      // (services/catalogService.ts + services/inventoryService.ts), so this
+      // page reports reality rather than a separate, possibly-diverging check.
+      const [catalogResult, inventory] = await Promise.all([fetchCatalogFromSupabase(), fetchInventoryFromSupabase()])
+      if (cancelled) return
+
+      const resolvedInventory = inventory ?? getLocalFallbackInventory()
+      setMergedPoolCount(catalogResult.items.length)
+      setMissingInventoryIds(findMissingInventoryIds(catalogResult.items, resolvedInventory))
+      const catalogIds = new Set(catalogResult.items.map((i) => i.id))
+      setOrphanSpecialistIds(Object.keys(STRING_SPECIALIST_PROFILES).filter((id) => !catalogIds.has(id)))
+      setLastFetchTick((t) => t + 1)
     }
 
     void run()
@@ -72,6 +85,7 @@ export default function SupabaseDebugPage() {
   }, [])
 
   const lastFetch = getLastFetchStatus()
+  const lastCatalogFetch = getLastCatalogFetchStatus()
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
@@ -90,6 +104,23 @@ export default function SupabaseDebugPage() {
             value={lastFetch ? `${lastFetch.ok ? '✓ OK' : '✗ Failed'} at ${new Date(lastFetch.at).toLocaleTimeString()}${lastFetch.message ? ` — ${lastFetch.message}` : ''}` : 'No fetch recorded yet'}
           />
           {error && <Row label="Error" value={error} />}
+        </dl>
+
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 4 — catalog loading</p>
+        <dl className="space-y-4 text-sm">
+          <Row label="Catalog source" value={lastCatalogFetch ? (lastCatalogFetch.source === 'live' ? '🟢 Live (public.strings)' : '🟡 Local fallback (strings.ts)') : 'Not fetched yet'} />
+          <Row
+            label="Last catalog fetch"
+            value={
+              lastCatalogFetch
+                ? `${new Date(lastCatalogFetch.at).toLocaleTimeString()} — ${lastCatalogFetch.acceptedCount} accepted, ${lastCatalogFetch.rejectedCount} rejected${lastCatalogFetch.fallbackReason ? ` (fell back: ${lastCatalogFetch.fallbackReason})` : ''}`
+                : 'No fetch recorded yet'
+            }
+          />
+          {lastCatalogFetch && lastCatalogFetch.rejectedReasons.length > 0 && <Row label="Rejected row reasons" value={lastCatalogFetch.rejectedReasons.join('; ')} />}
+          <Row label="Merged pool size" value={mergedPoolCount == null ? '—' : String(mergedPoolCount)} />
+          <Row label="Catalog ids missing an inventory row" value={missingInventoryIds.length === 0 ? 'None' : missingInventoryIds.join(', ')} />
+          <Row label="Specialist profiles referencing missing strings" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
         </dl>
       </div>
     </div>

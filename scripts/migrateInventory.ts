@@ -61,8 +61,8 @@ loadDotEnvLocal()
 type StringsRow = Database['public']['Tables']['strings']['Insert']
 type InventoryRow = Database['public']['Tables']['inventory']['Insert']
 
-/** Maps every catalog field this schema has a column for. Stock/setsAvailable are NOT mapped here — those belong to inventory, not the catalog table. */
-function toStringsRow(item: StringItem): StringsRow {
+/** Maps every catalog field this schema has a column for. Stock/setsAvailable are NOT mapped here — those belong to inventory, not the catalog table. Exported for scripts/testCatalog.ts's round-trip mapping test. */
+export function toStringsRow(item: StringItem): StringsRow {
   const t = item.tension
   const hasTensionMeta = t != null && (t.tensionAdjustment != null || t.recommendedMin != null || t.recommendedMax != null || t.tensionNotes != null)
 
@@ -170,4 +170,10 @@ async function main() {
   console.log('\nNo rows were deleted from either table. Existing inventory color/notes values (if any) were left untouched.')
 }
 
-main()
+// Guarded so this file can be imported (e.g. scripts/testCatalog.ts imports
+// toStringsRow for a round-trip mapping test) without triggering a real
+// migration run as a side effect — main() only runs when this file is
+// executed directly.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main()
+}

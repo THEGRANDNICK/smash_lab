@@ -10,7 +10,7 @@ type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 const MAX_COMPARE = 3
 
 interface StringComparisonProps {
-  /** Defaults to the static catalog import when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. */
+  /** Defaults to the static catalog import when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
   strings?: StringItem[]
 }
 

@@ -19,7 +19,7 @@ npm run preview   # preview the production build
 ```
 src/
   data/
-    strings.ts          # THE string database — edit prices, stock, ratings, colors, notes here
+    strings.ts          # Local string catalog — see "Catalog loading (Phase 4)" below: this is now the fallback/reference, not the live source when Supabase is configured
     quizQuestions.ts     # quiz copy: question text, options, emoji
   config/
     recommendationWeights.ts  # how each quiz answer nudges the string-matching score
@@ -42,7 +42,7 @@ src/
 
 ## Editing things later
 
-- **Add/remove a string, change stock or price**: edit the array in `src/data/strings.ts`. Nothing else needs touching — cards, filters, the quiz, and pricing all read from this one file.
+- **Add/remove a string, change stock or price**: if Supabase isn't configured yet, edit the array in `src/data/strings.ts` — cards, filters, the quiz, and pricing all read from this one file, and nothing else needs touching. **Once Supabase is configured (Phase 4+), the live site reads the catalog from `public.strings` instead** — see "Catalog loading (Phase 4)" below; editing `strings.ts` alone no longer changes what visitors see except as a fallback.
 - **Change the €15 service fee**: `STRINGING_SERVICE_FEE` in `src/logic/pricing.ts`.
 - **Tune how quiz answers affect string recommendations**: `src/config/recommendationWeights.ts` — every answer maps to small +/- nudges across five dimensions (repulsion, durability, hitting sound, shock absorption, control). Bigger number = stronger pull toward strings that score well there.
 - **Tune tension logic**: `src/config/tensionRules.ts` — base ranges per level, nudges for stated goal/current-tension feel, safety margins.
@@ -140,15 +140,19 @@ It's only ever used by local, one-off, server-side scripts (e.g. a future migrat
 - ✅ A typed Supabase client (`src/lib/supabase.ts`) and auth helpers (`src/lib/auth.ts`).
 
 **Phase 2** — inventory goes live:
-- ✅ `src/services/inventoryService.ts` + `src/hooks/useLiveStrings.ts`: the site fetches inventory from Supabase on load and merges it onto the catalog, falling back silently (with a console warning) to `strings.ts`'s own local stock values if Supabase is unreachable or not configured. The recommendation engine, catalog data, and specialist profiles are completely unaffected — only the `stock` value shown/used for badges and "Best Available Alternative" can now come from Supabase.
+- ✅ `src/services/inventoryService.ts` + `src/hooks/useStringPool.ts` (renamed in Phase 4, see below): the site fetches inventory from Supabase on load and merges it onto the catalog, falling back silently (with a console warning) to `strings.ts`'s own local stock values if Supabase is unreachable or not configured. The recommendation engine, catalog data, and specialist profiles are completely unaffected — only the `stock` value shown/used for badges and "Best Available Alternative" can now come from Supabase.
 - ✅ `scripts/migrateInventory.ts` (`npm run migrate:inventory`): one-time, idempotent backfill of `public.inventory` from `strings.ts`'s current values.
 - ✅ `/debug/supabase` (dev-only, see below).
 
 **Phase 3** — authenticated inventory admin:
 - ✅ `/admin` — a login-gated admin area (see "Admin area" below) for editing inventory (`stock_status`, `quantity`, `package_type`, `color`, `notes`) directly against Supabase, protected by real Supabase Auth + Row Level Security.
-- ❌ Catalog (`strings.ts`) editing, specialist-profile editing, and retailer-price administration are still local/nonexistent — later phases.
 
-Run `npm run verify:supabase` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
+**Phase 4** — catalog goes live (see "Catalog loading" below for full detail):
+- ✅ The public site's catalog (brand, name, category, ratings, gauge, cost, description, tension metadata, popularity rank, product/image URLs, colors) now loads from `public.strings`, with `strings.ts` retained as the validated fallback/rollback reference — not the normal live source anymore.
+- ✅ `src/services/catalogService.ts`: fetches, validates, and orders the live catalog; falls back to the complete local catalog (never a partial mix) if Supabase is unreachable, misconfigured, returns zero rows, contains invalid rows, or is missing any string `strings.ts` knows about.
+- ❌ Catalog *editing* (an admin UI for `public.strings`), specialist-profile editing, and retailer-price administration are still not implemented — Phase 5+.
+
+Run `npm run verify:supabase` and `npm run verify:catalog` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
 
 **Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live), and the admin area shows a "not configured" state instead of a login form.
 
@@ -158,13 +162,51 @@ Run `npm run verify:supabase` (after filling in `.env.local`) to confirm your pr
 
 **Logging in**: enter the email/password of a Supabase Auth user (the one you created in step 6 above). There's no sign-up form and no password reset in this UI — both are intentionally absent for a single-admin site; manage the Auth user itself from the Supabase dashboard. A wrong password shows a plain "Incorrect email or password" message; a network/Supabase-unavailable failure shows its own distinct error and lets you retry. Signing in with an Auth account that exists but isn't in `admin_users` succeeds (you're a valid authenticated user) but immediately shows an "Access denied" screen with no inventory controls and a sign-out button — being a Supabase Auth user is necessary but not sufficient, you also need the `admin_users` row from step 8.
 
-**What you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here (they still come from `strings.ts` via the catalog seed). Each row edits independently; saving validates the quantity client-side (whole numbers only, no negatives, blank → "unknown") before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
+**What you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here (they're read from `public.strings` — see "Catalog loading (Phase 4)" below; there's no catalog-editing UI yet). Each row edits independently; saving validates the quantity client-side (whole numbers only, no negatives, blank → "unknown") before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
 
 **Why writes are actually safe**: every inventory write goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on `public.inventory` is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write inventory without a real `admin_users` row.
 
-### 12. What's next (Phase 4+)
+### 12. What's next (Phase 5+)
 
-Catalog migration/editing, specialist-profile editing, and retailer-price administration are not implemented yet and are left for later, separate phases.
+Catalog *editing* (an admin UI for `public.strings`), specialist-profile editing, and retailer-price administration are not implemented yet and are left for later, separate phases. Phase 4 only made the catalog load live — it did not add a way to edit it outside the database directly.
+
+## Catalog loading (Phase 4)
+
+**Source of truth after Phase 4:**
+
+| Data | Source |
+| --- | --- |
+| Catalog (brand, name, category, ratings, gauge, cost, description, tension metadata, popularity rank, product/image URLs, colors) | Supabase `public.strings`, with `src/data/strings.ts` as fallback |
+| Inventory (stock status, quantity, package, color, notes) | Supabase `public.inventory`, with `strings.ts`'s own values as fallback (unchanged since Phase 2) |
+| Specialist profiles | `src/data/stringSpecialistProfiles.ts` — **local only, not migrated** |
+| Recommendation/tension/scoring logic | Git/TypeScript (`src/logic/`, `src/config/`) — **never touched by any data source** |
+
+**What actually happens on page load** (`src/hooks/useStringPool.ts` orchestrating `src/services/catalogService.ts` + `src/services/inventoryService.ts`):
+1. The page renders instantly from `strings.ts` (identical to pre-Phase-4 behavior — no loading spinner, no flicker).
+2. Catalog and inventory are fetched from Supabase concurrently in the background.
+3. If the live catalog is valid and complete, it replaces the fallback; live inventory is merged on top by `string_id`. If either fetch fails or the catalog is incomplete, that piece silently keeps using its local fallback — the two fall back independently.
+
+**Validation and completeness** — every `public.strings` row is checked (non-empty id/brand/name, valid category, ratings within 0–11, non-negative gauge/cost, valid tension metadata shape, safe `http(s)` URLs only, no duplicate ids) before being accepted. The live catalog is only ever trusted **whole**: if it's missing even one string `strings.ts` knows about, contains an invalid row, or returns zero rows, the site uses the complete local catalog instead rather than showing a partial/mixed result. This is intentionally conservative — a half-broken live catalog never reaches visitors. All of this is logged to the console as a warning; the public site itself never shows a database error, only the admin/debug pages do.
+
+**Catalog divergence warning**: after Phase 4, `strings.ts` is the fallback and rollback reference, not the normal editing surface — there's no catalog admin UI yet, so the only way to update live catalog data is directly in Supabase. Editing `strings.ts` alone will change what visitors see **only when the live fetch fails**; it will silently diverge from the live database the rest of the time. Keep them in sync manually until Phase 5 adds real catalog editing, and use `npm run verify:catalog` (below) to check for drift.
+
+**Diagnosing live vs. fallback**: visit `#debug-supabase` in dev — it shows whether the catalog source is 🟢 live or 🟡 fallback, the last fetch's accepted/rejected row counts and reasons, the merged pool size, any catalog ids missing an inventory row, and any specialist profile referencing a string id no longer in the catalog.
+
+### Verifying the catalog
+
+```bash
+npm run verify:catalog
+```
+
+Read-only (anon key only, same as the public site — never the service-role key). Fetches the live `public.strings`, runs it through the exact same validation the site itself uses, and reports accepted/rejected rows, missing/extra ids versus `strings.ts`, and whether the live site would actually use the live catalog right now. Never writes anything; never fabricates a pass if Supabase is unreachable.
+
+### Automated tests
+
+```bash
+npm run test:catalog
+```
+
+Plain assertions (no test framework dependency) covering: database-row-to-`StringItem` mapping (round-tripped over every real catalog entry), invalid-row rejection (bad category, out-of-range ratings, negative gauge/cost, malformed tension metadata, unsafe URL schemes), duplicate-id detection, the live/fallback completeness decision, deterministic catalog ordering, inventory-merge behavior, and — most importantly — that `recommendStrings`/`recommendTension` produce byte-identical Best Match / Best Available Alternative / Specialist Choice / tension results whether the pool comes from `strings.ts` directly or from mapping synthetic database rows built from the same data. This is local/automated only — it never touches a real Supabase project.
 
 ### Verifying your setup
 
@@ -206,7 +248,7 @@ Safe to re-run — never deletes rows from either table. Inventory only touches 
 
 ### `/debug/supabase` (development only)
 
-Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, and inventory row count. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
+Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, inventory row count, and (since Phase 4) the catalog source (live/fallback), last catalog fetch's accepted/rejected row counts and reasons, merged pool size, catalog ids missing an inventory row, and specialist profiles referencing a missing string. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
 
 ### Testing the admin area locally
 

@@ -15,7 +15,7 @@ interface RecommendationResultProps {
   answers: QuizAnswers
   onRetake: () => void
   onCompare: () => void
-  /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
+  /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
   pool?: StringItem[]
 }
 

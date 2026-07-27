@@ -15,10 +15,22 @@
 // imported from anything under src/ — see .env.example and README.md.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../types/database'
+import type { Database } from '../types/database.js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// Written as the literal `import.meta.env.KEY` expression (only with `?.`
+// added) deliberately — Vite statically replaces this exact pattern at
+// build time (which is what lets isSupabaseConfigured fold to a compile-time
+// constant and tree-shake the entire Supabase client out of an unconfigured
+// build, confirmed empirically in earlier phases). Rewriting this through an
+// intermediate variable or type-cast defeats that replacement and silently
+// breaks tree-shaking — don't refactor this without re-verifying bundle
+// size before/after. The `?.` only matters outside Vite (e.g.
+// scripts/testCatalog.ts importing this module transitively under plain
+// tsx), where import.meta.env itself is undefined; ImportMeta's `env`
+// property is typed via tsconfig.node.json's "vite/client" types entry so
+// this still type-checks there too.
+const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY
 
 /** True once both required env vars are present — check this before calling getSupabaseClient() if you want to avoid the thrown error, e.g. to render a "not configured" state instead of crashing. */
 export const isSupabaseConfigured: boolean = Boolean(supabaseUrl && supabaseAnonKey)

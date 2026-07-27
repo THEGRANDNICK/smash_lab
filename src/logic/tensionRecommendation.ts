@@ -14,9 +14,9 @@ import {
   RACKET_MAX_SAFETY_MARGIN,
   TENSION_ROUNDING_INCREMENT,
   COMPARISON_STEP,
-} from '../config/tensionRules'
-import type { StringItem } from '../data/strings'
-import type { QuizAnswers } from './types'
+} from '../config/tensionRules.js'
+import type { StringItem } from '../data/strings.js'
+import type { QuizAnswers } from './types.js'
 
 export interface TensionRecommendation {
   recommendedKg: number
