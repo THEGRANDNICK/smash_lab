@@ -143,15 +143,28 @@ It's only ever used by local, one-off, server-side scripts (e.g. a future migrat
 - ✅ `src/services/inventoryService.ts` + `src/hooks/useLiveStrings.ts`: the site fetches inventory from Supabase on load and merges it onto the catalog, falling back silently (with a console warning) to `strings.ts`'s own local stock values if Supabase is unreachable or not configured. The recommendation engine, catalog data, and specialist profiles are completely unaffected — only the `stock` value shown/used for badges and "Best Available Alternative" can now come from Supabase.
 - ✅ `scripts/migrateInventory.ts` (`npm run migrate:inventory`): one-time, idempotent backfill of `public.inventory` from `strings.ts`'s current values.
 - ✅ `/debug/supabase` (dev-only, see below).
-- ❌ Catalog (`strings.ts`) itself, specialist profiles, and the admin UI are still local/nonexistent — later phases.
+
+**Phase 3** — authenticated inventory admin:
+- ✅ `/admin` — a login-gated admin area (see "Admin area" below) for editing inventory (`stock_status`, `quantity`, `package_type`, `color`, `notes`) directly against Supabase, protected by real Supabase Auth + Row Level Security.
+- ❌ Catalog (`strings.ts`) editing, specialist-profile editing, and retailer-price administration are still local/nonexistent — later phases.
 
 Run `npm run verify:supabase` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
 
-**Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live).
+**Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live), and the admin area shows a "not configured" state instead of a login form.
 
-### 11. What's next (Phase 3+)
+### 11. Admin area (inventory editing)
 
-Phase 3 adds the admin UI (starting with inventory editing) and real authentication. Catalog migration, specialist-profile editing, and retailer pricing follow in later, separate phases.
+**URL**: `/#admin` (e.g. `https://<your-username>.github.io/smash_lab/#admin`, or `http://localhost:5173/#admin` in dev). It works with GitHub Pages' `/smash_lab/` base path and survives a direct navigation or a page refresh, since routing is hash-based like the rest of the site. It is not linked from the site's navigation — the URL itself is the only way in. **This is a convenience, not a security boundary**: nothing about the admin area's protection depends on the route being hard to find. The real protection is Supabase Auth (you must sign in) plus Row Level Security (your account must additionally be listed in `public.admin_users`, checked server-side via the `is_admin()` function — the browser never queries `admin_users` directly).
+
+**Logging in**: enter the email/password of a Supabase Auth user (the one you created in step 6 above). There's no sign-up form and no password reset in this UI — both are intentionally absent for a single-admin site; manage the Auth user itself from the Supabase dashboard. A wrong password shows a plain "Incorrect email or password" message; a network/Supabase-unavailable failure shows its own distinct error and lets you retry. Signing in with an Auth account that exists but isn't in `admin_users` succeeds (you're a valid authenticated user) but immediately shows an "Access denied" screen with no inventory controls and a sign-out button — being a Supabase Auth user is necessary but not sufficient, you also need the `admin_users` row from step 8.
+
+**What you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here (they still come from `strings.ts` via the catalog seed). Each row edits independently; saving validates the quantity client-side (whole numbers only, no negatives, blank → "unknown") before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
+
+**Why writes are actually safe**: every inventory write goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on `public.inventory` is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write inventory without a real `admin_users` row.
+
+### 12. What's next (Phase 4+)
+
+Catalog migration/editing, specialist-profile editing, and retailer-price administration are not implemented yet and are left for later, separate phases.
 
 ### Verifying your setup
 
@@ -194,6 +207,15 @@ Safe to re-run — never deletes rows from either table. Inventory only touches 
 ### `/debug/supabase` (development only)
 
 Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, and inventory row count. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
+
+### Testing the admin area locally
+
+1. Complete steps 1–8 above (project created, migration applied, your Auth user created and disable public sign-up, and that same user added to `public.admin_users`).
+2. `npm run dev`, then visit `http://localhost:5173/#admin` and sign in with that account.
+3. To see the "authenticated but not admin" state, create a second Auth user in the dashboard and sign in with it *without* adding it to `admin_users` — you should land on "Access denied" with no inventory controls.
+4. To confirm Row Level Security (not just the UI) is what's actually blocking that second user, you can run the same update it would attempt directly from the browser console while signed in as it — it should affect zero rows rather than erroring, which is RLS silently filtering the row out rather than the UI merely hiding a button.
+
+Never put a real password, UID, or project ref into a commit, issue, or this file — use throwaway test accounts for step 3.
 
 ## Copyright
 

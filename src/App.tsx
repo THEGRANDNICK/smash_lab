@@ -9,13 +9,18 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import StringFinder from './components/StringFinder'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
+import AdminApp from './components/admin/AdminApp'
 import { useLiveStrings } from './hooks/useLiveStrings'
 
-type View = 'home' | 'finder' | 'compare' | 'debug'
+type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin'
 
 function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
   if (hash === 'finder' || hash === 'compare') return hash
+  // Not linked from the public nav — a direct URL is the entry point.
+  // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
+  // this route being hard to find.
+  if (hash === 'admin' || hash === 'admin/inventory') return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
   // by Vite, so this branch (and the SupabaseDebugPage import) is dead
   // code eliminated from production builds entirely.
@@ -37,6 +42,14 @@ function App() {
     window.location.hash = next === 'home' ? '' : next
     setView(next)
     window.scrollTo({ top: 0, behavior: 'auto' })
+  }
+
+  // The admin area is deliberately isolated from the public Nav/Footer —
+  // it has its own header (Inventory / Return to public site / Log out)
+  // inside AdminApp. Real protection is Supabase Auth + RLS, handled
+  // entirely inside AdminApp; this route split is just presentation.
+  if (view === 'admin') {
+    return <AdminApp onExit={() => goTo('home')} />
   }
 
   return (
