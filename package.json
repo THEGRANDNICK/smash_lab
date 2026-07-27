@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "verify:supabase": "tsx scripts/verifySupabase.ts"
+    "verify:supabase": "tsx scripts/verifySupabase.ts",
+    "migrate:inventory": "tsx scripts/migrateInventory.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

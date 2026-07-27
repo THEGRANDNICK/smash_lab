@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { strings, type StringItem } from '../data/strings'
+import { strings as defaultStrings, type StringItem } from '../data/strings'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StringCard, { type PerformanceView } from './StringCard'
@@ -9,7 +9,13 @@ type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
 const MAX_COMPARE = 3
 
-export default function StringComparison() {
+interface StringComparisonProps {
+  /** Defaults to the static catalog import when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. */
+  strings?: StringItem[]
+}
+
+export default function StringComparison({ strings: stringsProp }: StringComparisonProps) {
+  const strings = stringsProp ?? defaultStrings
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [brand, setBrand] = useState<string>('all')
   const [availableOnly, setAvailableOnly] = useState(false)
@@ -17,7 +23,7 @@ export default function StringComparison() {
   const [view, setView] = useState<PerformanceView>('bars')
   const [compareIds, setCompareIds] = useState<string[]>([])
 
-  const brands = useMemo(() => Array.from(new Set(strings.map((s) => s.brand))).sort(), [])
+  const brands = useMemo(() => Array.from(new Set(strings.map((s) => s.brand))).sort(), [strings])
 
   const filtered = strings.filter((s) => {
     if (category !== 'all' && s.category !== category) return false

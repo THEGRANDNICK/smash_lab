@@ -33,6 +33,17 @@ jobs:
         run: npm ci
 
       - name: Build website
+        env:
+          # Vite inlines VITE_-prefixed env vars at build time and tree-shakes
+          # the Supabase client out entirely if these are unset — so they
+          # must be available here for the deployed site to actually use
+          # live inventory (falling back to strings.ts's local values
+          # otherwise, which still works but skips Phase 2's live data).
+          # Both are safe as plain repository VARIABLES (not secrets): the
+          # anon key is meant to be public, protected by RLS, not secrecy.
+          # Settings -> Secrets and variables -> Actions -> Variables tab.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - name: Setup GitHub Pages
