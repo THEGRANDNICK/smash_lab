@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
+import type { StringItem } from '../data/strings'
 import QuizQuestion from './QuizQuestion'
 import TensionInputStep from './TensionInputStep'
 import ProgressBar from './ProgressBar'
@@ -13,6 +14,8 @@ type Phase = 'quiz' | 'calculating' | 'result'
 interface StringFinderProps {
   onExit: () => void
   onCompare: () => void
+  /** Defaults to the full static catalog when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. */
+  pool?: StringItem[]
 }
 
 function buildSteps(answers: QuizAnswers): string[] {
@@ -25,7 +28,7 @@ function buildSteps(answers: QuizAnswers): string[] {
   return steps
 }
 
-export default function StringFinder({ onExit, onCompare }: StringFinderProps) {
+export default function StringFinder({ onExit, onCompare, pool }: StringFinderProps) {
   const [answers, setAnswers] = useState<QuizAnswers>({})
   const [stepIndex, setStepIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('quiz')
@@ -96,7 +99,7 @@ export default function StringFinder({ onExit, onCompare }: StringFinderProps) {
   if (phase === 'result') {
     return (
       <div className="px-4">
-        <RecommendationResult answers={answers} onRetake={restart} onCompare={onCompare} />
+        <RecommendationResult answers={answers} onRetake={restart} onCompare={onCompare} pool={pool} />
       </div>
     )
   }

@@ -5,6 +5,7 @@ import { formatKg, formatLbs } from '../logic/units'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
+import type { StringItem } from '../data/strings'
 import StatBars from './StatBars'
 import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
@@ -14,6 +15,8 @@ interface RecommendationResultProps {
   answers: QuizAnswers
   onRetake: () => void
   onCompare: () => void
+  /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useLiveStrings() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
+  pool?: StringItem[]
 }
 
 const STRENGTH_EMOJI: Record<string, string> = {
@@ -24,8 +27,8 @@ const STRENGTH_EMOJI: Record<string, string> = {
   shockAbsorption: '🤲 Great Comfort',
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare }: RecommendationResultProps) {
-  const rec = recommendStrings(answers)
+export default function RecommendationResult({ answers, onRetake, onCompare, pool }: RecommendationResultProps) {
+  const rec = recommendStrings(answers, pool)
   const tension = recommendTension(answers, rec.best.string)
   const bestSpecialist = getSpecialistProfile(rec.best.string.id)
 

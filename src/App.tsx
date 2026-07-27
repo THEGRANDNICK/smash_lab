@@ -8,17 +8,24 @@ import FAQ from './components/FAQ'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 import StringFinder from './components/StringFinder'
+import DevSupabaseDebugPage from './components/SupabaseDebugPage'
+import { useLiveStrings } from './hooks/useLiveStrings'
 
-type View = 'home' | 'finder' | 'compare'
+type View = 'home' | 'finder' | 'compare' | 'debug'
 
 function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
   if (hash === 'finder' || hash === 'compare') return hash
+  // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
+  // by Vite, so this branch (and the SupabaseDebugPage import) is dead
+  // code eliminated from production builds entirely.
+  if (import.meta.env.DEV && hash === 'debug-supabase') return 'debug'
   return 'home'
 }
 
 function App() {
   const [view, setView] = useState<View>(viewFromHash)
+  const liveStrings = useLiveStrings()
 
   useEffect(() => {
     const onHashChange = () => setView(viewFromHash())
@@ -41,7 +48,7 @@ function App() {
           <>
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
-            <StringComparison />
+            <StringComparison strings={liveStrings} />
             <WhyUs />
             <FAQ />
             <Contact />
@@ -50,13 +57,13 @@ function App() {
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">
-            <StringFinder onExit={() => goTo('home')} onCompare={() => goTo('compare')} />
+            <StringFinder onExit={() => goTo('home')} onCompare={() => goTo('compare')} pool={liveStrings} />
           </div>
         )}
 
         {view === 'compare' && (
           <div className="pt-6">
-            <StringComparison />
+            <StringComparison strings={liveStrings} />
             <div className="text-center pb-16">
               <button
                 type="button"
@@ -68,6 +75,8 @@ function App() {
             </div>
           </div>
         )}
+
+        {view === 'debug' && import.meta.env.DEV && <DevSupabaseDebugPage />}
       </main>
 
       <Footer />

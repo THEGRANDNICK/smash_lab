@@ -133,18 +133,25 @@ The `service_role` key **bypasses Row Level Security entirely**. It must never b
 
 It's only ever used by local, one-off, server-side scripts (e.g. a future migration script) run directly with Node — see the commented-out `SUPABASE_SERVICE_ROLE_KEY` line in `.env.example`.
 
-### 10. What Phase 1 actually does today
+### 10. What's implemented so far
 
-- ✅ Database schema exists (`strings`, `inventory`, `specialist_profiles`, `retailer_prices`, `admin_users`), with Row Level Security enforcing public-read / admin-only-write on the four data tables.
-- ✅ A typed Supabase client (`src/lib/supabase.ts`) and auth helpers (`src/lib/auth.ts`) exist in the codebase.
-- ❌ The website still reads `src/data/strings.ts` / `src/data/stringSpecialistProfiles.ts` — nothing fetches from Supabase yet.
-- ❌ There is no live inventory sync and no visible `/admin` page yet.
+**Phase 1** — backend foundation:
+- ✅ Database schema (`strings`, `inventory`, `specialist_profiles`, `retailer_prices`, `admin_users`), with Row Level Security enforcing public-read / admin-only-write on the four data tables.
+- ✅ A typed Supabase client (`src/lib/supabase.ts`) and auth helpers (`src/lib/auth.ts`).
 
-Run `npm run verify:supabase` (after filling in `.env.local`) to confirm your project matches what this phase expects — see the "Verifying your setup" section below.
+**Phase 2** — inventory goes live:
+- ✅ `src/services/inventoryService.ts` + `src/hooks/useLiveStrings.ts`: the site fetches inventory from Supabase on load and merges it onto the catalog, falling back silently (with a console warning) to `strings.ts`'s own local stock values if Supabase is unreachable or not configured. The recommendation engine, catalog data, and specialist profiles are completely unaffected — only the `stock` value shown/used for badges and "Best Available Alternative" can now come from Supabase.
+- ✅ `scripts/migrateInventory.ts` (`npm run migrate:inventory`): one-time, idempotent backfill of `public.inventory` from `strings.ts`'s current values.
+- ✅ `/debug/supabase` (dev-only, see below).
+- ❌ Catalog (`strings.ts`) itself, specialist profiles, and the admin UI are still local/nonexistent — later phases.
 
-### 11. What's next (Phase 2)
+Run `npm run verify:supabase` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
 
-Phase 2 will move **inventory reads only** to Supabase — stock/quantity/package type will come from the `inventory` table instead of being hard-coded, while the catalog (`strings.ts`) and the entire recommendation engine keep working exactly as they do today. Catalog migration, the admin UI, specialist-profile editing, and retailer pricing are later, separate phases.
+**Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live).
+
+### 11. What's next (Phase 3+)
+
+Phase 3 adds the admin UI (starting with inventory editing) and real authentication. Catalog migration, specialist-profile editing, and retailer pricing follow in later, separate phases.
 
 ### Verifying your setup
 
@@ -158,6 +165,18 @@ Checks (using only the public anon key — never the service-role key):
 - anon writes are correctly rejected
 
 Optionally, set `SUPABASE_TEST_ADMIN_EMAIL` / `SUPABASE_TEST_ADMIN_PASSWORD` in your shell for a single run to additionally verify your admin account can write — never commit these.
+
+### Migrating inventory into Supabase
+
+```bash
+VITE_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run migrate:inventory
+```
+
+One-time backfill: reads the current `stock`/`setsAvailable` values straight from `strings.ts` (nothing hand-typed) and upserts them into `public.inventory`. Safe to re-run — it never deletes rows, and only touches `stock_status`/`quantity`/`package_type` (any `color`/`notes` set later through the admin UI are left alone on a re-run). Needs the service-role key since it must write before `admin_users` necessarily has anyone in it yet; this key is never used by the website itself.
+
+### `/debug/supabase` (development only)
+
+Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, and inventory row count. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
 
 ## Copyright
 
