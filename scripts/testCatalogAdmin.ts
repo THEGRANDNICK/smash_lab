@@ -224,6 +224,9 @@ test('catalogFormInputFromRow round-trips through validateCatalogInput back to t
     productUrl: 'https://www.yonex.com/bg80',
     imageUrl: null,
     colors: ['Yellow', 'White'],
+    isHybrid: false,
+    mainStringMeta: null,
+    crossStringMeta: null,
     updatedAt: '2026-01-01T00:00:00Z',
   }
   const formInput = catalogFormInputFromRow(row)
@@ -244,6 +247,79 @@ test('catalogFormInputFromRow round-trips through validateCatalogInput back to t
     assert.equal(u.product_url, row.productUrl)
     assert.equal(u.image_url, row.imageUrl)
     assert.deepStrictEqual(u.colors, row.colors)
+    assert.equal(u.is_hybrid, false)
+    assert.equal(u.main_string_meta, null)
+    assert.equal(u.cross_string_meta, null)
+  }
+})
+
+console.log('\n=== Decimal ratings ===')
+test('accepts a decimal rating with one decimal place', () => {
+  const result = validateCatalogInput(validInput({ repulsion: '9.5' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) assert.equal(result.payload.update.repulsion, 9.5)
+})
+test('rejects a rating with more than one decimal place', () => {
+  const result = validateCatalogInput(validInput({ repulsion: '9.55' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, false)
+  if (!result.ok) assert.ok(result.errors.repulsion)
+})
+test('accepts a decimal shock absorption', () => {
+  const result = validateCatalogInput(validInput({ shockAbsorption: '6.5' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) assert.equal(result.payload.update.shock_absorption, 6.5)
+})
+test('accepts the upper bound 11.0', () => {
+  const result = validateCatalogInput(validInput({ repulsion: '11.0' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) assert.equal(result.payload.update.repulsion, 11)
+})
+test('rejects a rating above the maximum even as a decimal', () => {
+  const result = validateCatalogInput(validInput({ repulsion: '11.5' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, false)
+  if (!result.ok) assert.ok(result.errors.repulsion)
+})
+
+console.log('\n=== Hybrid string metadata ===')
+test('non-hybrid string produces null main/cross metadata', () => {
+  const result = validateCatalogInput(validInput(), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.equal(result.payload.update.is_hybrid, false)
+    assert.equal(result.payload.update.main_string_meta, null)
+    assert.equal(result.payload.update.cross_string_meta, null)
+  }
+})
+test('hybrid string with gauges on both sides produces sparse metadata objects', () => {
+  const result = validateCatalogInput(validInput({ isHybrid: true, mainGauge: '0.67', crossGauge: '0.61' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.equal(result.payload.update.is_hybrid, true)
+    assert.deepStrictEqual(result.payload.update.main_string_meta, { gauge: 0.67 })
+    assert.deepStrictEqual(result.payload.update.cross_string_meta, { gauge: 0.61 })
+  }
+})
+test('hybrid string with material/construction/coating/color text fields', () => {
+  const result = validateCatalogInput(
+    validInput({ isHybrid: true, mainGauge: '0.65', mainMaterial: ' Nylon ', mainConstruction: 'Multifilament', mainCoating: 'Resin', mainColor: ' White ' }),
+    EMPTY_CONTEXT,
+  )
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.deepStrictEqual(result.payload.update.main_string_meta, { gauge: 0.65, material: 'Nylon', construction: 'Multifilament', coating: 'Resin', color: 'White' })
+  }
+})
+test('rejects a negative hybrid gauge', () => {
+  const result = validateCatalogInput(validInput({ isHybrid: true, mainGauge: '-0.1' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, false)
+  if (!result.ok) assert.ok(result.errors.mainGauge)
+})
+test('isHybrid can be true with no metadata on one side (e.g. an unsourced gauge)', () => {
+  const result = validateCatalogInput(validInput({ isHybrid: true, mainGauge: '0.67' }), EMPTY_CONTEXT)
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.deepStrictEqual(result.payload.update.main_string_meta, { gauge: 0.67 })
+    assert.equal(result.payload.update.cross_string_meta, null)
   }
 })
 

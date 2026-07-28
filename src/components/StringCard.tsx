@@ -1,6 +1,7 @@
 import type { StringItem } from '../data/strings'
 import { buildRequestMailto } from '../logic/contactMessage'
-import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
+import { formatGauge } from '../logic/formatGauge'
+import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
@@ -21,11 +22,14 @@ interface StringCardProps {
   compareSelected?: boolean
   compareDisabled?: boolean
   onToggleCompare?: (id: string) => void
+  /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles() to reflect current data. Display only; never affects recommendation scoring. */
+  specialistProfiles?: Record<string, StringSpecialistProfile>
 }
 
-export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare }: StringCardProps) {
+export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, specialistProfiles }: StringCardProps) {
   const orderable = item.stock !== 'unavailable'
-  const specialistProfile = getSpecialistProfile(item.id)
+  const specialistProfile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
+  const gauge = formatGauge(item)
 
   return (
     <div
@@ -43,7 +47,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
-            {item.tension?.gauge != null && <> · {item.tension.gauge}mm</>}
+            {gauge != null && <> · {gauge}</>}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">

@@ -3,7 +3,8 @@ import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
 import { buildRequestMailto } from '../logic/contactMessage'
-import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
+import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
+import { formatGauge } from '../logic/formatGauge'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import StatBars from './StatBars'
@@ -17,6 +18,8 @@ interface RecommendationResultProps {
   onCompare: () => void
   /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
   pool?: StringItem[]
+  /** Defaults to the local stringSpecialistProfiles.ts lookup (recommendStrings' own default) when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). Never affects the scoring math itself, only where the specialist-layer data comes from. */
+  specialistProfiles?: Record<string, StringSpecialistProfile>
 }
 
 const STRENGTH_EMOJI: Record<string, string> = {
@@ -27,10 +30,11 @@ const STRENGTH_EMOJI: Record<string, string> = {
   shockAbsorption: '🤲 Great Comfort',
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, pool }: RecommendationResultProps) {
-  const rec = recommendStrings(answers, pool)
+export default function RecommendationResult({ answers, onRetake, onCompare, pool, specialistProfiles }: RecommendationResultProps) {
+  const rec = recommendStrings(answers, pool, specialistProfiles)
   const tension = recommendTension(answers, rec.best.string)
-  const bestSpecialist = getSpecialistProfile(rec.best.string.id)
+  const bestSpecialist = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
+  const bestGauge = formatGauge(rec.best.string)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -58,9 +62,7 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             <p className="mt-4 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
             <h2 className="font-display text-3xl sm:text-4xl font-bold">
               {rec.best.string.name}
-              {rec.best.string.tension?.gauge != null && (
-                <span className="text-base font-normal text-white/50 ml-2">{rec.best.string.tension.gauge}mm</span>
-              )}
+              {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
             </h2>
             {rec.bestAvailable && (
               <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>

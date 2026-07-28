@@ -14,7 +14,7 @@
 import { getSupabaseClient } from '../lib/supabase.js'
 import type { Database } from '../types/database.js'
 import type { StringCategory } from '../data/strings.js'
-import { VALID_CATEGORIES, RATING_MIN, RATING_MAX, SAFE_URL_PATTERN, isFiniteNumber, inRange } from './catalogService.js'
+import { VALID_CATEGORIES, RATING_MIN, RATING_MAX, SAFE_URL_PATTERN, isFiniteNumber, inRange, hasDecimalPrecision } from './catalogService.js'
 
 type StringsRow = Database['public']['Tables']['strings']['Row']
 type StringsInsert = Database['public']['Tables']['strings']['Insert']
@@ -43,7 +43,18 @@ export interface AdminCatalogRow {
   productUrl: string | null
   imageUrl: string | null
   colors: string[] | null
+  isHybrid: boolean
+  mainStringMeta: HybridMeta | null
+  crossStringMeta: HybridMeta | null
   updatedAt: string
+}
+
+interface HybridMeta {
+  gauge?: number
+  material?: string
+  construction?: string
+  coating?: string
+  color?: string
 }
 
 function fromRow(row: StringsRow): AdminCatalogRow {
@@ -65,6 +76,9 @@ function fromRow(row: StringsRow): AdminCatalogRow {
     productUrl: row.product_url,
     imageUrl: row.image_url,
     colors: row.colors,
+    isHybrid: row.is_hybrid,
+    mainStringMeta: row.main_string_meta,
+    crossStringMeta: row.cross_string_meta,
     updatedAt: row.updated_at,
   }
 }
@@ -109,6 +123,17 @@ export interface CatalogFormInput {
   recommendedMin: string
   recommendedMax: string
   tensionNotes: string
+  isHybrid: boolean
+  mainGauge: string
+  mainMaterial: string
+  mainConstruction: string
+  mainCoating: string
+  mainColor: string
+  crossGauge: string
+  crossMaterial: string
+  crossConstruction: string
+  crossCoating: string
+  crossColor: string
 }
 
 export function emptyCatalogFormInput(): CatalogFormInput {
@@ -133,6 +158,17 @@ export function emptyCatalogFormInput(): CatalogFormInput {
     recommendedMin: '',
     recommendedMax: '',
     tensionNotes: '',
+    isHybrid: false,
+    mainGauge: '',
+    mainMaterial: '',
+    mainConstruction: '',
+    mainCoating: '',
+    mainColor: '',
+    crossGauge: '',
+    crossMaterial: '',
+    crossConstruction: '',
+    crossCoating: '',
+    crossColor: '',
   }
 }
 
@@ -158,6 +194,17 @@ export function catalogFormInputFromRow(row: AdminCatalogRow): CatalogFormInput 
     recommendedMin: row.tensionMeta?.recommendedMin != null ? String(row.tensionMeta.recommendedMin) : '',
     recommendedMax: row.tensionMeta?.recommendedMax != null ? String(row.tensionMeta.recommendedMax) : '',
     tensionNotes: row.tensionMeta?.tensionNotes ?? '',
+    isHybrid: row.isHybrid,
+    mainGauge: row.mainStringMeta?.gauge != null ? String(row.mainStringMeta.gauge) : '',
+    mainMaterial: row.mainStringMeta?.material ?? '',
+    mainConstruction: row.mainStringMeta?.construction ?? '',
+    mainCoating: row.mainStringMeta?.coating ?? '',
+    mainColor: row.mainStringMeta?.color ?? '',
+    crossGauge: row.crossStringMeta?.gauge != null ? String(row.crossStringMeta.gauge) : '',
+    crossMaterial: row.crossStringMeta?.material ?? '',
+    crossConstruction: row.crossStringMeta?.construction ?? '',
+    crossCoating: row.crossStringMeta?.coating ?? '',
+    crossColor: row.crossStringMeta?.color ?? '',
   }
 }
 
@@ -184,12 +231,14 @@ export function suggestCatalogId(brand: string, name: string): string {
   return slug
 }
 
+/** Ratings allow decimals (e.g. 9.5, matching real manufacturer-published values) but at most one decimal place — 9.55 is rejected rather than silently rounded, matching the database's own CHECK constraint. */
 function parseRequiredRating(raw: string, label: string): { ok: true; value: number } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: false, error: `${label} is required.` }
   const num = Number(trimmed)
   if (!isFiniteNumber(num)) return { ok: false, error: `${label} must be a number.` }
   if (!inRange(num, RATING_MIN, RATING_MAX)) return { ok: false, error: `${label} must be between ${RATING_MIN} and ${RATING_MAX}.` }
+  if (!hasDecimalPrecision(num, 1)) return { ok: false, error: `${label} allows at most one decimal place (e.g. 9.5).` }
   return { ok: true, value: num }
 }
 
@@ -199,6 +248,7 @@ function parseNullableRating(raw: string, label: string): { ok: true; value: num
   const num = Number(trimmed)
   if (!isFiniteNumber(num)) return { ok: false, error: `${label} must be a number.` }
   if (!inRange(num, RATING_MIN, RATING_MAX)) return { ok: false, error: `${label} must be between ${RATING_MIN} and ${RATING_MAX}.` }
+  if (!hasDecimalPrecision(num, 1)) return { ok: false, error: `${label} allows at most one decimal place (e.g. 9.5).` }
   return { ok: true, value: num }
 }
 
@@ -231,6 +281,18 @@ function parseNullableUrl(raw: string, label: string): { ok: true; value: string
 function value<T>(result: { ok: true; value: T } | { ok: false; error: string }): T {
   if (!result.ok) throw new Error('unreachable: value() called after a failed parse result')
   return result.value
+}
+
+/** Builds a sparse hybrid-side metadata object, or null if nothing was entered — never an object with only empty/undefined values. */
+function buildHybridMeta(gauge: number | null, material: string, construction: string, coating: string, color: string): HybridMeta | null {
+  const meta: HybridMeta = {
+    ...(gauge != null ? { gauge } : {}),
+    ...(material.trim() !== '' ? { material: material.trim() } : {}),
+    ...(construction.trim() !== '' ? { construction: construction.trim() } : {}),
+    ...(coating.trim() !== '' ? { coating: coating.trim() } : {}),
+    ...(color.trim() !== '' ? { color: color.trim() } : {}),
+  }
+  return Object.keys(meta).length > 0 ? meta : null
 }
 
 function parseColors(raw: string): string[] | null {
@@ -330,6 +392,12 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
     }
   }
 
+  // Hybrid metadata is display/admin detail only (never a recommendation input) — validated the same way regardless of whether isHybrid is checked, so toggling it off and back on never silently drops a typo'd value.
+  const mainGaugeResult = parseNullableNonNegative(input.mainGauge, 'Main string gauge')
+  if (!mainGaugeResult.ok) errors.mainGauge = mainGaugeResult.error
+  const crossGaugeResult = parseNullableNonNegative(input.crossGauge, 'Cross string gauge')
+  if (!crossGaugeResult.ok) errors.crossGauge = crossGaugeResult.error
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors }
   }
@@ -346,6 +414,9 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
         ...(input.tensionNotes.trim() !== '' ? { tensionNotes: input.tensionNotes.trim() } : {}),
       }
     : null
+
+  const mainStringMeta = buildHybridMeta(value(mainGaugeResult), input.mainMaterial, input.mainConstruction, input.mainCoating, input.mainColor)
+  const crossStringMeta = buildHybridMeta(value(crossGaugeResult), input.crossMaterial, input.crossConstruction, input.crossCoating, input.crossColor)
 
   const sharedFields = {
     brand,
@@ -364,6 +435,9 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
     product_url: value(productUrlResult),
     image_url: value(imageUrlResult),
     colors: parseColors(input.colors),
+    is_hybrid: input.isHybrid,
+    main_string_meta: mainStringMeta,
+    cross_string_meta: crossStringMeta,
   }
 
   return {

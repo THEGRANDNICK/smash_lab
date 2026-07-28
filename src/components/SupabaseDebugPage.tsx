@@ -9,8 +9,8 @@ import { useEffect, useState } from 'react'
 import { isSupabaseConfigured, getSupabaseClient } from '../lib/supabase'
 import { getSession } from '../lib/auth'
 import { getLastFetchStatus, fetchInventoryFromSupabase, findMissingInventoryIds, getLocalFallbackInventory } from '../services/inventoryService'
-import { getLastCatalogFetchStatus, fetchCatalogFromSupabase } from '../services/catalogService'
-import { STRING_SPECIALIST_PROFILES } from '../data/stringSpecialistProfiles'
+import { getLastCatalogFetchStatus, fetchCatalogFromSupabase, type CatalogFetchStatus } from '../services/catalogService'
+import { fetchSpecialistProfilesFromSupabase, type SpecialistFetchStatus } from '../services/specialistProfileService'
 
 type ConnectionStatus = 'checking' | 'connected' | 'unreachable' | 'not-configured'
 
@@ -22,6 +22,10 @@ export default function SupabaseDebugPage() {
   const [error, setError] = useState<string | null>(null)
   const [missingInventoryIds, setMissingInventoryIds] = useState<string[]>([])
   const [orphanSpecialistIds, setOrphanSpecialistIds] = useState<string[]>([])
+  const [missingProfileCount, setMissingProfileCount] = useState<number | null>(null)
+  const [hybridCount, setHybridCount] = useState<number | null>(null)
+  const [decimalRatingCount, setDecimalRatingCount] = useState<number | null>(null)
+  const [specialistFetch, setSpecialistFetch] = useState<SpecialistFetchStatus | null>(null)
   const [mergedPoolCount, setMergedPoolCount] = useState<number | null>(null)
   // Forces a re-read of getLastFetchStatus()/getLastCatalogFetchStatus() after the effect's fetches resolve.
   const [, setLastFetchTick] = useState(0)
@@ -65,16 +69,26 @@ export default function SupabaseDebugPage() {
       }
 
       // Also exercise the exact same fetch + merge path the live site uses
-      // (services/catalogService.ts + services/inventoryService.ts), so this
-      // page reports reality rather than a separate, possibly-diverging check.
-      const [catalogResult, inventory] = await Promise.all([fetchCatalogFromSupabase(), fetchInventoryFromSupabase()])
+      // (services/catalogService.ts + services/inventoryService.ts +
+      // services/specialistProfileService.ts), so this page reports reality
+      // rather than a separate, possibly-diverging check.
+      const [catalogResult, inventory, specialistResult] = await Promise.all([
+        fetchCatalogFromSupabase(),
+        fetchInventoryFromSupabase(),
+        fetchSpecialistProfilesFromSupabase(),
+      ])
       if (cancelled) return
 
       const resolvedInventory = inventory ?? getLocalFallbackInventory()
       setMergedPoolCount(catalogResult.items.length)
       setMissingInventoryIds(findMissingInventoryIds(catalogResult.items, resolvedInventory))
       const catalogIds = new Set(catalogResult.items.map((i) => i.id))
-      setOrphanSpecialistIds(Object.keys(STRING_SPECIALIST_PROFILES).filter((id) => !catalogIds.has(id)))
+      setOrphanSpecialistIds(Object.keys(specialistResult.profiles).filter((id) => !catalogIds.has(id)))
+      setMissingProfileCount(catalogResult.items.filter((i) => !specialistResult.profiles[i.id]).length)
+      setSpecialistFetch(specialistResult.status)
+      setHybridCount(catalogResult.items.filter((i) => i.isHybrid).length)
+      const ratingFields = catalogResult.items.flatMap((i) => [i.repulsion, i.durability, i.control, i.hittingSound, i.shockAbsorption ?? null])
+      setDecimalRatingCount(ratingFields.filter((v) => v != null && !Number.isInteger(v)).length)
       setLastFetchTick((t) => t + 1)
     }
 
@@ -120,11 +134,37 @@ export default function SupabaseDebugPage() {
           {lastCatalogFetch && lastCatalogFetch.rejectedReasons.length > 0 && <Row label="Rejected row reasons" value={lastCatalogFetch.rejectedReasons.join('; ')} />}
           <Row label="Merged pool size" value={mergedPoolCount == null ? '—' : String(mergedPoolCount)} />
           <Row label="Catalog ids missing an inventory row" value={missingInventoryIds.length === 0 ? 'None' : missingInventoryIds.join(', ')} />
-          <Row label="Specialist profiles referencing missing strings" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
+        </dl>
+
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 6 — decimal ratings, hybrids &amp; specialist profiles</p>
+        <dl className="space-y-4 text-sm">
+          <Row label="Decimal validation status" value={decimalValidationLabel(lastCatalogFetch, decimalRatingCount)} />
+          <Row label="Hybrid strings in catalog" value={hybridCount == null ? '—' : String(hybridCount)} />
+          <Row label="Specialist profile source" value={specialistFetch ? (specialistFetch.source === 'live' ? '🟢 Live (public.specialist_profiles)' : '🟡 Local fallback (stringSpecialistProfiles.ts)') : 'Not fetched yet'} />
+          <Row
+            label="Last specialist fetch"
+            value={
+              specialistFetch
+                ? `${new Date(specialistFetch.at).toLocaleTimeString()} — ${specialistFetch.acceptedCount} accepted, ${specialistFetch.rejectedCount} rejected${specialistFetch.fallbackReason ? ` (fell back: ${specialistFetch.fallbackReason})` : ''}`
+                : 'No fetch recorded yet'
+            }
+          />
+          {specialistFetch && specialistFetch.rejectedReasons.length > 0 && <Row label="Rejected specialist row reasons" value={specialistFetch.rejectedReasons.join('; ')} />}
+          <Row label="Strings with no specialist profile" value={missingProfileCount == null ? '—' : `${missingProfileCount} (expected — profiles are sparse by design)`} />
+          <Row label="Specialist profiles referencing missing strings (orphaned)" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
         </dl>
       </div>
     </div>
   )
+}
+
+function decimalValidationLabel(lastCatalogFetch: CatalogFetchStatus | null, decimalRatingCount: number | null): string {
+  if (!lastCatalogFetch) return 'Not fetched yet'
+  const decimalRejections = lastCatalogFetch.rejectedReasons.filter((r) => r.includes('decimal place'))
+  const decimalNote = decimalRatingCount == null ? '' : ` — ${decimalRatingCount} accepted rating value(s) use a decimal (e.g. 9.5)`
+  return decimalRejections.length === 0
+    ? `✓ OK — every accepted row's ratings are within 0–11 at one decimal place${decimalNote}`
+    : `✗ ${decimalRejections.length} row(s) rejected for decimal precision: ${decimalRejections.join('; ')}`
 }
 
 function connectionLabel(status: ConnectionStatus): string {

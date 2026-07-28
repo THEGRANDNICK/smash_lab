@@ -25,6 +25,8 @@ import { recommendStrings } from '../src/logic/recommendationEngine.js'
 import { recommendTension } from '../src/logic/tensionRecommendation.js'
 import type { QuizAnswers } from '../src/logic/types.js'
 import { toStringsRow } from './migrateInventory.js'
+import { STRING_SPECIALIST_PROFILES, type StringSpecialistProfile } from '../src/data/stringSpecialistProfiles.js'
+import { mapSpecialistProfileRow } from '../src/services/specialistProfileService.js'
 
 type StringsRow = Database['public']['Tables']['strings']['Row']
 
@@ -63,6 +65,9 @@ function toFullRow(item: StringItem): StringsRow {
     product_url: insert.product_url ?? null,
     image_url: insert.image_url ?? null,
     colors: insert.colors ?? null,
+    is_hybrid: insert.is_hybrid ?? false,
+    main_string_meta: insert.main_string_meta ?? null,
+    cross_string_meta: insert.cross_string_meta ?? null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   }
@@ -256,6 +261,57 @@ for (const [i, answers] of SAMPLE_ANSWERS.entries()) {
     assert.deepStrictEqual(tensionMapped, tensionLocal, 'Tension recommendation differs')
   })
 }
+
+console.log('\n=== 8. Recommendation equivalence: local specialist profiles vs. mapped-from-DB-row specialist profiles ===')
+type SpecialistProfileRow = Database['public']['Tables']['specialist_profiles']['Row']
+
+function toSpecialistRow(stringId: string, profile: StringSpecialistProfile): SpecialistProfileRow {
+  return {
+    string_id: stringId,
+    feel: profile.feel ?? null,
+    personal_tension_min_kg: profile.personalTensionKg?.min ?? null,
+    personal_tension_max_kg: profile.personalTensionKg?.max ?? null,
+    experience_source: profile.experienceSource,
+    confidence: profile.confidence,
+    dimensions: profile.dimensions,
+    dimension_confidence: profile.dimensionConfidence ?? null,
+    strengths: profile.strengths ?? null,
+    weaknesses: profile.weaknesses ?? null,
+    specialist_tags: profile.specialistTags ?? null,
+    subjective_notes: profile.subjectiveNotes ?? null,
+    reviewer: profile.reviewer ?? null,
+    updated_at: '2026-01-01T00:00:00Z',
+  }
+}
+
+const mappedSpecialistProfiles: Record<string, StringSpecialistProfile> = {}
+for (const [stringId, profile] of Object.entries(STRING_SPECIALIST_PROFILES)) {
+  const result = mapSpecialistProfileRow(toSpecialistRow(stringId, profile))
+  assert.equal(result.ok, true, `expected ${stringId}'s round-tripped specialist row to be accepted`)
+  if (result.ok) mappedSpecialistProfiles[result.stringId] = result.profile
+}
+
+for (const [i, answers] of SAMPLE_ANSWERS.entries()) {
+  test(`quiz input #${i + 1}: identical recommendation with DB-row-mapped specialist profiles`, () => {
+    const fromLocal = recommendStrings(answers, localCatalog, STRING_SPECIALIST_PROFILES)
+    const fromMapped = recommendStrings(answers, localCatalog, mappedSpecialistProfiles)
+
+    assert.equal(fromMapped.best.string.id, fromLocal.best.string.id, 'Best Match id differs')
+    assert.equal(fromMapped.best.matchPercent, fromLocal.best.matchPercent, 'Best Match percent differs')
+    assert.equal(fromMapped.bestAvailable?.string.id, fromLocal.bestAvailable?.string.id, 'Best Available Alternative differs')
+    assert.equal(fromMapped.crossBrandAlternative?.string.id, fromLocal.crossBrandAlternative?.string.id, 'Cross-Brand Alternative differs')
+    assert.equal(fromMapped.specialistChoice?.string.id, fromLocal.specialistChoice?.string.id, 'Specialist Choice differs')
+    assert.equal(fromMapped.explanations.best, fromLocal.explanations.best, 'Best Match explanation text differs')
+  })
+}
+
+test('omitting the specialistProfiles parameter entirely still matches the explicit local-profiles call (default-parameter equivalence)', () => {
+  const answers: QuizAnswers = { level: 'advanced', priorities: ['hardAttack', 'easyPower'], playStyles: ['aggressive'], powerGeneration: 'ownPower' }
+  const withDefault = recommendStrings(answers, localCatalog)
+  const withExplicitLocal = recommendStrings(answers, localCatalog, STRING_SPECIALIST_PROFILES)
+  assert.equal(withDefault.best.string.id, withExplicitLocal.best.string.id)
+  assert.equal(withDefault.explanations.best, withExplicitLocal.explanations.best)
+})
 
 console.log(`\n${passed} passed, ${failed} failed.`)
 if (failed > 0) process.exit(1)
