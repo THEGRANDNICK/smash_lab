@@ -275,6 +275,12 @@ npm run test:retailers
 
 Covers Phase 7's normalized retailer feature end to end: retailer ENTITY row mapping/validation (name required, logo/website URL-scheme rejection, country-format rejection) and retailer LISTING row mapping/validation joined with a retailer (decimal price at 2 places, negative-price/URL-scheme/availability/package-type/package-length rejection, and rejection of a listing whose retailer_id has no matching retailer); admin form validation for both retailer entities (case-insensitive duplicate-name rejection) and listings (required fields, string/retailer-still-exists checks, the retailer-picker "inactive retailers aren't newly selectable, but an already-assigned inactive retailer is preserved when editing" rule, the duplicate-listing rule keyed on retailer_id, the non-blocking preferred-conflict warning); both row round-trips; preferred/availability/price ordering and its determinism; compatible-vs-incompatible price comparison (a set is never compared to a reel, two different reel lengths are never compared to each other); price-per-metre rounding; the diagnostics helpers the debug page uses (including case-insensitive duplicate-retailer-name detection); the "Supabase not configured" fallback path for both retailers and listings; and a recommendation-isolation regression section — including a compile-time check (`@ts-expect-error` on a call with a 4th argument, enforced by `npx tsc -b`) proving `recommendStrings` cannot even be called with retailer data, not just that nobody currently does. Also local/automated only — the actual Supabase create/update/delete calls, RLS, the FK-restrict-on-delete-with-listings behavior, and the live "deactivating a retailer hides its listings" behavior were verified separately via local Postgres+PostgREST integration testing (see the Phase 7 report), not by this script.
 
+```bash
+npm run test:ui
+```
+
+Covers Phase 8's presentation layer: a recommendation-isolation regression that pins `recommendStrings()`'s Best Match id/percent/Cross-Brand/Specialist Choice against fixture values captured before any Phase 8 code existed (so an accidental change to the engine, its weights, or its data would fail this suite immediately); determinism checks (same input twice → deep-equal output) for every new function; `ratingTier`'s bucketing; `buildStrengthBadges`/`buildTradeoffs`/`buildPlayerLevelFit`'s dedupe/cap/fallback rules; `buildStructuredExplanation` carrying the engine's own explanation text through verbatim; `buildAlternativeReasons`'s comparisons (durability/repulsion/control/comfort/feel/price/stock, capped at 3, never duplicated); and `buildComparisonRows` producing exactly the 12 requested metrics in order, with correct dot-scaling, graceful "Not rated"/"—"/"0" fallbacks, and successful rendering for every string in the catalog. Also local/automated only — no Supabase calls, no browser.
+
 ### Verifying your setup
 
 ```bash
@@ -517,6 +523,57 @@ See "Automated tests" above for what this covers. Real Supabase reads/writes, RL
 ### Phase 8+ scope
 
 Not implemented in this phase, left for later: image uploads, bulk edit/CSV import, per-dimension specialist confidence overrides, multi-currency support (the schema and types are designed to make this a small additive change when needed), and the "Dashboard" admin tab.
+
+## Recommendation UX & presentation polish (Phase 8)
+
+Phase 8 is a UI/UX-only phase — no new tables, no migrations, no schema changes, and no changes to `logic/recommendationEngine.ts`, `logic/tensionRecommendation.ts`, or anything under `src/config/`/`src/data/`. The goal was to make the existing recommendation output feel explained, comparable, and professional, without changing what gets recommended or why, and without adding a database dimension to this phase.
+
+### Recommendation explanation architecture
+
+`logic/recommendationExplanation.ts` is a new, pure presentation module that sits **downstream** of `recommendStrings()` — it never scores, ranks, or recommends anything itself. It takes a `ScoredString` (already computed by the engine), the engine's own natural-language `explanations.*` string for that candidate, and the string's existing `StringSpecialistProfile` (if any), and reshapes them into a `StructuredExplanation`:
+
+- **headline / headlineSecondary** — the top 1–2 manufacturer dimensions the engine already picked (`topDimensions`), bucketed into a display tier (`ratingTier`: Excellent / Very Good / Good / Fair) purely from the string's own existing 0–11 rating. Bucketing a known number into a tier never changes the number, the ranking, or the match percentage.
+- **paragraph** — the engine's own `explanations.best`/`explanations.bestAvailable`/etc. text, carried through **verbatim**. This module never writes new prose about *why* a string was recommended; it only reformats the reasoning the engine already produced.
+- **playerLevelFit** — a rough "Great for Beginners" / "Suitable for Intermediate Players" / "Best for Advanced, Attacking Players" line, bucketed from the specialist profile's own existing `beginnerFriendliness`/`hardHitterFit`/`allRoundSuitability` dimensions (undefined when there's no specialist profile at all).
+- **strengths** — the specialist profile's own hand-written `strengths` text when available, otherwise a plain restatement of the top manufacturer dimensions.
+- **tradeoffs** — the specialist profile's own hand-written `weaknesses` text when available (capped at 2); only falls back to a fixed, factual sentence (e.g. "Higher repulsion usually reduces durability.") for the weakest dimension the string wasn't already praised for, when no specialist profile exists.
+- **badges** — up to 4 short chips built from the same `topDimensions`/`topSpecialistDims` the engine already selected, deduplicated.
+
+The same module's `buildAlternativeReasons(alternative, baseline, ...)` builds the Alternatives section's "why choose this instead" bullets (e.g. "Higher durability than the Best Match.", "Slightly softer feel.", "Lower price than the Best Match.") by comparing fields both candidates already carry — manufacturer ratings, specialist `feel`/top dimension, `stringCost`, `stock`. It never changes which string is the alternative or reorders anything; it only explains a choice `recommendStrings()` already made.
+
+### Comparison metrics architecture
+
+`logic/comparisonMetrics.ts` builds the compact comparison-table rows (Repulsion, Control, Durability, Feel, Tension Retention, Hitting Sound, Power, Comfort, Overall Specialist Rating, Retail Availability, Package Options, Retailer Count) from the same existing data sources: manufacturer ratings (`data/strings.ts`), specialist dimensions (`data/stringSpecialistProfiles.ts`), and retailer listings (`services/retailerPriceService.ts`, reusing its own `orderRetailerListings`/`AVAILABILITY_LABELS`/`PACKAGE_TYPE_LABELS`). Numeric metrics render as a 5-dot indicator (`Math.round(value / max * 5)`); categorical ones (Feel, Retail Availability, Package Options) render as plain text. "Power" is deliberately distinct from "Repulsion": Repulsion is the raw manufacturer number, Power is the specialist layer's own average of `easyPower`/`hardHitterFit`/`attackSmash` (a different, existing question — suitability for power players — not a new one). Nothing here filters, sorts, or scores strings.
+
+### UI philosophy
+
+- **`RecommendationResult.tsx`** — the Best Match card is now a fuller "product page": headline + badges + the engine's explanation + a specialist player-level-fit line + a Strengths/Trade-offs two-column list + manufacturer stat bars + the Smash Lab specialist panel + a "Where to Buy" retailer section (or a plain "no listings yet" note instead of just disappearing). The Cross-Brand Alternative and Specialist Choice cards now include the same per-alternative reasoning bullets.
+- **`ComparisonTable.tsx`** — a real `<table>` (not another chart) is now the primary content of the 2–3-string comparison panel in `StringComparison.tsx`; the existing radar-chart overlay is kept, but collapsed behind a `<details>` disclosure rather than always shown, per the brief's "no large complex graphs" instruction for this section.
+- Compact dot/text indicators, badges, and section headings all reuse the app's existing visual language (`rounded-2xl`/`rounded-full`, `court-`/`shuttle-`/`ink-` color tokens, the `focus-ring` utility) rather than introducing a new one.
+- **Mobile nav** — `Nav.tsx`'s Strings/FAQ/Contact links previously vanished below the `sm` breakpoint with no replacement; there's now an accessible hamburger menu (`aria-expanded`, `aria-controls`) for small screens.
+- **Offline state** — `OfflineBanner.tsx` is a small, purely additive banner (`navigator.onLine` + the `online`/`offline` window events) explaining that prices/stock/retailer data may be stale — it never blocks or changes any feature, since every data hook already degrades gracefully on its own.
+
+### Accessibility
+
+- The finder-results page now has exactly one `<h1>` (the recommended string's name) with a clean `h1 → h2 → h3` hierarchy through the Best Match panel (previously an `h2` with no page-level heading in that view).
+- `ComparisonTable.tsx` uses a semantic `<table>` with `scope="col"`/`scope="row"` headers and a screen-reader-only `<caption>`; dot indicators are `aria-hidden` with the real value exposed via visible or `sr-only` text.
+- The new mobile nav toggle is a real `<button>` with `aria-expanded`/`aria-controls`/`aria-label`, keyboard-operable like every other control in the app (all new interactive elements use the existing `focus-ring` utility).
+- No existing accessibility behavior was reduced or removed.
+
+### Performance
+
+- `RecommendationResult.tsx` wraps the `recommendStrings()`/`recommendTension()` calls and the new `buildStructuredExplanation()`/`buildAlternativeReasons()` calls in `useMemo`, so they only recompute when their actual inputs (answers/pool/specialistProfiles, or the specific scored candidate) change — not on every unrelated re-render (e.g. retailer listings resolving after first paint).
+- No new loading states, lazy-loading, or code-splitting were introduced beyond that — the existing instant-local-fallback-then-live-update architecture (Phase 2/4/6/7) already avoids spinners, and Vite's own chunking is unchanged. Recommendation calculations themselves are untouched.
+
+### Manual testing checklist
+
+1. Take the quiz through to a result — confirm the Best Match id, match percentage, and headline are unchanged from before Phase 8 for the same answers (cross-check against `npm run test:ui`'s fixture values).
+2. Confirm the Best Match card shows a headline, strengths, trade-offs, manufacturer stat bars, the specialist panel (when one exists), and either purchase options or a "no listings yet" note.
+3. Confirm the Cross-Brand Alternative and Specialist Choice cards show at least one "why choose this" bullet when the underlying data supports one, and none when it genuinely doesn't (no fabricated reasons).
+4. Open Compare, select 2–3 strings, confirm the comparison table shows all 12 metrics with dot/text indicators, and that "Show radar overlay" still renders the existing chart when expanded.
+5. Resize to 320px, 375px, 390px, 768px, and 1024px — confirm the mobile nav hamburger works, the Best Match card and comparison table never overflow horizontally, and touch targets stay comfortably tappable.
+6. Tab through the finder results and the comparison table using only the keyboard — confirm every interactive element reachable and visibly focused.
+7. Turn off networking (or toggle airplane mode) — confirm the offline banner appears and the app continues to function on its existing local/fallback data.
 
 ## Copyright
 

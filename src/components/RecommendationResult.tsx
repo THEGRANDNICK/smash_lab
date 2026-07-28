@@ -1,10 +1,12 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { recommendStrings } from '../logic/recommendationEngine'
+import { recommendStrings, type ScoredString } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { formatGauge } from '../logic/formatGauge'
+import { buildStructuredExplanation, buildAlternativeReasons } from '../logic/recommendationExplanation'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { RetailerListing } from '../services/retailerPriceService'
@@ -26,20 +28,41 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-const STRENGTH_EMOJI: Record<string, string> = {
-  repulsion: '⚡ Quick Repulsion',
-  control: '🎯 Excellent Control',
-  durability: '💪 Good Durability',
-  hittingSound: '🔊 Crisp Hitting Sound',
-  shockAbsorption: '🤲 Great Comfort',
-}
-
 export default function RecommendationResult({ answers, onRetake, onCompare, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
-  const rec = recommendStrings(answers, pool, specialistProfiles)
-  const tension = recommendTension(answers, rec.best.string)
+  // useMemo avoids recomputing the (pure, but non-trivial) recommendation
+  // whenever this component re-renders for an unrelated reason (e.g. the
+  // retailer listings map updating after the initial paint) — the inputs
+  // here are exactly recommendStrings()'s own parameters, so the result is
+  // always identical to calling it directly; this is a rendering
+  // optimization only, never a change to what gets computed.
+  const rec = useMemo(() => recommendStrings(answers, pool, specialistProfiles), [answers, pool, specialistProfiles])
+  const tension = useMemo(() => recommendTension(answers, rec.best.string), [answers, rec.best.string])
+
   const bestSpecialist = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
   const bestGauge = formatGauge(rec.best.string)
   const bestListings = retailerListingsByStringId?.[rec.best.string.id]
+
+  const bestExplanation = useMemo(() => buildStructuredExplanation(rec.best, rec.explanations.best, bestSpecialist), [rec.best, rec.explanations.best, bestSpecialist])
+
+  if (rec.best.string == null) {
+    // Defensive only — recommendStrings() always returns a `best` when given
+    // a non-empty pool, and the app never renders the quiz with an empty
+    // one. Kept as a graceful message instead of a crash if that ever
+    // changes upstream.
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <p className="text-lg font-semibold text-ink-900 dark:text-shuttle-50">No recommendations available right now.</p>
+        <p className="mt-2 text-ink-700/70 dark:text-shuttle-100/70">Please try again in a moment, or browse the full lineup directly.</p>
+        <button
+          type="button"
+          onClick={onCompare}
+          className="focus-ring mt-6 rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
+        >
+          Browse strings
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -60,26 +83,25 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
 
             <div className="mt-4 flex items-center gap-4">
-              <div className="text-5xl sm:text-6xl font-display font-bold text-shuttle-400">{rec.best.matchPercent}%</div>
+              <div className="text-5xl sm:text-6xl font-display font-bold text-shuttle-400" aria-label={`${rec.best.matchPercent} percent match`}>
+                {rec.best.matchPercent}%
+              </div>
               <div className="text-lg font-semibold text-white/80">match</div>
             </div>
 
             <p className="mt-4 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold">
+            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
               {rec.best.string.name}
               {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
-            </h2>
-            {rec.bestAvailable && (
-              <p className="mt-1 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
+            </h1>
+            {bestExplanation.playerLevelFit && (
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
+                ⭐ {bestExplanation.playerLevelFit}
+              </p>
             )}
-
-            <div className="flex flex-wrap gap-2 mt-4">
-              {rec.best.topDimensions.map((d) => (
-                <span key={d} className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold backdrop-blur-sm">
-                  {STRENGTH_EMOJI[d]}
-                </span>
-              ))}
-            </div>
+            {rec.bestAvailable && (
+              <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
+            )}
 
             {/* Tension */}
             <div className="mt-8 rounded-2xl bg-white/10 backdrop-blur-sm p-5">
@@ -118,16 +140,44 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           </div>
         )}
 
-        {/* Why this setup */}
-        <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">Why this setup?</h3>
+        {/* Best Match detail — the "premium product page" panel: headline,
+            manufacturer stats, specialist take, strengths, trade-offs,
+            purchase options, all in one place. */}
+        <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6 sm:p-7" aria-labelledby="best-match-heading">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400">Why this is your best match</p>
+              <h2 id="best-match-heading" className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">
+                {bestExplanation.headline}
+                {bestExplanation.headlineSecondary && <span className="text-ink-700/50 dark:text-shuttle-100/50 font-normal"> · {bestExplanation.headlineSecondary}</span>}
+              </h2>
+            </div>
             <StockBadge stock={rec.best.string.stock} />
           </div>
-          <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.best}</p>
+
+          {bestExplanation.badges.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {bestExplanation.badges.map((badge) => (
+                <span
+                  key={badge.key}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-700 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
+                >
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-4 text-ink-700/80 dark:text-shuttle-100/80">{bestExplanation.paragraph}</p>
           <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">{tension.explanation}</p>
 
-          <div className="mt-5">
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+            <ExplanationList title="Strengths" icon="✅" items={bestExplanation.strengths} />
+            <ExplanationList title="Trade-offs" icon="⚖️" items={bestExplanation.tradeoffs} />
+          </div>
+
+          <div className="mt-6">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Manufacturer Ratings</h3>
             <StatBars item={rec.best.string} />
           </div>
 
@@ -137,35 +187,37 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             </div>
           )}
 
-          {bestListings && (
+          {bestListings && bestListings.length > 0 ? (
             <div className="mt-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Where to Buy</h3>
               <PurchaseOptions listings={bestListings} />
             </div>
+          ) : (
+            <p className="mt-5 text-xs text-ink-700/50 dark:text-shuttle-100/50">No retailer listings available for this string yet.</p>
           )}
-        </div>
+        </section>
 
         {/* Cross-brand alternative */}
         {rec.crossBrandAlternative && (
-          <div className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6">
-            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">🌐 Cross-Brand Alternative</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
-                {rec.crossBrandAlternative.string.brand} {rec.crossBrandAlternative.string.name}
-              </h4>
-              <span className="text-shuttle-600 font-bold">{rec.crossBrandAlternative.matchPercent}% Match</span>
-            </div>
-            <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.crossBrandAlternative}</p>
-          </div>
+          <AlternativeCard
+            title="🌐 Cross-Brand Alternative"
+            scored={rec.crossBrandAlternative}
+            explanation={rec.explanations.crossBrandAlternative}
+            baseline={rec.best}
+            specialistProfiles={specialistProfiles}
+          />
         )}
 
         {/* Specialist choice */}
         {rec.specialistChoice && (
-          <div className="mt-4 rounded-2xl border border-court-900/10 dark:border-white/10 bg-white/40 dark:bg-white/5 p-5">
-            <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">
-              ⭐ Specialist Choice — {rec.specialistChoice.string.name} ({rec.specialistChoice.matchPercent}% Match)
-            </p>
-            <p className="mt-1 text-ink-700/80 dark:text-shuttle-100/80 text-sm">{rec.explanations.specialistChoice}</p>
-          </div>
+          <AlternativeCard
+            title="⭐ Specialist Choice"
+            scored={rec.specialistChoice}
+            explanation={rec.explanations.specialistChoice}
+            baseline={rec.best}
+            specialistProfiles={specialistProfiles}
+            compact
+          />
         )}
 
         {/* Actions */}
@@ -192,6 +244,68 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           </button>
         </div>
       </motion.div>
+    </div>
+  )
+}
+
+function ExplanationList({ title, icon, items }: { title: string; icon: string; items: string[] }) {
+  if (items.length === 0) return null
+  return (
+    <div>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">
+        {icon} {title}
+      </h3>
+      <ul className="space-y-1.5 text-sm text-ink-700/80 dark:text-shuttle-100/80">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span aria-hidden="true">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function AlternativeCard({
+  title,
+  scored,
+  explanation,
+  baseline,
+  specialistProfiles,
+  compact,
+}: {
+  title: string
+  scored: ScoredString
+  explanation?: string
+  baseline: ScoredString
+  specialistProfiles?: Record<string, StringSpecialistProfile>
+  compact?: boolean
+}) {
+  const profile = specialistProfiles ? specialistProfiles[scored.string.id] : getSpecialistProfile(scored.string.id)
+  const baselineProfile = specialistProfiles ? specialistProfiles[baseline.string.id] : getSpecialistProfile(baseline.string.id)
+  const reasons = useMemo(() => buildAlternativeReasons(scored, baseline, profile, baselineProfile), [scored, baseline, profile, baselineProfile])
+
+  return (
+    <div className={`mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 p-6 ${compact ? 'bg-white/40 dark:bg-white/5' : 'bg-white/60 dark:bg-white/5'}`}>
+      <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">{title}</p>
+      <div className="flex items-baseline gap-2 mt-1">
+        <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
+          {scored.string.brand} {scored.string.name}
+        </h4>
+        <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
+      </div>
+      {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm">{explanation}</p>}
+      {reasons.length > 0 && (
+        <ul className="mt-3 space-y-1 text-sm text-ink-700/70 dark:text-shuttle-100/70">
+          {reasons.map((reason) => (
+            <li key={reason} className="flex gap-2">
+              <span aria-hidden="true">↳</span>
+              <span>{reason}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
