@@ -43,7 +43,7 @@
 //   - Nothing is ever deleted.
 
 import { existsSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/types/database.js'
@@ -212,7 +212,16 @@ async function main() {
 
 // Guarded so this file can be imported without triggering a real import
 // run as a side effect — main() only runs when this file is executed
-// directly.
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main()
+// directly. Compared via pathToFileURL rather than a hand-built
+// `file://${...}` string: on Windows, import.meta.url is a
+// file:///E:/... URL while process.argv[1] is a Windows filesystem path
+// (backslashes, no leading slash), so a naive string comparison never
+// matches and main() silently never runs. pathToFileURL normalizes
+// process.argv[1] the same way Node derived import.meta.url, so the
+// comparison is correct on Windows and POSIX alike.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main().catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
 }
