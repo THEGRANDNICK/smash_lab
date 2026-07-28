@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import StockBadge from '../StockBadge'
+import StringColorSwatch from '../StringColorSwatch'
+import { resolveStringColor } from '../../logic/stringColor'
 import type { StockLevel } from '../../data/strings'
 import {
   STOCK_STATUS_OPTIONS,
@@ -97,7 +99,16 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-4">
             <Field label="Quantity" value={row.quantity == null ? '—' : String(row.quantity)} />
             <Field label="Package" value={row.packageType} />
-            <Field label="Color" value={row.color || '—'} />
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Color</dt>
+              <dd className="text-ink-900 dark:text-shuttle-50 flex items-center gap-1.5">
+                {(() => {
+                  const swatch = resolveStringColor(row.color)
+                  return swatch ? <StringColorSwatch swatch={swatch} size="sm" /> : null
+                })()}
+                {row.color || '—'}
+              </dd>
+            </div>
             <Field label="Notes" value={row.notes || '—'} />
           </dl>
           <div className="flex items-center justify-between gap-3">
@@ -169,9 +180,12 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 disabled={state === 'saving'}
-                placeholder="optional"
+                placeholder="e.g. Yellow — optional"
                 className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               />
+              <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+                The specific color of the stock actually on hand — shown first on the public site, ahead of the catalog's general color list, but only while this string is in stock.
+              </span>
             </label>
           </div>
 

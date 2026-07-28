@@ -3,7 +3,6 @@ import type { StringItem } from '../data/strings'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { formatGauge } from '../logic/formatGauge'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
-import { allStringColors } from '../logic/stringColor'
 import { needsClamp } from '../logic/textClamp'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
@@ -12,7 +11,7 @@ import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
-import StringColorSwatch from './StringColorSwatch'
+import ColorSwatchPreview from './ColorSwatchPreview'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
   repulsion: 'Quick Repulsion',
@@ -38,33 +37,23 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
   const orderable = item.stock !== 'unavailable'
   const specialistProfile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const gauge = formatGauge(item)
-  const swatches = allStringColors(item.colors)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const descriptionClamped = needsClamp(item.notes)
 
   return (
     <div
-      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 bg-white/90 dark:bg-white/5 transition-shadow ${
+      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 bg-white/90 dark:bg-white/5 transition-[box-shadow,transform] duration-200 ${
         compareSelected
           ? 'border-shuttle-500 ring-2 ring-shuttle-500/30'
           : orderable
-            ? 'border-court-900/10 dark:border-white/10 hover:shadow-lg'
+            ? 'border-court-900/10 dark:border-white/10 hover:shadow-lg hover:-translate-y-0.5'
             : 'border-court-900/5 dark:border-white/5 opacity-70'
       }`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
-          <div className="flex items-center gap-2">
-            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
-            {swatches.length > 0 && (
-              <span className="flex items-center gap-1">
-                {swatches.map((swatch) => (
-                  <StringColorSwatch key={swatch.hex} swatch={swatch} size="sm" />
-                ))}
-              </span>
-            )}
-          </div>
+          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
             {gauge != null && <> · {gauge}</>}
@@ -72,6 +61,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <StockBadge stock={item.stock} />
+          <ColorSwatchPreview item={item} size="sm" />
           {item.popularityRank === 1 ? (
             <span
               className="inline-flex items-center gap-1 rounded-full bg-shuttle-500 text-court-900 px-2.5 py-1 text-xs font-semibold"

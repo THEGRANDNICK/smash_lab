@@ -7,7 +7,6 @@ import { buildRequestMailto } from '../logic/contactMessage'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { formatGauge } from '../logic/formatGauge'
 import { buildStructuredExplanation, buildAlternativeReasons } from '../logic/recommendationExplanation'
-import { primaryStringColor } from '../logic/stringColor'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { RetailerListing } from '../services/retailerPriceService'
@@ -16,7 +15,7 @@ import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
-import StringColorSwatch from './StringColorSwatch'
+import ColorSwatchPreview from './ColorSwatchPreview'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -66,8 +65,6 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
     )
   }
 
-  const bestSwatch = primaryStringColor(rec.best.string.colors)
-
   return (
     <div className="max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
@@ -96,13 +93,10 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             </div>
 
             <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
-            <div className="mt-1 flex items-center gap-3">
-              {bestSwatch && <StringColorSwatch swatch={bestSwatch} size="lg" />}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
-                {rec.best.string.name}
-                {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
-              </h1>
-            </div>
+            <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+              {rec.best.string.name}
+              {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
+            </h1>
             {bestExplanation.playerLevelFit && (
               <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
                 ⭐ {bestExplanation.playerLevelFit}
@@ -161,7 +155,10 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
                 {bestExplanation.headlineSecondary && <span className="text-ink-700/50 dark:text-shuttle-100/50 font-normal"> · {bestExplanation.headlineSecondary}</span>}
               </h2>
             </div>
-            <StockBadge stock={rec.best.string.stock} />
+            <div className="flex flex-col items-end gap-1.5">
+              <StockBadge stock={rec.best.string.stock} />
+              <ColorSwatchPreview item={rec.best.string} size="md" />
+            </div>
           </div>
 
           {bestExplanation.badges.length > 0 && (
@@ -308,20 +305,23 @@ function AlternativeCard({
   const profile = specialistProfiles ? specialistProfiles[scored.string.id] : getSpecialistProfile(scored.string.id)
   const baselineProfile = specialistProfiles ? specialistProfiles[baseline.string.id] : getSpecialistProfile(baseline.string.id)
   const reasons = useMemo(() => buildAlternativeReasons(scored, baseline, profile, baselineProfile), [scored, baseline, profile, baselineProfile])
-  const swatch = primaryStringColor(scored.string.colors)
   const accent = VARIANT_ACCENT[variant]
 
   return (
     <div
       className={`mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 ${accent.border} p-6 ${compact ? 'bg-white/40 dark:bg-white/5' : 'bg-white/60 dark:bg-white/5'}`}
     >
-      <p className={`text-sm font-semibold ${accent.title}`}>{title}</p>
-      <div className="flex items-baseline gap-2 mt-1.5">
-        {swatch && <StringColorSwatch swatch={swatch} size="sm" />}
-        <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
-          {scored.string.brand} {scored.string.name}
-        </h4>
-        <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className={`text-sm font-semibold ${accent.title}`}>{title}</p>
+          <div className="flex items-baseline gap-2 mt-1.5">
+            <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
+              {scored.string.brand} {scored.string.name}
+            </h4>
+            <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
+          </div>
+        </div>
+        <ColorSwatchPreview item={scored.string} size="sm" />
       </div>
       {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm max-w-2xl">{explanation}</p>}
       {reasons.length > 0 && (

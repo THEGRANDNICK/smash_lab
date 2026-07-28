@@ -50,6 +50,17 @@ export interface StringItem {
   /** Cost of the string itself in EUR. Kept separate from the service fee. */
   stringCost: number | null // null = price not set yet
   colors?: string[]
+  /**
+   * The specific physical color of the stock currently on hand — set only
+   * by mergeInventoryIntoCatalog() from the live `inventory.color` row
+   * (see services/inventoryService.ts), never present on the static
+   * fallback catalog. Display-only, like `stock`/`setsAvailable` above:
+   * never a recommendation input. Takes priority over `colors` for
+   * display purposes when both are present, since it names the one
+   * color actually in stock rather than the full range of options the
+   * string ships in.
+   */
+  inventoryColor?: string
   /** True for a dual-string (main+cross) construction, e.g. Yonex AeroBite. Display/admin metadata only — the recommendation engine scores the hybrid as a whole via the ratings above, exactly like any other string; it never special-cases isHybrid. */
   isHybrid?: boolean
   /** Only meaningful when isHybrid is true. */

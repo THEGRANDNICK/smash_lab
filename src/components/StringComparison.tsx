@@ -4,12 +4,11 @@ import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
-import { primaryStringColor } from '../logic/stringColor'
 import { readStoredComparisonView, writeStoredComparisonView, type ComparisonView } from '../logic/comparisonViewPreference'
 import StringCard, { type PerformanceView } from './StringCard'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
-import StringColorSwatch from './StringColorSwatch'
+import ColorSwatchPreview from './ColorSwatchPreview'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -152,25 +151,11 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
       </div>
 
       {compareItems.length > 0 && (
-        <div className="mb-8 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
-            <div>
-              <h3 className="font-display text-lg font-bold text-court-800 dark:text-shuttle-400">
-                Comparing {compareItems.length} string{compareItems.length > 1 ? 's' : ''}
-              </h3>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
-                {compareItems.map((item, i) => {
-                  const swatch = primaryStringColor(item.colors)
-                  return (
-                    <span key={item.id} className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-900 dark:text-shuttle-50">
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color" />
-                      {swatch && <StringColorSwatch swatch={swatch} size="sm" />}
-                      {item.name}
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
+        <div className="mb-8 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h3 className="font-display text-lg font-bold text-court-800 dark:text-shuttle-400">
+              Comparing {compareItems.length} string{compareItems.length > 1 ? 's' : ''}
+            </h3>
             <button
               type="button"
               onClick={() => setCompareIds([])}
@@ -179,6 +164,32 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               Clear comparison
             </button>
           </div>
+
+          <div className="flex flex-wrap gap-2 mb-1.5">
+            {compareItems.map((item, i) => (
+              <span
+                key={item.id}
+                className="inline-flex items-center gap-2 rounded-full bg-white/80 dark:bg-white/5 border border-court-900/10 dark:border-white/15 pl-1.5 pr-1 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50"
+              >
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color — identifies this string in the radar/table" />
+                <span className="truncate max-w-[10rem]">{item.name}</span>
+                <ColorSwatchPreview item={item} size="sm" maxVisible={2} />
+                <button
+                  type="button"
+                  onClick={() => toggleCompare(item.id)}
+                  aria-label={`Remove ${item.name} from comparison`}
+                  className="focus-ring shrink-0 rounded-full w-5 h-5 flex items-center justify-center text-ink-700/50 dark:text-shuttle-100/50 hover:bg-court-900/10 dark:hover:bg-white/15 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
+                >
+                  <span aria-hidden="true">✕</span>
+                </button>
+              </span>
+            ))}
+          </div>
+          <p className="text-[11px] text-ink-700/40 dark:text-shuttle-100/40 mb-5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-court-700 dark:bg-shuttle-400 align-middle mr-1" aria-hidden="true" /> chart color ·{' '}
+            <span aria-hidden="true">●</span> physical string color
+          </p>
+
           {compareItems.length === 1 ? (
             <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Pick one more string (up to {MAX_COMPARE}) to see them side by side.</p>
           ) : (
@@ -204,10 +215,10 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               </div>
 
               {compareView === 'radar' ? (
-                <div className="flex justify-center">
+                <div className="flex justify-center -mx-4 sm:-mx-5">
                   <RadarChart
-                    size={320}
-                    maxWidthClassName="max-w-[380px] sm:max-w-[460px]"
+                    size={360}
+                    maxWidthClassName="max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]"
                     series={compareItems.map((item, i) => ({
                       id: item.id,
                       label: item.name,
