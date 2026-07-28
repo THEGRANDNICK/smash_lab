@@ -4,7 +4,7 @@ import { PERFORMANCE_AXES, PERFORMANCE_MAX, getPerformanceValues } from './perfo
 export default function StatBars({ item, compact = false }: { item: StringItem; compact?: boolean }) {
   const values = getPerformanceValues(item)
   return (
-    <div className="space-y-2">
+    <div className={compact ? 'space-y-2' : 'space-y-3'}>
       {PERFORMANCE_AXES.map((axis) => {
         const value = values[axis.key]
         return (

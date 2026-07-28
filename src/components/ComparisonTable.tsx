@@ -2,7 +2,9 @@ import type { StringItem } from '../data/strings'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { buildComparisonRows } from '../logic/comparisonMetrics'
+import { primaryStringColor } from '../logic/stringColor'
 import { RADAR_COMPARE_COLORS } from './performanceAxes'
+import StringColorSwatch from './StringColorSwatch'
 
 interface ComparisonTableProps {
   items: StringItem[]
@@ -42,14 +44,18 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
             <th scope="col" className="text-left font-semibold text-ink-700/70 dark:text-shuttle-100/70 px-3 py-2 whitespace-nowrap">
               Metric
             </th>
-            {items.map((item, i) => (
-              <th key={item.id} scope="col" className="text-left font-semibold text-ink-900 dark:text-shuttle-50 px-3 py-2 min-w-[8rem]">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" />
-                  <span className="truncate">{item.name}</span>
-                </span>
-              </th>
-            ))}
+            {items.map((item, i) => {
+              const swatch = primaryStringColor(item.colors)
+              return (
+                <th key={item.id} scope="col" className="text-left font-semibold text-ink-900 dark:text-shuttle-50 px-3 py-2 min-w-[8rem]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color" />
+                    {swatch && <StringColorSwatch swatch={swatch} size="sm" />}
+                    <span className="truncate">{item.name}</span>
+                  </span>
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>

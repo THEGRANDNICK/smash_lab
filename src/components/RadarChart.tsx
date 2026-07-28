@@ -53,9 +53,11 @@ interface RadarChartProps {
   size?: number
   /** Show exact numeric values at each vertex — only sensible with a single series. */
   showValues?: boolean
+  /** Tailwind max-width classes capping the rendered (CSS) size — the SVG always scales via `w-full` beneath this, so it never overflows its container regardless of `size`. Defaults to the original compact cap used everywhere before Phase 8 polish. */
+  maxWidthClassName?: string
 }
 
-export default function RadarChart({ series, size = 220, showValues = false }: RadarChartProps) {
+export default function RadarChart({ series, size = 220, showValues = false, maxWidthClassName = 'max-w-[260px]' }: RadarChartProps) {
   const padding = size * 0.24
   const center = size / 2
   const radius = size / 2 - padding
@@ -64,8 +66,14 @@ export default function RadarChart({ series, size = 220, showValues = false }: R
   const ariaLabel = series.length === 1 ? describeSeries(series[0]) : `Radar comparison of ${series.length} strings: ${series.map(describeSeries).join('. ')}`
 
   return (
-    <div>
-      <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-auto max-w-[260px] mx-auto" role="img" aria-label={ariaLabel}>
+    <div className="w-full">
+      {/* An <svg> with no width/height attribute falls back to its UA-default
+          intrinsic size (300x150) for sizing purposes — harmless in a normal
+          block-flow parent (which stretches to fill), but a flex/grid parent
+          sizes this wrapper by that intrinsic default instead of the
+          w-full/max-w classes below unless the wrapper itself is forced to
+          fill its container. `w-full` here makes this correct in both. */}
+      <svg viewBox={`0 0 ${size} ${size}`} className={`w-full h-auto mx-auto ${maxWidthClassName}`} role="img" aria-label={ariaLabel}>
         <title>{ariaLabel}</title>
 
         {/* Grid rings */}
