@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Nav from './components/Nav'
+import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import StringComparison from './components/StringComparison'
@@ -66,6 +67,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <OfflineBanner />
       <Nav onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onHome={() => goTo('home')} />
 
       <main className="flex-1">

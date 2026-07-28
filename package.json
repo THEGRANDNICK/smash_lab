@@ -16,7 +16,8 @@
     "test:catalog": "tsx scripts/testCatalog.ts",
     "test:catalog-admin": "tsx scripts/testCatalogAdmin.ts",
     "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts",
-    "test:retailers": "tsx scripts/testRetailers.ts"
+    "test:retailers": "tsx scripts/testRetailers.ts",
+    "test:ui": "tsx scripts/testUiPresentation.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

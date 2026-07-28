@@ -6,6 +6,7 @@ import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StringCard, { type PerformanceView } from './StringCard'
 import RadarChart from './RadarChart'
+import ComparisonTable from './ComparisonTable'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -164,18 +165,28 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             </button>
           </div>
           {compareItems.length === 1 ? (
-            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Pick one more string (up to {MAX_COMPARE}) to see them overlaid.</p>
+            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Pick one more string (up to {MAX_COMPARE}) to see them side by side.</p>
           ) : (
-            <RadarChart
-              size={280}
-              series={compareItems.map((item, i) => ({
-                id: item.id,
-                label: item.name,
-                values: getPerformanceValues(item),
-                strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
-                fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
-              }))}
-            />
+            <div className="space-y-6">
+              <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
+              <details className="text-sm">
+                <summary className="cursor-pointer select-none font-semibold text-shuttle-600 dark:text-shuttle-400 focus-ring rounded">
+                  Show radar overlay
+                </summary>
+                <div className="mt-4">
+                  <RadarChart
+                    size={280}
+                    series={compareItems.map((item, i) => ({
+                      id: item.id,
+                      label: item.name,
+                      values: getPerformanceValues(item),
+                      strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
+                      fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
+                    }))}
+                  />
+                </div>
+              </details>
+            </div>
           )}
         </div>
       )}
