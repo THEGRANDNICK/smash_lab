@@ -11,6 +11,8 @@ import { getSession } from '../lib/auth'
 import { getLastFetchStatus, fetchInventoryFromSupabase, findMissingInventoryIds, getLocalFallbackInventory } from '../services/inventoryService'
 import { getLastCatalogFetchStatus, fetchCatalogFromSupabase, type CatalogFetchStatus } from '../services/catalogService'
 import { fetchSpecialistProfilesFromSupabase, type SpecialistFetchStatus } from '../services/specialistProfileService'
+import { fetchRetailerPricesFromSupabase, summarizeRetailerDiagnostics, type RetailerFetchStatus, type RetailerDiagnostics } from '../services/retailerPriceService'
+import { fetchRetailersFromSupabase, findDuplicateRetailerNameCandidates, type RetailerEntityFetchStatus } from '../services/retailerService'
 
 type ConnectionStatus = 'checking' | 'connected' | 'unreachable' | 'not-configured'
 
@@ -26,6 +28,13 @@ export default function SupabaseDebugPage() {
   const [hybridCount, setHybridCount] = useState<number | null>(null)
   const [decimalRatingCount, setDecimalRatingCount] = useState<number | null>(null)
   const [specialistFetch, setSpecialistFetch] = useState<SpecialistFetchStatus | null>(null)
+  const [retailerFetch, setRetailerFetch] = useState<RetailerFetchStatus | null>(null)
+  const [retailerDiagnostics, setRetailerDiagnostics] = useState<RetailerDiagnostics | null>(null)
+  const [retailerEntityFetch, setRetailerEntityFetch] = useState<RetailerEntityFetchStatus | null>(null)
+  const [activeRetailerCount, setActiveRetailerCount] = useState<number | null>(null)
+  const [inactiveRetailerCount, setInactiveRetailerCount] = useState<number | null>(null)
+  const [retailersWithoutListings, setRetailersWithoutListings] = useState<string[]>([])
+  const [duplicateRetailerNames, setDuplicateRetailerNames] = useState<string[]>([])
   const [mergedPoolCount, setMergedPoolCount] = useState<number | null>(null)
   // Forces a re-read of getLastFetchStatus()/getLastCatalogFetchStatus() after the effect's fetches resolve.
   const [, setLastFetchTick] = useState(0)
@@ -70,12 +79,14 @@ export default function SupabaseDebugPage() {
 
       // Also exercise the exact same fetch + merge path the live site uses
       // (services/catalogService.ts + services/inventoryService.ts +
-      // services/specialistProfileService.ts), so this page reports reality
-      // rather than a separate, possibly-diverging check.
-      const [catalogResult, inventory, specialistResult] = await Promise.all([
+      // services/specialistProfileService.ts + services/retailerPriceService.ts),
+      // so this page reports reality rather than a separate, possibly-diverging check.
+      const [catalogResult, inventory, specialistResult, retailerResult, retailerEntityResult] = await Promise.all([
         fetchCatalogFromSupabase(),
         fetchInventoryFromSupabase(),
         fetchSpecialistProfilesFromSupabase(),
+        fetchRetailerPricesFromSupabase(),
+        fetchRetailersFromSupabase(),
       ])
       if (cancelled) return
 
@@ -89,6 +100,28 @@ export default function SupabaseDebugPage() {
       setHybridCount(catalogResult.items.filter((i) => i.isHybrid).length)
       const ratingFields = catalogResult.items.flatMap((i) => [i.repulsion, i.durability, i.control, i.hittingSound, i.shockAbsorption ?? null])
       setDecimalRatingCount(ratingFields.filter((v) => v != null && !Number.isInteger(v)).length)
+      setRetailerFetch(retailerResult.status)
+      setRetailerDiagnostics(summarizeRetailerDiagnostics(retailerResult.listingsByStringId, catalogResult.items.map((i) => i.id)))
+
+      setRetailerEntityFetch(retailerEntityResult.status)
+      const retailers = Object.values(retailerEntityResult.retailersById)
+      setActiveRetailerCount(retailers.filter((r) => r.active).length)
+      setInactiveRetailerCount(retailers.filter((r) => !r.active).length)
+      setDuplicateRetailerNames(findDuplicateRetailerNameCandidates(retailerEntityResult.retailersById))
+
+      // Every listing's retailer_id, regardless of validity or the
+      // retailer's active status — deliberately a raw query rather than
+      // retailerPriceService's public fetch, which filters both out
+      // (needed here so "retailers with zero listings" isn't skewed by
+      // that filtering).
+      if (retailerEntityResult.status.source === 'live') {
+        const { data: allListingRetailerIds } = await getSupabaseClient().from('retailer_prices').select('retailer_id')
+        if (!cancelled && allListingRetailerIds) {
+          const usedRetailerIds = new Set(allListingRetailerIds.map((r) => r.retailer_id))
+          setRetailersWithoutListings(retailers.filter((r) => !usedRetailerIds.has(r.id)).map((r) => r.name))
+        }
+      }
+
       setLastFetchTick((t) => t + 1)
     }
 
@@ -153,9 +186,77 @@ export default function SupabaseDebugPage() {
           <Row label="Strings with no specialist profile" value={missingProfileCount == null ? '—' : `${missingProfileCount} (expected — profiles are sparse by design)`} />
           <Row label="Specialist profiles referencing missing strings (orphaned)" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
         </dl>
+
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailers</p>
+        <dl className="space-y-4 text-sm">
+          <Row
+            label="Retailer entity source"
+            value={retailerEntityFetch ? (retailerEntityFetch.source === 'live' ? '🟢 Live (public.retailers)' : '🔴 Unavailable') : 'Not fetched yet'}
+          />
+          {retailerEntityFetch && retailerEntityFetch.rejectedReasons.length > 0 && <Row label="Invalid retailer entity rows" value={retailerEntityFetch.rejectedReasons.join('; ')} />}
+          <Row
+            label="Retailer count"
+            value={retailerEntityFetch ? `${retailerEntityFetch.acceptedCount} valid, ${retailerEntityFetch.rejectedCount} invalid` : '—'}
+          />
+          <Row label="Active retailers" value={activeRetailerCount == null ? '—' : String(activeRetailerCount)} />
+          <Row label="Inactive retailers" value={inactiveRetailerCount == null ? '—' : String(inactiveRetailerCount)} />
+          <Row label="Retailers without any listing" value={retailersWithoutListings.length === 0 ? 'None' : retailersWithoutListings.join(', ')} />
+          <Row label="Duplicate retailer names" value={duplicateRetailerNames.length === 0 ? 'None' : duplicateRetailerNames.join('; ')} />
+          <Row
+            label="Invalid retailer website/logo URLs"
+            value={
+              retailerEntityFetch
+                ? retailerEntityFetch.rejectedReasons.filter((r) => r.includes('website_url') || r.includes('logo_url')).join('; ') || 'None'
+                : '—'
+            }
+          />
+        </dl>
+
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailer listings &amp; purchase options</p>
+        <dl className="space-y-4 text-sm">
+          <Row label="Retailer source" value={retailerFetch ? (retailerFetch.source === 'live' ? '🟢 Live (public.retailer_prices)' : '🔴 Unavailable — no purchase options shown') : 'Not fetched yet'} />
+          <Row
+            label="Last retailer fetch"
+            value={
+              retailerFetch
+                ? `${new Date(retailerFetch.at).toLocaleTimeString()} — ${retailerFetch.acceptedCount} accepted, ${retailerFetch.rejectedCount} rejected${retailerFetch.fallbackReason ? ` (failed: ${retailerFetch.fallbackReason})` : ''}`
+                : 'No fetch recorded yet'
+            }
+          />
+          {retailerFetch && retailerFetch.rejectedReasons.length > 0 && <Row label="Invalid retailer listing rows" value={retailerFetch.rejectedReasons.join('; ')} />}
+          <Row
+            label="Listings with missing retailer relations"
+            value={retailerFetch ? retailerFetch.rejectedReasons.filter((r) => r.includes('missing retailer relation')).join('; ') || 'None' : '—'}
+          />
+          <Row label="Listings hidden because retailer is inactive" value={retailerFetch ? String(retailerFetch.hiddenInactiveCount) : '—'} />
+          <Row label="Visible retailer listing count" value={retailerDiagnostics == null ? '—' : String(retailerDiagnostics.totalListings)} />
+          <Row label="Strings with retailer listings" value={retailerDiagnostics == null ? '—' : String(retailerDiagnostics.stringsWithListingsCount)} />
+          <Row
+            label="Strings without any retailer listing"
+            value={retailerDiagnostics == null ? '—' : `${retailerDiagnostics.stringsWithoutListingIds.length} (expected — listings are sparse by design)`}
+          />
+          <Row label="Out-of-stock listings" value={retailerDiagnostics == null ? '—' : String(retailerDiagnostics.outOfStockCount)} />
+          <Row label="Discontinued listings" value={retailerDiagnostics == null ? '—' : String(retailerDiagnostics.discontinuedCount)} />
+          <Row label="Listings missing last-checked date" value={retailerDiagnostics == null ? '—' : String(retailerDiagnostics.missingLastCheckedCount)} />
+          <Row
+            label="Preferred-listing conflicts"
+            value={retailerDiagnostics == null ? '—' : retailerDiagnostics.preferredConflictStringIds.length === 0 ? 'None' : retailerDiagnostics.preferredConflictStringIds.join(', ')}
+          />
+          <Row
+            label="Duplicate retailer candidates"
+            value={retailerDiagnostics == null ? '—' : retailerDiagnostics.duplicateCandidates.length === 0 ? 'None' : retailerDiagnostics.duplicateCandidates.join('; ')}
+          />
+          <Row label="Currency counts" value={retailerDiagnostics == null ? '—' : formatCounts(retailerDiagnostics.currencyCounts)} />
+          <Row label="Package-type counts" value={retailerDiagnostics == null ? '—' : formatCounts(retailerDiagnostics.packageTypeCounts)} />
+        </dl>
       </div>
     </div>
   )
+}
+
+function formatCounts(counts: Record<string, number>): string {
+  const entries = Object.entries(counts)
+  return entries.length === 0 ? 'None' : entries.map(([k, v]) => `${k}: ${v}`).join(', ')
 }
 
 function decimalValidationLabel(lastCatalogFetch: CatalogFetchStatus | null, decimalRatingCount: number | null): string {

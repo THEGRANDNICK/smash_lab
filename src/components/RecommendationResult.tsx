@@ -7,10 +7,12 @@ import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stri
 import { formatGauge } from '../logic/formatGauge'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
+import type { RetailerListing } from '../services/retailerPriceService'
 import StatBars from './StatBars'
 import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
 import SpecialistPanel from './SpecialistPanel'
+import PurchaseOptions from './PurchaseOptions'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -20,6 +22,8 @@ interface RecommendationResultProps {
   pool?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup (recommendStrings' own default) when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). Never affects the scoring math itself, only where the specialist-layer data comes from. */
   specialistProfiles?: Record<string, StringSpecialistProfile>
+  /** Purchase options, keyed by string id, from useRetailerPrices(). Display only — never passed to recommendStrings() and never affects scoring. */
+  retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
 const STRENGTH_EMOJI: Record<string, string> = {
@@ -30,11 +34,12 @@ const STRENGTH_EMOJI: Record<string, string> = {
   shockAbsorption: '🤲 Great Comfort',
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, pool, specialistProfiles }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onRetake, onCompare, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   const rec = recommendStrings(answers, pool, specialistProfiles)
   const tension = recommendTension(answers, rec.best.string)
   const bestSpecialist = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
   const bestGauge = formatGauge(rec.best.string)
+  const bestListings = retailerListingsByStringId?.[rec.best.string.id]
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -129,6 +134,12 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           {bestSpecialist && (
             <div className="mt-5">
               <SpecialistPanel profile={bestSpecialist} />
+            </div>
+          )}
+
+          {bestListings && (
+            <div className="mt-5">
+              <PurchaseOptions listings={bestListings} />
             </div>
           )}
         </div>

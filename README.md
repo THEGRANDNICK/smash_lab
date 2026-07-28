@@ -164,17 +164,26 @@ It's only ever used by local, one-off, server-side scripts (e.g. a future migrat
 - ✅ The recommendation engine itself was **not modified** beyond accepting its existing inputs (ratings, specialist profile) as parameters instead of hardcoded imports — see "Recommendation engine isolation" below.
 - ❌ Retailer-price administration, image uploads, and per-dimension confidence overrides in the editor are still not implemented — Phase 7+.
 
+**Phase 7** — retailer price administration & purchase options, with retailers as first-class, reusable entities (see "Retailer prices & purchase options" below for full detail):
+- ✅ Two normalized tables: `public.retailers` (name, logo, website, country, active — one row per real retailer) and `public.retailer_prices` (one row per listing, referencing `retailer_id` instead of storing a retailer name). `public.retailer_prices`'s original Phase 1 shape (three baked-in price columns: set/reel/sale, plus a free-text retailer name) is converted via an additive, data-preserving migration — including deduplicating retailer names case-insensitively into single `retailers` rows.
+- ✅ Retailer + listing data loads from Supabase (`src/services/retailerService.ts` for retailer entities, `src/services/retailerPriceService.ts` for listings, joined together); there is no local fallback dataset (none existed to fall back to) — a failed fetch simply shows no purchase options anywhere, the rest of the site is unaffected.
+- ✅ `#admin/retailers` (retailer entities: create, edit, deactivate/reactivate, delete-when-safe) and `#admin/retailer-listings` (listings: create, edit, delete, selecting an existing retailer rather than typing a name) — alongside `#admin/inventory`, `#admin/catalog`, and `#admin/specialists`.
+- ✅ Deactivating a retailer hides all of its listings from the public site (verified directly) while keeping them fully visible and editable in the admin — the retailer and its listings are never deleted by deactivation.
+- ✅ Purchase options now appear (collapsed by default) on catalog cards and the quiz's Best Match card: retailer logo (with a safe fallback if missing/broken), retailer name, price, package, availability, and a safe external buy link.
+- ✅ The recommendation engine itself has **no retailer parameter at all** — retailer data was never wired into it, so there was nothing to isolate beyond keeping it that way. See "Recommendation isolation proof" below.
+- ❌ Retailer-price administration is done; image uploads and per-dimension specialist confidence overrides are still not implemented — Phase 8+.
+
 Run `npm run verify:supabase` and `npm run verify:catalog` (after filling in `.env.local`) to confirm your project matches what these phases expect — see "Verifying your setup" below.
 
 **Important — GitHub Pages build step**: Vite inlines `VITE_`-prefixed env vars *at build time* and tree-shakes the entire Supabase client out of the bundle if they're unset, so the deployed site needs `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` available to the GitHub Actions build step, not just in your local `.env.local`. `.github/workflows/deploy.yml` reads them from repository **variables** (Settings → Secrets and variables → Actions → Variables tab, same place as the earlier Google Sheets discussion) — until you add those two variables, the deployed site simply keeps using `strings.ts`'s local values (safe, just not live), and the admin area shows a "not configured" state instead of a login form.
 
 ### 11. Admin area
 
-**URL**: `/#admin` (e.g. `https://<your-username>.github.io/smash_lab/#admin`, or `http://localhost:5173/#admin` in dev) — redirects into `#admin/inventory` by default. There's also `#admin/catalog` and `#admin/specialists`. All three work with GitHub Pages' `/smash_lab/` base path and survive a direct navigation or a page refresh, since routing is hash-based like the rest of the site. None is linked from the site's navigation — the URL itself is the only way in. **This is a convenience, not a security boundary**: nothing about the admin area's protection depends on the route being hard to find. The real protection is Supabase Auth (you must sign in) plus Row Level Security (your account must additionally be listed in `public.admin_users`, checked server-side via the `is_admin()` function — the browser never queries `admin_users` directly).
+**URL**: `/#admin` (e.g. `https://<your-username>.github.io/smash_lab/#admin`, or `http://localhost:5173/#admin` in dev) — redirects into `#admin/inventory` by default. There's also `#admin/catalog`, `#admin/specialists`, `#admin/retailers`, and `#admin/retailer-listings`. All five work with GitHub Pages' `/smash_lab/` base path and survive a direct navigation or a page refresh, since routing is hash-based like the rest of the site. None is linked from the site's navigation — the URL itself is the only way in. **This is a convenience, not a security boundary**: nothing about the admin area's protection depends on the route being hard to find. The real protection is Supabase Auth (you must sign in) plus Row Level Security (your account must additionally be listed in `public.admin_users`, checked server-side via the `is_admin()` function — the browser never queries `admin_users` directly).
 
 **Logging in**: enter the email/password of a Supabase Auth user (the one you created in step 6 above). There's no sign-up form and no password reset in this UI — both are intentionally absent for a single-admin site; manage the Auth user itself from the Supabase dashboard. A wrong password shows a plain "Incorrect email or password" message; a network/Supabase-unavailable failure shows its own distinct error and lets you retry. Signing in with an Auth account that exists but isn't in `admin_users` succeeds (you're a valid authenticated user) but immediately shows an "Access denied" screen with no inventory or catalog controls and a sign-out button — being a Supabase Auth user is necessary but not sufficient, you also need the `admin_users` row from step 8.
 
-**Navigation**: once signed in as an admin, a small tab bar switches between **Inventory**, **Catalog**, and **Specialists** (each its own real, refreshable `#admin/inventory` / `#admin/catalog` / `#admin/specialists` URL). A greyed-out **Dashboard** tab is a disabled placeholder for a future phase — it's not a link to anything yet.
+**Navigation**: once signed in as an admin, a small tab bar switches between **Inventory**, **Catalog**, **Specialists**, **Retailers**, and **Retailer Listings** (each its own real, refreshable `#admin/inventory` / `#admin/catalog` / `#admin/specialists` / `#admin/retailers` / `#admin/retailer-listings` URL). A greyed-out **Dashboard** tab is a disabled placeholder for a future phase — it's not a link to anything yet.
 
 **Inventory tab — what you can edit**: stock status (in stock / low stock / unavailable), quantity (a whole number ≥ 0, or left blank for "unknown"), package type (reel / set / mixed / unknown), an optional color, and optional notes — one row per string, sorted by brand then name. Brand, name, and the string's internal ID are shown for reference but aren't editable here — see the Catalog tab for that. Each row edits independently; saving validates the quantity client-side before writing, and only updates the on-screen row once Supabase confirms the write succeeded.
 
@@ -182,11 +191,15 @@ Run `npm run verify:supabase` and `npm run verify:catalog` (after filling in `.e
 
 **Specialists tab — what you can do** (Phase 6): every catalog string is listed with its brand, name, current specialist recommendation summary (confidence, source, reviewer), and an Edit button — strings with no profile yet show a "No profile" badge and an "Add profile" button instead. The editor covers every `public.specialist_profiles` field: source, confidence, feel, reviewer, personal tension range, strengths/weaknesses (one per line), tags (comma-separated), subjective notes, and all 17 scored dimensions (1–5) in a collapsed "advanced" section. "Remove" clears a string's profile entirely (reverting it to manufacturer-data-only scoring on the public site) without touching the catalog or inventory rows. Search and a has-profile/no-profile filter help navigate the full catalog. See "Decimal ratings, hybrid strings & specialist profiles" below for full CRUD/validation/fallback detail.
 
-**Why writes are actually safe**: every write (inventory or catalog) goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on `public.inventory` and `public.strings` is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write either table without a real `admin_users` row.
+**Retailers tab — what you can do** (Phase 7): every `public.retailers` row (a real retailer entity, not a listing) is shown with its logo, name, listing count, and country; search by name, filter by active/inactive. **Create** or **edit** a retailer (name, logo URL, website URL, country, active). **Deactivate**/**Reactivate** toggles whether it's selectable for new listings and whether its existing listings show on the public site — its data and listings are untouched either way. **Delete** only succeeds for a retailer with zero listings (checked before attempting the delete, with a friendly message pointing at deactivation otherwise) — a retailer with listings is never silently deleted along with them.
 
-### 12. What's next (Phase 7+)
+**Retailer Listings tab — what you can do** (Phase 7): every `public.retailer_prices` row (one retailer selling one string in one package) is shown with the retailer's logo/name, string, package, price, availability, preferred status, and last-checked date; search by string/retailer, filter by brand/retailer/retailer-active-status/availability/preferred status, and sort by string/retailer/price/last-checked. **Create**, **edit**, or **delete** a listing — a string can have any number of listings (a set, a reel, several package lengths, several retailers), and the retailer is always chosen from the Retailers tab's list, never typed as free text. An inactive retailer stays selectable only for a listing that was already assigned to it (so an existing listing's form never shows a blank/invalid retailer field) — it can't be newly assigned to another listing until reactivated. See "Retailer prices & purchase options" below for full CRUD/validation/security detail.
 
-Retailer-price administration, image uploads, and per-dimension confidence overrides in the specialist editor are not implemented yet and are left for later, separate phases.
+**Why writes are actually safe**: every write (inventory, catalog, specialist, retailer, or retailer listing) goes through the signed-in user's own Supabase session — there is no service-role key anywhere in the frontend, and there couldn't be one without exposing it to every visitor. Row Level Security on every data table is what actually decides whether a write is allowed: `anon` and merely-authenticated-but-non-admin users are rejected at the database level regardless of what the UI shows (verified directly in testing — see "Testing this locally" below), so even a modified/malicious client can't write any table without a real `admin_users` row.
+
+### 12. What's next (Phase 8+)
+
+Image uploads and per-dimension confidence overrides in the specialist editor are not implemented yet and are left for later, separate phases.
 
 ## Catalog loading (Phase 4)
 
@@ -220,13 +233,13 @@ Builds on "Catalog loading" above — read that first for how the public site ac
 
 **Edit**: same form, prefilled, with the ID field locked (IDs are immutable after creation — string_id is what inventory/specialist-profile foreign keys point at). Saves only touch `public.strings`; inventory is untouched.
 
-**Delete**: requires an explicit "Yes, delete it" confirmation that names the string and states plainly that it disappears from recommendations, the catalog, comparison, and the quiz. `public.inventory`, `public.specialist_profiles`, and `public.retailer_prices` all have `references public.strings(id) on delete cascade`, so a single DELETE atomically removes the matching inventory row too (a real Postgres transaction, not a client-side simulation) — verified directly in testing. **Caveat**: `src/data/stringSpecialistProfiles.ts`'s specialist knowledge is a separate local file, not the (currently unused) `specialist_profiles` table, so deleting a string does *not* remove its local specialist profile entry — it becomes orphaned, and `#debug-supabase` flags that mismatch afterward.
+**Delete**: requires an explicit "Yes, delete it" confirmation that names the string and states plainly that it disappears from recommendations, the catalog, comparison, and the quiz. `public.inventory`, `public.specialist_profiles`, and `public.retailer_prices` all have `references public.strings(id) on delete cascade`, so a single DELETE atomically removes the matching inventory row, specialist profile, and every retailer listing for that string too (a real Postgres transaction, not a client-side simulation) — verified directly in testing (including with more than one retailer listing on the same string). **Caveat**: `src/data/stringSpecialistProfiles.ts`'s specialist knowledge is a separate local *fallback* file (used only if the live fetch fails), so deleting a string does not remove any corresponding entry there — it becomes a harmless stale fallback entry for an id the live catalog no longer has, and `#debug-supabase` flags that mismatch afterward.
 
 **Validation**: required brand/name/category/ratings; ratings 0–11; gauge/cost/popularity-rank non-negative (popularity rank must also be a whole number); tension adjustment may be negative (it's a +/- nudge) but recommended min must not exceed max; image/product URLs must be `http(s)` — a `javascript:` or other unsafe scheme is rejected outright (verified against a test database with no such constraint of its own, confirming the app layer is the real defense here, not just the database's own CHECK constraints on ratings/enums). Every field is trimmed; blank optional fields become `null`, never an empty string.
 
 **Image handling**: still URL-only — no upload yet (planned for a later phase, see "What's next" above). The image URL field shows a live preview, and a broken/unreachable URL shows a clear placeholder instead of a broken-image icon.
 
-**Current limitations / Phase 6+ scope** (as of Phase 5; specialist-profile editing shipped in Phase 6 — see below): no image upload (URLs only); no bulk edit or CSV import; no retailer-price administration; the disabled "Dashboard" nav tab is a placeholder for a future phase, not a hint at what it'll contain.
+**Current limitations / Phase 6+ scope** (as of Phase 5; specialist-profile editing shipped in Phase 6, retailer-price administration shipped in Phase 7 — see below): no image upload (URLs only); no bulk edit or CSV import; the disabled "Dashboard" nav tab is a placeholder for a future phase, not a hint at what it'll contain.
 
 ### Verifying the catalog
 
@@ -255,6 +268,12 @@ npm run test:specialist-admin
 ```
 
 Same style, covering the Phase 6 specialist profile admin form and the public read path's row validation: required-field validation (source/confidence), personal tension range rules, all 17 dimensions' 1–5 range, text trimming/null-handling for reviewer/notes/strengths/weaknesses/tags, that a specialist row round-trips through the edit form back to an identical payload, and that `mapSpecialistProfileRow` (the same function the public site's fetch path uses) accepts everything the admin editor can produce and rejects malformed data. Also local/automated only — the actual Supabase upsert/delete calls were verified separately via local integration testing (see the Phase 6 report), not by this script.
+
+```bash
+npm run test:retailers
+```
+
+Covers Phase 7's normalized retailer feature end to end: retailer ENTITY row mapping/validation (name required, logo/website URL-scheme rejection, country-format rejection) and retailer LISTING row mapping/validation joined with a retailer (decimal price at 2 places, negative-price/URL-scheme/availability/package-type/package-length rejection, and rejection of a listing whose retailer_id has no matching retailer); admin form validation for both retailer entities (case-insensitive duplicate-name rejection) and listings (required fields, string/retailer-still-exists checks, the retailer-picker "inactive retailers aren't newly selectable, but an already-assigned inactive retailer is preserved when editing" rule, the duplicate-listing rule keyed on retailer_id, the non-blocking preferred-conflict warning); both row round-trips; preferred/availability/price ordering and its determinism; compatible-vs-incompatible price comparison (a set is never compared to a reel, two different reel lengths are never compared to each other); price-per-metre rounding; the diagnostics helpers the debug page uses (including case-insensitive duplicate-retailer-name detection); the "Supabase not configured" fallback path for both retailers and listings; and a recommendation-isolation regression section — including a compile-time check (`@ts-expect-error` on a call with a 4th argument, enforced by `npx tsc -b`) proving `recommendStrings` cannot even be called with retailer data, not just that nobody currently does. Also local/automated only — the actual Supabase create/update/delete calls, RLS, the FK-restrict-on-delete-with-listings behavior, and the live "deactivating a retailer hides its listings" behavior were verified separately via local Postgres+PostgREST integration testing (see the Phase 7 report), not by this script.
 
 ### Verifying your setup
 
@@ -296,7 +315,7 @@ Safe to re-run — never deletes rows from either table. Inventory only touches 
 
 ### `/debug/supabase` (development only)
 
-Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, inventory row count, and (since Phase 4) the catalog source (live/fallback), last catalog fetch's accepted/rejected row counts and reasons, merged pool size, and catalog ids missing an inventory row. Since Phase 6, it also shows: decimal-rating validation status (whether any accepted row's ratings use a decimal, and whether any row was rejected for exceeding one decimal place), the hybrid string count, the specialist profile source (live/fallback) and last fetch status, how many strings have no specialist profile (expected — profiles are sparse by design), and specialist profiles referencing a string id no longer in the catalog. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
+Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see connection status, current user, admin status, inventory row count, and (since Phase 4) the catalog source (live/fallback), last catalog fetch's accepted/rejected row counts and reasons, merged pool size, and catalog ids missing an inventory row. Since Phase 6, it also shows: decimal-rating validation status (whether any accepted row's ratings use a decimal, and whether any row was rejected for exceeding one decimal place), the hybrid string count, the specialist profile source (live/fallback) and last fetch status, how many strings have no specialist profile (expected — profiles are sparse by design), and specialist profiles referencing a string id no longer in the catalog. Since Phase 7, it also shows: the retailer source (live/unavailable) and last fetch status, invalid retailer rows, total listing count, strings with/without any listing, out-of-stock and discontinued counts, listings missing a last-checked date, preferred-listing conflicts, duplicate-retailer candidates, and currency/package-type counts. It only exists in dev builds (`import.meta.env.DEV`) and isn't linked from anywhere in the normal site.
 
 ### Testing the admin area locally
 
@@ -306,6 +325,8 @@ Visit `http://localhost:5173/#debug-supabase` while running `npm run dev` to see
 4. To confirm Row Level Security (not just the UI) is what's actually blocking that second user, you can run the same update/insert/delete it would attempt directly from the browser console while signed in as it — it should affect zero rows rather than erroring, which is RLS silently filtering the row out rather than the UI merely hiding a button.
 5. To see the catalog's create-then-rollback path, temporarily revoke `authenticated`'s `INSERT` on `public.inventory` in the SQL editor, create a string, and confirm both that a clear error appears and that the string itself doesn't linger in the catalog — then re-grant the permission.
 6. Switch to the Specialists tab (Phase 6) to add, edit, and remove a specialist profile for a string; refresh the public site's catalog/comparison/quiz pages afterward to confirm the change is reflected (specialist data is fetched on page load, not live-pushed).
+7. Switch to the Retailers tab (Phase 7) to add a retailer (name, optionally a logo/website URL and country). Switch to Retailer Listings, add a listing for a string using that retailer (pick a package type and, for a reel, a length); mark it preferred; refresh the public site and confirm the purchase option appears (collapsed under "🛒 Purchase options") on that string's catalog card and, if it's the quiz's Best Match, on the result page too. Edit its price/availability, then delete it and confirm it disappears from the public site on refresh without touching the string itself.
+8. Back on the Retailers tab, deactivate that same retailer (recreate a listing for it first if you deleted the one from step 7) and refresh the public site — the purchase option should disappear even though the listing row itself still exists (confirm this on the Retailer Listings tab, where it stays fully visible and editable, tagged "Retailer inactive"). Reactivate the retailer and refresh again to confirm the purchase option comes back. Then try deleting a retailer that still has a listing — it should be blocked with a message pointing you at deactivation instead.
 
 Never put a real password, UID, or project ref into a commit, issue, or this file — use throwaway test accounts for step 3.
 
@@ -351,7 +372,151 @@ All three are local/automated only (no network calls); the actual Supabase reads
 
 ### Phase 7+ scope
 
-Not implemented in Phase 6, left for later: retailer-price administration, image uploads, per-dimension confidence overrides in the specialist editor (the profile-level `confidence` is editable; the more granular `dimension_confidence` column exists in the schema but has no UI yet), bulk edit/CSV import, and the "Dashboard" admin tab.
+Not implemented in Phase 6, left for later: retailer-price administration (shipped in Phase 7 — see below), image uploads, per-dimension confidence overrides in the specialist editor (the profile-level `confidence` is editable; the more granular `dimension_confidence` column exists in the schema but has no UI yet), bulk edit/CSV import, and the "Dashboard" admin tab.
+
+## Retailer prices & purchase options (Phase 7)
+
+Builds on "Catalog loading", "Catalog administration", "Admin area", and "Decimal ratings, hybrid strings & specialist profiles" above. This phase turned `public.retailer_prices` — created in Phase 1 for schema stability but never actually used — into a real, **normalized** retailer model with a full admin editor, and surfaced it on the public site as secondary "purchase options" information. Retailers are reusable entities (name, logo, website, country, active) referenced by listings via `retailer_id`, not free text repeated on every row. The recommendation engine was never touched: it has no retailer parameter at all, so there was nothing to isolate beyond keeping it that way.
+
+### Architecture
+
+| Data | Source |
+| --- | --- |
+| Retailer entities (name, logo, website, country, active) | Supabase `public.retailers` — **no local fallback dataset** |
+| Retailer listings (retailer_id, price, currency, availability, package type/length, preferred flag, notes) | Supabase `public.retailer_prices` — **no local fallback dataset** (see "Fallback behavior" below) |
+| Recommendation/tension/scoring logic | Git/TypeScript (`src/logic/`, `src/config/`) — **never touched by retailer data** |
+
+Four services, each with one job:
+- `src/services/retailerService.ts` — the only place the public site queries `public.retailers` (retailer entities).
+- `src/services/retailerPriceService.ts` — the only place the public site queries `public.retailer_prices`; joins in each listing's retailer metadata (name, logo, active status) via `retailerService.ts`, and hides any listing whose retailer is inactive (see "Fallback behavior" and "Inactive retailer behavior" below).
+- `src/services/retailerAdminService.ts` — the only place `#admin/retailers` writes retailer entities (create, edit, deactivate/reactivate, delete-when-safe).
+- `src/services/retailerListingAdminService.ts` — the only place `#admin/retailer-listings` writes listings (create, edit, delete) — always selecting an existing retailer by id, never creating one implicitly.
+
+`src/hooks/useRetailerPrices.ts` exposes the joined result as `Record<string, RetailerListing[]>`, threaded through `App.tsx` into `StringComparison`/`StringFinder` → `StringCard`/`RecommendationResult` → `PurchaseOptions`, the same prop-threading pattern Phase 6 used for specialist profiles. None of these four services is ever imported by `src/logic/recommendationEngine.ts`, and `recommendStrings()`'s signature has no retailer parameter to inject one through even if a future change tried.
+
+### Retailers table
+
+`public.retailers` (one row = one real retailer entity, reusable across every string it sells):
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `bigint identity` | Primary key. |
+| `name` | `text not null` | Trimmed; required; unique case-insensitively (`unique index` on `lower(name)`). |
+| `logo_url` | `text` | Nullable; `http(s)` only. |
+| `website_url` | `text` | Nullable; `http(s)` only — the retailer's general site, distinct from a listing's specific `product_url`. |
+| `country` | `text` | Nullable; ISO 3166-1 alpha-2, uppercase (e.g. `"DE"`) — a `CHECK (country ~ '^[A-Z]{2}$')` enforces the shape without hardcoding a country list. |
+| `active` | `boolean not null default true` | See "Inactive retailer behavior" below. |
+| `created_at` / `updated_at` | `timestamptz` | `updated_at` auto-stamped by a new trigger, reusing the existing `set_updated_at()` function from Phase 1. |
+
+### Retailer listings table
+
+`public.retailer_prices` (one row = one retailer selling one string in one package):
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `bigint identity` | Primary key. |
+| `string_id` | `text` | FK → `strings(id) on delete cascade`. |
+| `retailer_id` | `bigint` | FK → `retailers(id)` — default (`NO ACTION`/restrict) behavior, **not** cascade: deleting a retailer with listings fails at the database level (see "Retailer CRUD behavior" below). |
+| `product_url` | `text` | Nullable; `http(s)` only — this specific product page, not the retailer's general site. |
+| `price` | `numeric` | Nullable (a listing may be tracked before a price is confirmed); 0 or greater; at most 2 decimal places. |
+| `currency` | `text not null default 'EUR'` | `EUR` only for now — see "Price rules" below. |
+| `availability_status` | `text not null default 'unknown'` | One of the six states below. |
+| `package_type` | `text not null default 'other'` | One of: `set`, `reel`, `hybrid`, `other`. |
+| `package_length_m` | `numeric` | Nullable; must be `> 0` when set. |
+| `is_preferred` | `boolean not null default false` | Display ordering only — see "Preferred retailer ordering" below. |
+| `notes` | `text` | Nullable free text. |
+| `last_checked_at` | `timestamptz` | Nullable — when this listing's price/availability was last confirmed. |
+| `created_at` / `updated_at` | `timestamptz` | `updated_at` auto-stamped by the existing Phase 1 trigger. |
+
+**Existing schema found before this phase** (Part 1's required review, done before writing the migration): `retailer_prices` already existed from Phase 1, but as a flat table with `retailer_name` (free text) plus `set_price_eur`, `reel_price_eur`, `sale_price_eur` (three separate price columns per row) and a boolean `retailer_in_stock`, with `unique(string_id, retailer_name)` — no `retailers` table existed at all. That shape couldn't represent an arbitrary listing (one row held up to three DIFFERENT prices), conflated a price *tier* (`sale_price_eur`, a discount) with a package *type*, and repeated retailer-level metadata (which this phase didn't even have fields for yet — logo, website, country) on every single listing row with no way to manage a retailer as its own entity. See the migration file's own header comment for the full before/after column list.
+
+### Legacy migration behavior
+
+One migration file, revised in place before ever being applied anywhere (Phase 7 had not been installed or pushed when the normalized model was requested, so there was no reason to layer a second migration under it). Two stages, both idempotent:
+- **Stage A** (unchanged from the first draft): the three legacy price columns collapse into the single-price-per-row shape described above — `set_price_eur` claims the original row as a `'set'` listing; if `reel_price_eur` is *also* present, a second row is inserted for it; `sale_price_eur` (a price tier, not a package type) is preserved as its own `'other'`-typed row with an explanatory note rather than mislabeled. `retailer_in_stock` converts to `availability_status`.
+- **Stage B** (new): every distinct `retailer_name` (case-insensitively) becomes exactly one `retailers` row, reused across every listing that named it; every listing is then linked via `retailer_id`, and the now-redundant `retailer_name` column is dropped (`retailer_product_url` is renamed to `product_url`, not dropped — its data survives).
+- **Collision resolution**: normalizing case-insensitively can expose listings the OLD case-*sensitive* uniqueness allowed to coexist as "different retailers" (e.g. `"RetailerA"` and `"retailera"`, each with their own `'set'` listing for the same string) — once merged into one real retailer, those become genuine duplicates under the new key. Rather than silently drop one, the most recently updated listing in each colliding group is kept and every other listing's price/availability/last-checked data is appended to its `notes` as an auditable merge record before being deleted. Caught and fixed via local integration testing (seeded exactly this scenario — two case-variant retailer names, one with all three legacy prices set — before the migration shipped).
+- Verified directly: applying the migration against seeded legacy data (including the collision case above) preserves every price with a clear audit trail; re-applying the same file a second time is a complete no-op (row counts unchanged).
+
+### Availability states
+
+`in_stock`, `low_stock`, `out_of_stock`, `preorder`, `discontinued`, `unknown` — one shared source of truth (`RETAILER_AVAILABILITY_STATUSES` and `AVAILABILITY_LABELS` in `retailerPriceService.ts`) used by the database `CHECK` constraint, `mapRetailerPriceRow` (public read), `validateRetailerListingInput` (admin write), the admin form's `<select>`, and `PurchaseOptions`' public display — no duplicated enum list anywhere.
+
+### Package types
+
+`set`, `reel`, `hybrid`, `other` — describes what the *retailer* is selling, not the string's own technical construction (kept deliberately separate from `strings.is_hybrid`/`main_string_meta`/`cross_string_meta`, which describe the string itself regardless of who sells it or how). `package_length_m` (metres) is optional and independent of package type — a reel almost always has one, a set usually doesn't, but nothing enforces that pairing, since real retailer listings are messier than that in practice.
+
+### Price rules
+
+Manufacturer-published prices are decimals with cents, so `price` is unbounded `numeric` (**not** `numeric(10,2)`) with a `CHECK (price is null or (price >= 0 and price = round(price, 2)))`. This mirrors a lesson learned the hard way in Phase 6: a declared-scale column like `numeric(10,2)` **rounds** an over-precise value (e.g. `9.999` → `10.00`) at assignment time, *before* any `CHECK` on that column ever runs — making a `price = round(price, 2)` check on it a no-op, since by the time the check runs the value has already been silently rounded to fit. Local integration testing for this phase re-verified that risk directly against the retailer table before shipping the migration. `EUR` is the only supported currency for now (`currency` is `text` with `CHECK (currency in ('EUR'))`, no conversion is ever performed) — adding another currency later is a one-line additive migration (widen the `CHECK` list) plus widening the matching `RetailerCurrency` type and `RETAILER_CURRENCIES` constant; the column itself never needs to change shape.
+
+### Preferred retailer ordering
+
+At most one listing per string is expected to be marked preferred (the admin form warns, non-blockingly, if you mark a second one — see "Duplicate rules" below for why it's a warning and not a hard block). `orderRetailerListings()` — the single ordering function used by both `PurchaseOptions` (public) and the fetch path that populates it — sorts: preferred listing(s) first, then by availability (`in_stock` → `low_stock` → `preorder` → `unknown` → `out_of_stock` → `discontinued`), then by price ascending (unpriced listings last), then by retailer name for a deterministic tie-break. Preferred status is a display label only ("preferred" text, no other visual claim) — it never implies "cheapest" unless it genuinely is, and it can never affect recommendation scoring, because nothing about it is ever passed to `recommendationEngine.ts`. More than one preferred listing for the same string is flagged as a **preferred-listing conflict** on the debug page (`findPreferredConflicts()`) — a data-quality signal, never silently resolved by picking one.
+
+### Price & package comparison
+
+Two listings are only ever compared directly if `areListingsComparable()` says they represent the same real-world product unit: same `package_type`, same `package_length_m` (both `null` counts as "equal" — two "unknown length" listings of the same type), and the same `currency`. A 10m set and a 200m reel — or a set and a reel of any length — are never compared, even though both might be EUR. `groupComparableListings()` buckets a string's listings into these comparable groups; `lowestPriceInGroup()` finds the minimum *within* one bucket, never across buckets. Where a package length is known, `pricePerMetre()` computes price ÷ length for **display only**, rounded to 2 decimal places — it's never used to compare across strings, and never blends a hybrid string's combined-package price-per-metre with a normal string's as if they were equivalent "value" metrics (a hybrid package still contains two different constructions per metre).
+
+### Duplicate rules
+
+**Retailers**: unique case-insensitively on `name` (a database `unique index` on `lower(name)`, plus the same check client-side in `validateRetailerInput` before ever hitting the database) — `"Amazon"` and `"amazon"` are the same retailer.
+
+**Listings**: the natural-key rule `(string_id, retailer_id, package_type, package_length_m)`, enforced by a `unique index` (using `coalesce(package_length_m, -1)` so two "unknown length" listings from the same retailer/type still collide, since plain `unique` treats every `NULL` as distinct from every other `NULL`) — deliberately **not** URL-based: retailers sometimes reuse one category-page URL across several package variants, and a URL can legitimately change over time without the listing's real identity changing. `validateRetailerListingInput` checks this same rule client-side before ever hitting the database, so a mistake surfaces as a friendly inline error instead of a raw constraint-violation message. This key intentionally does **not** block the same retailer selling a set *and* a reel, or two different reel lengths, from the same retailer for the same string — those are legitimate, distinct listings.
+
+### Retailer CRUD behavior
+
+Create/edit a retailer (name, logo URL, website URL, country, active) via `#admin/retailers`. **Deactivate**/**Reactivate** are just the `active` field toggled through the same update path. **Delete** only succeeds for a retailer with zero listings — `retailerAdminService.ts`'s `deleteRetailer()` checks the listing count first and returns a friendly, specific error otherwise ("delete or reassign its listings first, or deactivate it instead"); the database's own FK (`retailer_prices.retailer_id references retailers(id)`, default restrict behavior) is the real backstop even if that check were ever bypassed — verified directly (a raw authenticated `DELETE` on a retailer with an existing listing fails with a foreign-key-violation error, not a silent cascade).
+
+### Listing CRUD behavior
+
+Create/edit/delete a listing via `#admin/retailer-listings`, always selecting an existing retailer from a `<select>` populated by `retailerListingAdminService.ts` — never free-text entry, so a listing can't reference a retailer that doesn't exist or introduce a new near-duplicate spelling. Deleting a listing requires an explicit confirmation naming the retailer and string, removes only that one row, and never touches the string, its inventory row, its specialist profile, or the retailer entity itself (verified directly — deleting a *string*, by contrast, correctly cascades and removes all of its retailer listings too, an intended, pre-existing `on delete cascade` behavior unchanged by this phase).
+
+### Inactive retailer behavior
+
+An inactive retailer's listings are hidden from the public site entirely (`fetchRetailerPricesFromSupabase()` joins each listing with its retailer and skips any whose retailer is inactive, tracked separately as `hiddenInactiveCount` — never conflated with genuinely invalid/rejected rows) while remaining fully visible and editable on `#admin/retailer-listings`, tagged "Retailer inactive." An inactive retailer cannot be newly assigned to a listing (`validateRetailerListingInput` rejects it) — except a listing that's already assigned to it, which can still be saved unchanged (via `originalRetailerId`), so an existing listing's form never breaks or silently reassigns itself just because its retailer was deactivated elsewhere. Verified directly, live: deactivating a retailer through the real admin write path immediately hides its listing from a subsequent real `fetchRetailerPricesFromSupabase()` call (`hiddenInactiveCount` goes from 0 to 1); reactivating brings it back. Nothing is ever deleted by deactivation — retailer and listing rows are both fully preserved.
+
+### Public display behavior
+
+`PurchaseOptions` shows, per listing: the retailer's logo (only if a safe `http(s)` URL is set *and* the image actually loads — an `onError` handler and a URL-scheme re-check both fall back to showing just the retailer name, never a broken-image icon, never a layout shift), retailer name, price, package type/length, availability, and a `product_url` "Buy ↗" link (`target="_blank" rel="noopener noreferrer nofollow"`, scheme-checked). The retailer's `website_url` is retailer *metadata* only — shown on the admin Retailers tab, never as a public buy link, since the actual purchase link is always the listing's own `product_url`.
+
+### Fallback behavior
+
+There is **no local fallback dataset** for retailer data (entities or listings) — unlike the catalog or specialist profiles, no real local retailer pricing ever existed in this project to fall back to, and the phase spec is explicit that a fallback must never be invented. If a live fetch fails outright (network error, misconfiguration, or a query error), the affected service returns an empty map and records the failure (`source: 'unavailable'`, visible on the debug page); `fetchRetailerPricesFromSupabase()` also short-circuits to this same fallback if the *retailers* fetch it depends on fails, since without retailer data there's no safe way to join names/logos or check active status. The practical effect is simply that no "🛒 Purchase options" section appears anywhere on the site. The catalog, inventory, specialist profiles, quiz, and recommendations are completely unaffected; retailer data was fetched as one more independent `Promise` alongside the others in `App.tsx`; a failure in one never blocks or delays the others. Individual malformed rows are skipped and logged rather than failing the whole fetch, the same pattern used for specialist profiles.
+
+### Security model
+
+No service-role key anywhere in the frontend — all four retailer services use the same shared, anon-key-only client every other service uses. RLS on `public.retailers` (new — public read, admin-only insert/update/delete via the existing `is_admin()` function) mirrors every other table's policy exactly; RLS on `public.retailer_prices` was already correctly configured since Phase 1 and required no changes, this phase only restructured its *columns*. Verified directly in local integration testing for both tables: anonymous reads succeed, anonymous writes are rejected (401), authenticated-but-non-admin writes are rejected by RLS (403/0-rows-affected, data left untouched), and admin writes succeed. Retailer/listing URLs (logo, website, product) are treated as untrusted input at every layer: the admin forms reject a `javascript:` URL before it's ever sent; the public read paths (`mapRetailerRow`, `mapRetailerPriceRow`) independently re-validate the scheme and would reject such a row even if one reached the database by some other means (confirmed directly — inserting a `javascript:` product URL via a raw authenticated request succeeds at the database level, since the database itself has no URL-scheme constraint, but `mapRetailerPriceRow` correctly rejects that exact row when read back, proving the app layer — not the database — is the real defense here, the same pattern already established for the catalog's URL fields in Phase 5); and `PurchaseOptions` re-checks the scheme a third time before rendering either link, belt-and-braces.
+
+### Recommendation isolation proof
+
+`recommendStrings()`'s parameter list is exactly `(answers, pool, specialistProfiles)` — unchanged by this phase, with no retailer parameter added. `scripts/testRetailers.ts` proves this two ways: a runtime check that calling it with retailer data loaded elsewhere in the same process produces byte-identical output to calling it without, and a **compile-time** check — a call with a 4th (retailer) argument wrapped in `@ts-expect-error`, which only passes `npx tsc -b` (run as part of `npm run build` and every phase's verification) if that call is genuinely a type error. If a future change ever added a retailer parameter, that line would stop being an error, `@ts-expect-error` would report "unused directive," and the build would fail — turning an accidental regression into a hard build break instead of a silent behavior change.
+
+### Manual verification checklist
+
+After applying the Phase 7 migration against a real Supabase project:
+1. Open `#admin/retailers` and confirm the tab loads (empty is expected on a fresh project); add a retailer.
+2. Open `#admin/retailer-listings` and add a listing for an existing string, selecting that retailer (pick a package type; add a length for a reel).
+3. Edit its price and availability; confirm the change saves.
+4. Mark it preferred; confirm the debug page shows no preferred-conflict for that string.
+5. Refresh the public site and confirm the purchase option appears under "🛒 Purchase options" on that string's card (and on the quiz's Best Match card, if applicable), including the retailer's logo if one is set.
+6. Click the external retailer link and confirm it opens safely in a new tab.
+7. Deactivate the retailer on `#admin/retailers`; refresh the public site and confirm the purchase option is gone, while the listing itself is still visible and editable on `#admin/retailer-listings` (tagged "Retailer inactive"). Reactivate and confirm it reappears.
+8. Try deleting a retailer that still has a listing — confirm it's blocked with a message pointing at deactivation. Delete the listing, then delete the retailer — confirm that succeeds.
+9. Take the quiz before and after adding a high-price/preferred listing for the winning string, and confirm the recommendation, match percentage, and explanation text are identical either way.
+10. Temporarily break `VITE_SUPABASE_URL` (or revoke `anon`'s `SELECT` on `retailer_prices`) and confirm the site still works fully — catalog, quiz, recommendations, specialist panels — just with no purchase options shown, and that `#debug-supabase` reports the retailer source as unavailable.
+
+### Testing
+
+```bash
+npm run test:retailers
+```
+
+See "Automated tests" above for what this covers. Real Supabase reads/writes, RLS for both tables, the FK-restrict-on-delete-with-listings behavior, the case-insensitive-name-merge migration collision handling, and the live "deactivating a retailer hides its listings" behavior (via a real Vite-processed build of the actual service code, not a mock) were all verified separately through local Postgres+PostgREST integration testing (see the Phase 7 report) — actual browser-level click-through of the admin UI was **not** performed in that session (it would require a full GoTrue-compatible auth stub beyond what local PostgREST alone provides), hence the manual checklist above.
+
+### Phase 8+ scope
+
+Not implemented in this phase, left for later: image uploads, bulk edit/CSV import, per-dimension specialist confidence overrides, multi-currency support (the schema and types are designed to make this a small additive change when needed), and the "Dashboard" admin tab.
 
 ## Copyright
 

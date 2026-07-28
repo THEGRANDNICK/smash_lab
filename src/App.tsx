@@ -12,6 +12,7 @@ import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 import AdminApp from './components/admin/AdminApp'
 import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
+import { useRetailerPrices } from './hooks/useRetailerPrices'
 
 type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin'
 
@@ -21,7 +22,15 @@ function viewFromHash(): View {
   // Not linked from the public nav — a direct URL is the entry point.
   // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
   // this route being hard to find.
-  if (hash === 'admin' || hash === 'admin/inventory' || hash === 'admin/catalog' || hash === 'admin/specialists') return 'admin'
+  if (
+    hash === 'admin' ||
+    hash === 'admin/inventory' ||
+    hash === 'admin/catalog' ||
+    hash === 'admin/specialists' ||
+    hash === 'admin/retailers' ||
+    hash === 'admin/retailer-listings'
+  )
+    return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
   // by Vite, so this branch (and the SupabaseDebugPage import) is dead
   // code eliminated from production builds entirely.
@@ -33,6 +42,7 @@ function App() {
   const [view, setView] = useState<View>(viewFromHash)
   const liveStrings = useStringPool()
   const specialistProfiles = useSpecialistProfiles()
+  const retailerListingsByStringId = useRetailerPrices()
 
   useEffect(() => {
     const onHashChange = () => setView(viewFromHash())
@@ -63,7 +73,7 @@ function App() {
           <>
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
             <WhyUs />
             <FAQ />
             <Contact />
@@ -72,13 +82,19 @@ function App() {
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">
-            <StringFinder onExit={() => goTo('home')} onCompare={() => goTo('compare')} pool={liveStrings} specialistProfiles={specialistProfiles} />
+            <StringFinder
+              onExit={() => goTo('home')}
+              onCompare={() => goTo('compare')}
+              pool={liveStrings}
+              specialistProfiles={specialistProfiles}
+              retailerListingsByStringId={retailerListingsByStringId}
+            />
           </div>
         )}
 
         {view === 'compare' && (
           <div className="pt-6">
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
             <div className="text-center pb-16">
               <button
                 type="button"

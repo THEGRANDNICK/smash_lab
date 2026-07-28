@@ -2,11 +2,13 @@ import type { StringItem } from '../data/strings'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { formatGauge } from '../logic/formatGauge'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
+import type { RetailerListing } from '../services/retailerPriceService'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
+import PurchaseOptions from './PurchaseOptions'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
   repulsion: 'Quick Repulsion',
@@ -24,9 +26,11 @@ interface StringCardProps {
   onToggleCompare?: (id: string) => void
   /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles() to reflect current data. Display only; never affects recommendation scoring. */
   specialistProfiles?: Record<string, StringSpecialistProfile>
+  /** Purchase options for this string, from useRetailerPrices() — omitted or empty renders nothing. Secondary, display-only information; never affects recommendation scoring. */
+  retailerListings?: RetailerListing[]
 }
 
-export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, specialistProfiles }: StringCardProps) {
+export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, specialistProfiles, retailerListings }: StringCardProps) {
   const orderable = item.stock !== 'unavailable'
   const specialistProfile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const gauge = formatGauge(item)
@@ -93,6 +97,8 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
       {item.notes && <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">{item.notes}</p>}
 
       {specialistProfile && <SpecialistPanel profile={specialistProfile} />}
+
+      {retailerListings && <PurchaseOptions listings={retailerListings} />}
 
       {item.productUrl && (
         <a

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { strings as defaultStrings, type StringItem } from '../data/strings'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
+import type { RetailerListing } from '../services/retailerPriceService'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StringCard, { type PerformanceView } from './StringCard'
@@ -15,9 +16,11 @@ interface StringComparisonProps {
   strings?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). */
   specialistProfiles?: Record<string, StringSpecialistProfile>
+  /** Purchase options, keyed by string id, from useRetailerPrices(). Omitted or empty renders no purchase options. */
+  retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function StringComparison({ strings: stringsProp, specialistProfiles }: StringComparisonProps) {
+export default function StringComparison({ strings: stringsProp, specialistProfiles, retailerListingsByStringId }: StringComparisonProps) {
   const strings = stringsProp ?? defaultStrings
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [brand, setBrand] = useState<string>('all')
@@ -190,6 +193,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               compareDisabled={compareIds.length >= MAX_COMPARE}
               onToggleCompare={toggleCompare}
               specialistProfiles={specialistProfiles}
+              retailerListings={retailerListingsByStringId?.[item.id]}
             />
           ))}
         </div>
