@@ -287,6 +287,12 @@ npm run test:ui-polish
 
 Covers the Phase 8 polish revision: a second, independent recommendation/ranking/tension regression (`recommendStrings` **and** `recommendTension` pinned against fixture values, plus a `buildComparisonRows` fixture check) proving this purely visual pass changed nothing about what gets recommended; `resolveStringColor`/`primaryStringColor`/`allStringColors` (case-insensitive matching, determinism, the white/black "strong ring" border rule, never-fabricate-a-color behavior for unrecognized names, real-catalog-data smoke test); `readStoredComparisonView`/`writeStoredComparisonView` (radar-first default with no/empty/corrupted storage, round-tripping both directions, and never throwing even when the underlying storage does); and `needsClamp`'s threshold behavior against both synthetic and the real catalog's `notes` text. Also local/automated only — the actual visual rendering (swatches, hero texture, card accents) and the Radar/Table switch's `aria-pressed` state were verified in a real browser instead (see the Phase 8 report's "Browser verification" section), since this repo has no DOM/component-testing library.
 
+```bash
+npm run test:catalog-polish
+```
+
+Covers Phase 9: a third recommendation/ranking/tension regression pin (including a direct check that `mergeInventoryIntoCatalog()` only ever changes `stock`/`setsAvailable`/`inventoryColor`, never a recommendation-relevant field); all 23 required color names, case-insensitivity, determinism, and never-fabricate-a-color behavior for unrecognized names; `buildColorPreview()`'s one/two/three-color, beyond-three-overflow, and alphabetical-ordering behavior; the merged inventory-then-catalog priority (available inventory color shown first without duplicating a catalog entry, stock-gated exclusion when unavailable, an unrecognized inventory color falling through to catalog rather than blocking it); hybrid handling (a true split swatch only when both main and cross colors are known, a plain single swatch when only one side is, "none" when neither is); `summarizeColorDiagnostics()`'s counts and flags; the version-helper functions backing the admin footer; a real-catalog-data smoke test; and confirmation that the deprecated Phase 8 `primaryStringColor`/`allStringColors` wrappers still work unchanged. Also local/automated only — the rendered swatches (including the hybrid split-circle and `+N` expand/collapse), the comparison chips, the larger radar/full-width table, and the admin version footer were verified in a real browser instead (see the Phase 9 report).
+
 ### Verifying your setup
 
 ```bash
@@ -612,11 +618,92 @@ A focused, real-browser-driven visual polish pass on top of the Phase 8 base abo
 **Manual verification checklist (polish revision).**
 
 1. At 1440px and 1920px, confirm the result page uses noticeably more width than before with no huge empty margins and no stretched-looking cards; paragraph text should still read as normal-length lines, not edge-to-edge.
-2. Confirm the Best Match hero shows a color swatch next to the string name when the string has recognized `colors` data, and shows nothing when it doesn't (never a placeholder circle).
+2. Confirm the Best Match panel shows a color swatch preview below its stock badge when the string has recognized color data, and shows nothing when it doesn't (never a placeholder circle) — see the "Catalog & color experience (Phase 9)" section below for the current multi-swatch/hybrid-split design, which superseded the single-swatch-next-to-the-name version described here.
 3. Confirm the Cross-Brand Alternative card has a blue/cyan left accent and the Specialist Choice card has a gold left accent, both still reading as part of the same design system as the Best Match card.
 4. On the catalog page, switch Performance View to Radar and confirm the charts are visibly larger than before with no clipped labels; expand/collapse a long description with "Read more"/"Show less" and confirm no layout jump breaks the grid.
 5. Select 2–3 strings to compare and confirm Radar is selected by default, the chart is large and centered, switching to Table and back to Radar both work, and reloading the page within the same tab remembers your last choice.
 6. Resize to 320px/375px/390px/768px/1024px and confirm no page ever scrolls horizontally (checked via `document.body.scrollWidth` against the viewport width in every case during browser verification), the comparison table still scrolls within its own container on mobile, and the hamburger nav still works.
+
+## Catalog & color experience (Phase 9)
+
+Phase 9 is a catalog-and-comparison-presentation pass — no changes to recommendation scoring, ranking, weights, tension logic, specialist logic, retailer architecture, retailer pricing, Supabase authentication, RLS, or existing migrations. No new database migration was needed: the public `StringItem` shape already had room for a display-only `inventoryColor` field, so color data is fully supportable with the existing schema.
+
+### String color investigation
+
+Re-investigated the existing color data end to end before implementing anything:
+
+- **Catalog colors** — `StringItem.colors?: string[]` (`data/strings.ts`), editable via the admin "Colors" comma-separated text field (`CatalogStringForm.tsx`). Flows straight onto the public `StringItem` — no plumbing gap. The real gap: no string in the actual catalog has this populated yet (an admin-data gap, not a code gap).
+- **Inventory colors** — `inventory.color` (`services/inventoryService.ts`), editable via the Inventory admin page (`InventoryAdminRow.tsx`). Fetched into `InventoryMap[id].color`, but `mergeInventoryIntoCatalog()` silently dropped it instead of passing it onto the merged `StringItem` — this was the more significant reason swatches were invisible: even a real, admin-entered inventory color could never reach the UI.
+- **Hybrid colors** — `mainString.color`/`crossString.color` already existed on hybrid catalog rows and already flowed onto `StringItem`, but nothing rendered them as a combined swatch.
+- Inventory variants are linked to strings via `stringId`, the same key used everywhere else in the admin/public split — reliable, no separate lookup needed.
+
+Both real gaps are now closed: `mergeInventoryIntoCatalog()` additionally sets `StringItem.inventoryColor` from the live row (alongside the pre-existing `stock`/`setsAvailable` merge — still purely presentational, never touching a recommendation-relevant field), and `logic/stringColor.ts`'s new `buildColorPreview()` merges it with catalog colors under the priority rules below. No catalog data was added as part of this commit — real swatches only start appearing once colors are entered through the admin pages.
+
+### Inventory/catalog color priority
+
+`buildColorPreview(item, maxVisible = 3)` in `logic/stringColor.ts` is the single entry point every swatch-rendering component uses, in this order:
+
+1. **Available inventory color** — the string's `inventoryColor`, but only counted as "available" when the string's `stock` is not `unavailable` (low stock still counts). An out-of-stock inventory color is excluded and the UI falls back to catalog colors instead of showing a color that's no longer on hand.
+2. **Catalog colors** — the remaining `colors` list, alphabetically tie-broken, with the inventory color's own hex excluded so it never appears twice.
+3. **No swatch** — if neither source resolves to a recognized color.
+
+An unrecognized inventory color name never blocks catalog colors from showing (it's simply skipped, falling through to catalog). Case-insensitive duplicates (`"Yellow"`/`"yellow"`) are merged into one. Ordering is fully deterministic — colors are never shuffled between renders. Catalog and inventory logic stay in separate functions/modules; this priority merge is the only place they meet.
+
+### Color mapping & unknown-color behavior
+
+`resolveStringColor()` maps a fixed, case-insensitive, trimmed table of 23 names — yellow, white, black, red, blue, green, orange, pink, purple, silver, grey, gray, natural, neon yellow, neon green, turquoise, lime, navy, sky blue, royal blue, mint, coral, violet — to a hex value and a Tailwind ring class. White/black/silver/natural/neon colors get a stronger, more visible ring in both light and dark mode; other colors get a subtler one. Neon colors get a vivid flat fill — no glow or animation. An unrecognized color name is **never** guessed or invented: it's omitted from the swatch preview, while the raw string is retained for admin diagnostics (see below).
+
+### Color swatch preview & expansion
+
+`ColorSwatchPreview.tsx` renders circles only — no visible color names on cards. Up to 3 colors show directly; a 4th-and-beyond collapses into a `+N` button that **expands and collapses** inline (no modal, no permanent truncation) with `aria-expanded` correctly reflecting live state and an `aria-label` describing the action ("Show 2 more colors" / "Show fewer colors"). Every swatch — visible or expanded — carries a `title`/`aria-label` naming the color, so the information is always available to assistive technology even though it's never printed as text. Fully keyboard- and touch-accessible.
+
+### Hybrid color swatch
+
+A single split circle (CSS `conic-gradient`, diagonal, no image or extra SVG) renders only when **both** `mainString.color` and `crossString.color` resolve to known colors — e.g. `aria-label="Hybrid string colors: White main, Red cross"`. If only one side is known, it renders as an ordinary single solid swatch rather than a misleading half-invented split; if neither side is known, nothing renders. A hybrid never falls back to its own top-level `colors` list, since that could misrepresent which side is which. Missing hybrid color data is recorded in the admin color diagnostics, not hidden silently.
+
+### Placement
+
+Swatches sit beneath the stock badge / availability area — never inside the string-name heading — in catalog cards (`StringCard.tsx`), the Best Match hero and alternative cards (`RecommendationResult.tsx`), comparison chips and the comparison table's column headings (`StringComparison.tsx`, `ComparisonTable.tsx`), and the relevant admin previews (`CatalogAdminCard.tsx` for catalog colors, `InventoryAdminRow.tsx` for the in-stock color). They're never repeated inside every comparison metric row.
+
+### Comparison experience improvements
+
+- **Comparison chips** — replaced the plain legend row with removable chips: chart-series dot + string name + physical color-swatch preview + a per-string `✕` remove button (in addition to the existing "Clear comparison," which still clears all at once). A subtle hint line under the chips row clarifies that the small dot is the chart series color while the circles are the string's actual colors — no large permanent instruction block.
+- **Bigger radar** — the default comparison view's chart cap grew again this phase, to `max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]`, so it reads as the comparison panel's primary visualization rather than a small chart in a lot of empty space, without clipping any axis labels. Radar values themselves are unchanged.
+- **Full-width table** — `ComparisonTable.tsx`'s `<table>` uses `w-full` so its columns stretch to use the panel's full width on desktop for both 2- and 3-string comparisons, while still scrolling horizontally within its own container on mobile.
+- **Radar/Table switch** — unchanged in spirit: a segmented control, Radar the default, the choice remembered for the current tab only via `sessionStorage` (no database persistence, no reload).
+
+### Version source of truth & admin footer
+
+`package.json`'s `"version"` field (`"0.8.0-beta.0"`) is the single source of truth. `vite.config.ts` reads it at build time via Node's `readFileSync` and bakes it into the bundle through Vite's `define` (`import.meta.env.APP_VERSION`) — no manual duplication anywhere else, and no secret env values are ever touched. `logic/version.ts`'s `getRuntimeVersionInfo()` turns that raw string into a display form (`formatDisplayVersion` drops a trailing `.0` prerelease build number, so `"0.8.0-beta.0"` displays as `"v0.8.0-beta"`) and an environment label from `import.meta.env.PROD` (`"Production"`/`"Development"` — never a secret value). `AdminApp.tsx` renders a subtle footer: `Smash Lab Admin · v0.8.0-beta · Production`. The public site intentionally shows no version badge — this stays admin-only.
+
+### Admin color diagnostics
+
+`logic/colorDiagnostics.ts`'s `summarizeColorDiagnostics()` extends the existing `/debug/supabase` diagnostics page (no new dashboard) with: strings with an inventory color, strings with catalog colors, strings with neither, unrecognized color values (with the raw text preserved), same-string case-insensitive duplicate colors, hybrid strings missing a main or cross color, inventory colors currently hidden because the string is out of stock, and the total count of unique mapped colors across the whole catalog.
+
+### Admin form review
+
+`catalogAdminService.ts`'s `parseColors()` was fixed to deduplicate case-insensitively (previously it only trimmed and dropped blanks, so `"Yellow, yellow"` could save as two colors). Confirmed comma-separated parsing, trimming, and blank-removal were already otherwise safe. Added clarifying helper text to the catalog "Colors" field and the hybrid Main/Cross color fields (`CatalogStringForm.tsx`) and to the Inventory "Color" field (`InventoryAdminRow.tsx`), explaining the inventory-over-catalog priority in plain language. The form itself was not redesigned.
+
+### Accessibility
+
+Color is never the only source of information — every swatch carries a `title`/`aria-label`, the `+N` control has `aria-expanded` and a descriptive `aria-label`, chip remove buttons have accessible labels and a comfortable touch target, the Radar/Table switch retains its `aria-pressed` state, and `ComparisonTable.tsx` keeps semantic `<table>` markup throughout. Visible color names are intentionally omitted from compact cards but remain available via tooltip/title and to assistive technology.
+
+### Performance
+
+No new chart, animation, or color-mapping libraries; no runtime network requests for color resolution; no new image assets. The hybrid split-swatch reuses a plain CSS `conic-gradient`. Color resolution and diagnostics are cheap, pure, and deterministic.
+
+### Manual verification checklist (Phase 9)
+
+1. Catalog at 1440px/1920px/375px: confirm 1, 3, and 4+ colors render correctly (dots, then `+N`), and that `+N` expands and collapses on click and via keyboard.
+2. Confirm a hybrid string with both main and cross colors known renders one true split circle, and that a string with no color data renders no swatch at all.
+3. Comparison with 2 and 3 strings: confirm Radar is selected by default and visibly larger, switching to Table shows a full-width table with no empty right-hand gutter, chips show both the chart dot and physical swatches, and removing one chip via its `✕` deselects only that string.
+4. Resize to 375px/1024px and confirm no horizontal page scroll, with the comparison table still scrolling only within its own container.
+5. In the admin panel, confirm the footer reads `Smash Lab Admin · v0.8.0-beta · <Production|Development>` depending on how the app was built, and that `/debug/supabase` shows the new color-diagnostics figures.
+6. In the catalog/inventory admin forms, confirm saving `"Yellow, yellow"` in Colors stores only one color, and that the new helper text reads clearly.
+
+### Likely Phase 10 scope
+
+Populating real catalog/inventory color data now that the pipeline exists; possibly surfacing a compact color filter on the catalog page; considering an optional inline radar-zoom control if user feedback asks for it; continued attention to comparison-table responsiveness at tablet widths.
 
 ## Copyright
 

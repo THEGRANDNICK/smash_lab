@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
+import { getRuntimeVersionInfo } from '../../logic/version'
 import AdminLogin from './AdminLogin'
 import InventoryAdminPage from './InventoryAdminPage'
 import CatalogAdminPage from './CatalogAdminPage'
@@ -39,6 +40,7 @@ const SECTION_LABEL: Record<AdminSection, string> = {
 export default function AdminApp({ onExit }: AdminAppProps) {
   const { status, session, error, signIn, signOut } = useAdminAuth()
   const [section, setSection] = useState<AdminSection>(sectionFromHash)
+  const versionInfo = getRuntimeVersionInfo()
 
   useEffect(() => {
     const onHashChange = () => setSection(sectionFromHash())
@@ -140,6 +142,10 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       {section === 'specialists' && <SpecialistAdminPage />}
       {section === 'retailers' && <RetailerAdminPage />}
       {section === 'retailerListings' && <RetailerListingAdminPage />}
+
+      <footer className="mt-12 pt-4 border-t border-court-900/10 dark:border-white/10 text-center text-xs text-ink-700/40 dark:text-shuttle-100/40">
+        Smash Lab Admin · {versionInfo.display} · {versionInfo.environment}
+      </footer>
     </div>
   )
 }

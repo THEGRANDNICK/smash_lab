@@ -295,11 +295,18 @@ function buildHybridMeta(gauge: number | null, material: string, construction: s
   return Object.keys(meta).length > 0 ? meta : null
 }
 
+/** Splits, trims, and drops blanks exactly as before, plus (Phase 9) deduplicates case-insensitively so "Yellow, yellow" is saved as just "Yellow" — the first-seen casing wins. */
 function parseColors(raw: string): string[] | null {
-  const items = raw
-    .split(',')
-    .map((c) => c.trim())
-    .filter((c) => c.length > 0)
+  const seen = new Set<string>()
+  const items: string[] = []
+  for (const candidate of raw.split(',')) {
+    const trimmed = candidate.trim()
+    if (trimmed.length === 0) continue
+    const key = trimmed.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    items.push(trimmed)
+  }
   return items.length > 0 ? items : null
 }
 

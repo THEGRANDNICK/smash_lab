@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import CatalogStringForm from './CatalogStringForm'
+import { allStringColors, resolveStringColor } from '../../logic/stringColor'
+import StringColorSwatch from '../StringColorSwatch'
 import {
   updateString,
   deleteString,
@@ -98,6 +100,8 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
         <Field label="Product URL" value={row.productUrl ? '✓ set' : '— none'} />
       </dl>
 
+      <CatalogColorPreview row={row} />
+
       {error && (
         <p role="alert" className="text-sm font-semibold text-red-600 dark:text-red-400 mb-3">
           {state === 'confirmingDelete' || state === 'deleting' ? 'Delete failed' : 'Error'}: {error}
@@ -154,6 +158,43 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * A quick visual sanity-check for the row's own `colors` list (and, for a
+ * hybrid, its main/cross colors) — kept deliberately catalog-only, never
+ * reading inventory data (that's a different admin page entirely, with
+ * its own priority over this fallback on the public site — see
+ * logic/stringColor.ts). Renders nothing when nothing resolves.
+ */
+function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
+  if (row.isHybrid) {
+    const main = resolveStringColor(row.mainStringMeta?.color)
+    const cross = resolveStringColor(row.crossStringMeta?.color)
+    if (!main && !cross) return null
+    return (
+      <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
+        <span className="font-semibold uppercase tracking-wide">Colors</span>
+        {main && <StringColorSwatch swatch={main} size="sm" />}
+        {cross && <StringColorSwatch swatch={cross} size="sm" />}
+        <span>
+          {main?.label ?? 'unset'} main / {cross?.label ?? 'unset'} cross
+        </span>
+      </p>
+    )
+  }
+
+  const swatches = allStringColors(row.colors ?? undefined)
+  if (swatches.length === 0) return null
+  return (
+    <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
+      <span className="font-semibold uppercase tracking-wide">Colors</span>
+      {swatches.map((s) => (
+        <StringColorSwatch key={s.hex} swatch={s} size="sm" />
+      ))}
+      <span>{swatches.map((s) => s.label).join(', ')}</span>
+    </p>
   )
 }
 

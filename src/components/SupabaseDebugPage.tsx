@@ -8,11 +8,12 @@
 import { useEffect, useState } from 'react'
 import { isSupabaseConfigured, getSupabaseClient } from '../lib/supabase'
 import { getSession } from '../lib/auth'
-import { getLastFetchStatus, fetchInventoryFromSupabase, findMissingInventoryIds, getLocalFallbackInventory } from '../services/inventoryService'
+import { getLastFetchStatus, fetchInventoryFromSupabase, findMissingInventoryIds, getLocalFallbackInventory, mergeInventoryIntoCatalog } from '../services/inventoryService'
 import { getLastCatalogFetchStatus, fetchCatalogFromSupabase, type CatalogFetchStatus } from '../services/catalogService'
 import { fetchSpecialistProfilesFromSupabase, type SpecialistFetchStatus } from '../services/specialistProfileService'
 import { fetchRetailerPricesFromSupabase, summarizeRetailerDiagnostics, type RetailerFetchStatus, type RetailerDiagnostics } from '../services/retailerPriceService'
 import { fetchRetailersFromSupabase, findDuplicateRetailerNameCandidates, type RetailerEntityFetchStatus } from '../services/retailerService'
+import { summarizeColorDiagnostics, type ColorDiagnosticsSummary } from '../logic/colorDiagnostics'
 
 type ConnectionStatus = 'checking' | 'connected' | 'unreachable' | 'not-configured'
 
@@ -36,6 +37,7 @@ export default function SupabaseDebugPage() {
   const [retailersWithoutListings, setRetailersWithoutListings] = useState<string[]>([])
   const [duplicateRetailerNames, setDuplicateRetailerNames] = useState<string[]>([])
   const [mergedPoolCount, setMergedPoolCount] = useState<number | null>(null)
+  const [colorDiagnostics, setColorDiagnostics] = useState<ColorDiagnosticsSummary | null>(null)
   // Forces a re-read of getLastFetchStatus()/getLastCatalogFetchStatus() after the effect's fetches resolve.
   const [, setLastFetchTick] = useState(0)
 
@@ -93,6 +95,7 @@ export default function SupabaseDebugPage() {
       const resolvedInventory = inventory ?? getLocalFallbackInventory()
       setMergedPoolCount(catalogResult.items.length)
       setMissingInventoryIds(findMissingInventoryIds(catalogResult.items, resolvedInventory))
+      setColorDiagnostics(summarizeColorDiagnostics(mergeInventoryIntoCatalog(catalogResult.items, resolvedInventory)))
       const catalogIds = new Set(catalogResult.items.map((i) => i.id))
       setOrphanSpecialistIds(Object.keys(specialistResult.profiles).filter((id) => !catalogIds.has(id)))
       setMissingProfileCount(catalogResult.items.filter((i) => !specialistResult.profiles[i.id]).length)
@@ -185,6 +188,30 @@ export default function SupabaseDebugPage() {
           {specialistFetch && specialistFetch.rejectedReasons.length > 0 && <Row label="Rejected specialist row reasons" value={specialistFetch.rejectedReasons.join('; ')} />}
           <Row label="Strings with no specialist profile" value={missingProfileCount == null ? '—' : `${missingProfileCount} (expected — profiles are sparse by design)`} />
           <Row label="Specialist profiles referencing missing strings (orphaned)" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
+        </dl>
+
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 9 — string colors</p>
+        <dl className="space-y-4 text-sm">
+          <Row label="Strings with an inventory color" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.withInventoryColor)} />
+          <Row label="Strings with catalog colors" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.withCatalogColors)} />
+          <Row label="Strings with no color data at all" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.withNeither)} />
+          <Row
+            label="Inventory colors hidden (string out of stock)"
+            value={colorDiagnostics == null ? '—' : String(colorDiagnostics.hiddenDueToUnavailableInventory)}
+          />
+          <Row label="Total unique mapped colors in use" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.totalUniqueMappedColors)} />
+          <Row
+            label="Unrecognized color values (admin diagnostic only)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.unknownColorValues.length === 0 ? 'None' : colorDiagnostics.unknownColorValues.join(', ')}
+          />
+          <Row
+            label="Same-string case-insensitive duplicate colors"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.duplicateCaseInsensitiveColors.length === 0 ? 'None' : colorDiagnostics.duplicateCaseInsensitiveColors.join('; ')}
+          />
+          <Row
+            label="Hybrid strings missing a main/cross color"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.hybridMissingColors.length === 0 ? 'None' : colorDiagnostics.hybridMissingColors.join(', ')}
+          />
         </dl>
 
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailers</p>

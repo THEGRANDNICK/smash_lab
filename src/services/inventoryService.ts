@@ -3,15 +3,22 @@
 // StringItem[] this module (via hooks/useStringPool.ts) produces.
 //
 // The recommendation engine stays completely untouched and stock-blind:
-// this module only ever changes the `.stock` (and `.setsAvailable`)
-// fields already present on each StringItem, purely for presentation
-// (badges, filters, Best Available Alternative). It never affects
-// scoring, weights, or which strings are eligible to be recommended.
+// this module only ever changes the `.stock`, `.setsAvailable`, and (since
+// Phase 9) `.inventoryColor` fields already present on each StringItem,
+// purely for presentation (badges, filters, Best Available Alternative,
+// color swatches). It never affects scoring, weights, or which strings are
+// eligible to be recommended.
 //
 // Phase 4: deliberately decoupled from catalog fetching (see
 // services/catalogService.ts) — this module never assumes the catalog it's
 // merging onto came from strings.ts. mergeInventoryIntoCatalog() takes the
 // resolved catalog (live or local fallback) as an explicit argument.
+//
+// Phase 9: `inventory.color` (a single, specific physical color for the
+// stock actually on hand) is now passed through onto the merged
+// StringItem's `.inventoryColor` — previously fetched but silently
+// dropped. See logic/stringColor.ts for how it's prioritized over the
+// catalog's own `colors` list for display.
 
 import type { StringItem, StockLevel } from '../data/strings.js'
 import { getLocalFallbackCatalog } from './catalogService.js'
@@ -118,7 +125,7 @@ export function mergeInventoryIntoCatalog(catalogItems: StringItem[], inventory:
   return catalogItems.map((item) => {
     const entry = inventory[item.id]
     if (!entry) return item
-    return { ...item, stock: entry.stockStatus, setsAvailable: entry.quantity ?? undefined }
+    return { ...item, stock: entry.stockStatus, setsAvailable: entry.quantity ?? undefined, inventoryColor: entry.color }
   })
 }
 

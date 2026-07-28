@@ -2,7 +2,7 @@
   "name": "app",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.0.0",
+  "version": "0.8.0-beta.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,8 @@
     "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts",
     "test:retailers": "tsx scripts/testRetailers.ts",
     "test:ui": "tsx scripts/testUiPresentation.ts",
-    "test:ui-polish": "tsx scripts/testUiPolish.ts"
+    "test:ui-polish": "tsx scripts/testUiPolish.ts",
+    "test:catalog-polish": "tsx scripts/testCatalogPolish.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

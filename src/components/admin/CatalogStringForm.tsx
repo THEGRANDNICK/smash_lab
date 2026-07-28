@@ -125,7 +125,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Material" value={input.mainMaterial} onChange={(v) => set('mainMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.mainConstruction} onChange={(v) => set('mainConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.mainCoating} onChange={(v) => set('mainCoating', v)} disabled={saving} placeholder="optional" />
-              <TextField label="Color" value={input.mainColor} onChange={(v) => set('mainColor', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Color" value={input.mainColor} onChange={(v) => set('mainColor', v)} disabled={saving} placeholder="optional" hint="Shown as one half of the split swatch, only when Cross color is also set." />
             </div>
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Cross string</p>
@@ -133,7 +133,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Material" value={input.crossMaterial} onChange={(v) => set('crossMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.crossConstruction} onChange={(v) => set('crossConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.crossCoating} onChange={(v) => set('crossCoating', v)} disabled={saving} placeholder="optional" />
-              <TextField label="Color" value={input.crossColor} onChange={(v) => set('crossColor', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Color" value={input.crossColor} onChange={(v) => set('crossColor', v)} disabled={saving} placeholder="optional" hint="Shown as the other half of the split swatch, only when Main color is also set." />
             </div>
           </div>
         )}
@@ -173,7 +173,14 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
             <TextField label="Image URL" value={input.imageUrl} onChange={(v) => set('imageUrl', v)} error={errors.imageUrl} disabled={saving} placeholder="https://…" />
             {input.imageUrl.trim() !== '' && <ImagePreview url={input.imageUrl.trim()} />}
           </div>
-          <TextField label="Colors" value={input.colors} onChange={(v) => set('colors', v)} disabled={saving} placeholder="comma-separated, e.g. Yellow, Pink, White" />
+          <TextField
+            label="Colors"
+            value={input.colors}
+            onChange={(v) => set('colors', v)}
+            disabled={saving}
+            placeholder="comma-separated, e.g. Yellow, Pink, White"
+            hint="The general range this product ships in. Case-insensitive duplicates (e.g. Yellow, yellow) are merged automatically. Shown as a fallback whenever the Inventory page has no specific in-stock color set."
+          />
         </div>
       </details>
 
