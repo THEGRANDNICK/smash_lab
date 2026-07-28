@@ -37,17 +37,18 @@ function loadDotEnvLocal() {
 
 loadDotEnvLocal()
 
-type PublicTableName = 'strings' | 'inventory' | 'specialist_profiles' | 'retailer_prices'
+type PublicTableName = 'strings' | 'inventory' | 'specialist_profiles' | 'retailers' | 'retailer_prices'
 
 /** Exact expected columns per table — a real mismatch (renamed/missing column) surfaces as a specific PostgREST error, not just "table unreachable". */
 const EXPECTED_COLUMNS: Record<PublicTableName, string> = {
   strings:
-    'id, brand, name, category, gauge_mm, repulsion, durability, hitting_sound, shock_absorption, control, string_cost_eur, description, tension_meta, popularity_rank, product_url, image_url, colors, created_at, updated_at',
+    'id, brand, name, category, gauge_mm, repulsion, durability, hitting_sound, shock_absorption, control, string_cost_eur, description, tension_meta, popularity_rank, product_url, image_url, colors, is_hybrid, main_string_meta, cross_string_meta, created_at, updated_at',
   inventory: 'string_id, stock_status, quantity, package_type, color, notes, updated_at',
   specialist_profiles:
-    'string_id, feel, personal_tension_min_kg, personal_tension_max_kg, experience_source, confidence, dimensions, dimension_confidence, strengths, weaknesses, specialist_tags, subjective_notes, updated_at',
+    'string_id, feel, personal_tension_min_kg, personal_tension_max_kg, experience_source, confidence, dimensions, dimension_confidence, strengths, weaknesses, specialist_tags, subjective_notes, reviewer, updated_at',
+  retailers: 'id, name, logo_url, website_url, country, active, created_at, updated_at',
   retailer_prices:
-    'id, string_id, retailer_name, retailer_product_url, set_price_eur, reel_price_eur, sale_price_eur, retailer_in_stock, last_checked_at, created_at, updated_at',
+    'id, string_id, retailer_id, product_url, price, currency, availability_status, package_type, package_length_m, is_preferred, notes, last_checked_at, created_at, updated_at',
 }
 
 const passes: string[] = []

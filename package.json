@@ -15,7 +15,8 @@
     "migrate:specialists": "tsx scripts/migrateSpecialists.ts",
     "test:catalog": "tsx scripts/testCatalog.ts",
     "test:catalog-admin": "tsx scripts/testCatalogAdmin.ts",
-    "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts"
+    "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts",
+    "test:retailers": "tsx scripts/testRetailers.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

@@ -270,7 +270,7 @@ function parseNullablePositiveInt(raw: string, label: string): { ok: true; value
   return { ok: true, value: num }
 }
 
-function parseNullableUrl(raw: string, label: string): { ok: true; value: string | null } | { ok: false; error: string } {
+export function parseNullableUrl(raw: string, label: string): { ok: true; value: string | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
   if (!SAFE_URL_PATTERN.test(trimmed)) return { ok: false, error: `${label} must be a valid http(s) URL.` }
@@ -278,7 +278,7 @@ function parseNullableUrl(raw: string, label: string): { ok: true; value: string
 }
 
 /** Extracts `.value` from a parse result already known to be `ok: true` (the caller has already returned early if any parse result had errors) — avoids repeating a runtime-safe-but-TS-unprovable narrowing at every call site. */
-function value<T>(result: { ok: true; value: T } | { ok: false; error: string }): T {
+export function value<T>(result: { ok: true; value: T } | { ok: false; error: string }): T {
   if (!result.ok) throw new Error('unreachable: value() called after a failed parse result')
   return result.value
 }

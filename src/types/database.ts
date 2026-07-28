@@ -20,6 +20,12 @@ export type SpecialistFeel = 'hard' | 'medium' | 'soft'
 export type ExperienceSource = 'personal' | 'club' | 'stringing-observation' | 'manufacturer' | 'community' | 'mixed'
 export type Confidence = 'very-high' | 'high' | 'medium' | 'low' | 'unknown'
 
+/** retailer_prices.currency — EUR only for now (no conversion is ever performed); widen this when another currency is genuinely needed, matching the DB's own CHECK constraint. */
+export type RetailerCurrency = 'EUR'
+export type RetailerAvailabilityStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'preorder' | 'discontinued' | 'unknown'
+/** retailer_prices.package_type — describes what the RETAILER is selling (distinct from inventory's own PackageType, and from a string's technical gauge/hybrid metadata on public.strings). */
+export type RetailerPackageType = 'set' | 'reel' | 'hybrid' | 'other'
+
 /** Shape of the `tension_meta` jsonb column — mirrors StringTensionMeta in data/strings.ts. */
 export interface TensionMetaJson {
   tensionAdjustment?: number
@@ -239,16 +245,53 @@ export interface Database {
         ]
       }
 
+      retailers: {
+        Row: {
+          id: number
+          name: string
+          logo_url: string | null
+          website_url: string | null
+          country: string | null
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          logo_url?: string | null
+          website_url?: string | null
+          country?: string | null
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          logo_url?: string | null
+          website_url?: string | null
+          country?: string | null
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+
       retailer_prices: {
         Row: {
           id: number
           string_id: string
-          retailer_name: string
-          retailer_product_url: string | null
-          set_price_eur: number | null
-          reel_price_eur: number | null
-          sale_price_eur: number | null
-          retailer_in_stock: boolean | null
+          retailer_id: number
+          product_url: string | null
+          price: number | null
+          currency: RetailerCurrency
+          availability_status: RetailerAvailabilityStatus
+          package_type: RetailerPackageType
+          package_length_m: number | null
+          is_preferred: boolean
+          notes: string | null
           last_checked_at: string | null
           created_at: string
           updated_at: string
@@ -256,12 +299,15 @@ export interface Database {
         Insert: {
           id?: number
           string_id: string
-          retailer_name: string
-          retailer_product_url?: string | null
-          set_price_eur?: number | null
-          reel_price_eur?: number | null
-          sale_price_eur?: number | null
-          retailer_in_stock?: boolean | null
+          retailer_id: number
+          product_url?: string | null
+          price?: number | null
+          currency?: RetailerCurrency
+          availability_status?: RetailerAvailabilityStatus
+          package_type?: RetailerPackageType
+          package_length_m?: number | null
+          is_preferred?: boolean
+          notes?: string | null
           last_checked_at?: string | null
           created_at?: string
           updated_at?: string
@@ -269,17 +315,35 @@ export interface Database {
         Update: {
           id?: number
           string_id?: string
-          retailer_name?: string
-          retailer_product_url?: string | null
-          set_price_eur?: number | null
-          reel_price_eur?: number | null
-          sale_price_eur?: number | null
-          retailer_in_stock?: boolean | null
+          retailer_id?: number
+          product_url?: string | null
+          price?: number | null
+          currency?: RetailerCurrency
+          availability_status?: RetailerAvailabilityStatus
+          package_type?: RetailerPackageType
+          package_length_m?: number | null
+          is_preferred?: boolean
+          notes?: string | null
           last_checked_at?: string | null
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'retailer_prices_string_id_fkey'
+            columns: ['string_id']
+            isOneToOne: false
+            referencedRelation: 'strings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'retailer_prices_retailer_id_fkey'
+            columns: ['retailer_id']
+            isOneToOne: false
+            referencedRelation: 'retailers'
+            referencedColumns: ['id']
+          },
+        ]
       }
 
       admin_users: {

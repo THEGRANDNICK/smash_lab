@@ -4,24 +4,36 @@ import AdminLogin from './AdminLogin'
 import InventoryAdminPage from './InventoryAdminPage'
 import CatalogAdminPage from './CatalogAdminPage'
 import SpecialistAdminPage from './SpecialistAdminPage'
+import RetailerAdminPage from './RetailerAdminPage'
+import RetailerListingAdminPage from './RetailerListingAdminPage'
 
 interface AdminAppProps {
   onExit: () => void
 }
 
-type AdminSection = 'inventory' | 'catalog' | 'specialists'
+type AdminSection = 'inventory' | 'catalog' | 'specialists' | 'retailers' | 'retailerListings'
+
+/** Section <-> hash mapping — kept explicit (not derived from the section id) since the retailerListings section uses a kebab-case hash (#admin/retailer-listings) for readability, unlike its camelCase TS identifier. */
+const SECTION_HASH: Record<AdminSection, string> = {
+  inventory: 'admin/inventory',
+  catalog: 'admin/catalog',
+  specialists: 'admin/specialists',
+  retailers: 'admin/retailers',
+  retailerListings: 'admin/retailer-listings',
+}
 
 function sectionFromHash(): AdminSection {
   const hash = window.location.hash.replace('#', '')
-  if (hash === 'admin/catalog') return 'catalog'
-  if (hash === 'admin/specialists') return 'specialists'
-  return 'inventory'
+  const match = (Object.entries(SECTION_HASH) as [AdminSection, string][]).find(([, h]) => h === hash)
+  return match ? match[0] : 'inventory'
 }
 
 const SECTION_LABEL: Record<AdminSection, string> = {
   inventory: 'Inventory',
   catalog: 'Catalog',
   specialists: 'Specialists',
+  retailers: 'Retailers',
+  retailerListings: 'Retailer Listings',
 }
 
 export default function AdminApp({ onExit }: AdminAppProps) {
@@ -35,7 +47,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
   }, [])
 
   function goToSection(next: AdminSection) {
-    window.location.hash = `admin/${next}`
+    window.location.hash = SECTION_HASH[next]
     setSection(next)
   }
 
@@ -101,7 +113,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       </div>
 
       <nav className="flex items-center gap-2 mb-8 flex-wrap" aria-label="Admin sections">
-        {(['inventory', 'catalog', 'specialists'] as const).map((s) => (
+        {(['inventory', 'catalog', 'specialists', 'retailers', 'retailerListings'] as const).map((s) => (
           <button
             key={s}
             type="button"
@@ -126,6 +138,8 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       {section === 'inventory' && <InventoryAdminPage />}
       {section === 'catalog' && <CatalogAdminPage />}
       {section === 'specialists' && <SpecialistAdminPage />}
+      {section === 'retailers' && <RetailerAdminPage />}
+      {section === 'retailerListings' && <RetailerListingAdminPage />}
     </div>
   )
 }

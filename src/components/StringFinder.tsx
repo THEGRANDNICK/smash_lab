@@ -4,6 +4,7 @@ import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
+import type { RetailerListing } from '../services/retailerPriceService'
 import QuizQuestion from './QuizQuestion'
 import TensionInputStep from './TensionInputStep'
 import ProgressBar from './ProgressBar'
@@ -19,6 +20,8 @@ interface StringFinderProps {
   pool?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). */
   specialistProfiles?: Record<string, StringSpecialistProfile>
+  /** Purchase options, keyed by string id, from useRetailerPrices(). Omitted or empty renders no purchase options. */
+  retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
 function buildSteps(answers: QuizAnswers): string[] {
@@ -31,7 +34,7 @@ function buildSteps(answers: QuizAnswers): string[] {
   return steps
 }
 
-export default function StringFinder({ onExit, onCompare, pool, specialistProfiles }: StringFinderProps) {
+export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId }: StringFinderProps) {
   const [answers, setAnswers] = useState<QuizAnswers>({})
   const [stepIndex, setStepIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('quiz')
@@ -102,7 +105,14 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   if (phase === 'result') {
     return (
       <div className="px-4">
-        <RecommendationResult answers={answers} onRetake={restart} onCompare={onCompare} pool={pool} specialistProfiles={specialistProfiles} />
+        <RecommendationResult
+          answers={answers}
+          onRetake={restart}
+          onCompare={onCompare}
+          pool={pool}
+          specialistProfiles={specialistProfiles}
+          retailerListingsByStringId={retailerListingsByStringId}
+        />
       </div>
     )
   }
