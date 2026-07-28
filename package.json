@@ -12,6 +12,7 @@
     "verify:supabase": "tsx scripts/verifySupabase.ts",
     "verify:catalog": "tsx scripts/verifyCatalog.ts",
     "migrate:inventory": "tsx scripts/migrateInventory.ts",
+    "migrate:specialists": "tsx scripts/migrateSpecialists.ts",
     "test:catalog": "tsx scripts/testCatalog.ts",
     "test:catalog-admin": "tsx scripts/testCatalogAdmin.ts",
     "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts"
