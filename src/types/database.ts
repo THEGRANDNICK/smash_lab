@@ -28,6 +28,15 @@ export interface TensionMetaJson {
   tensionNotes?: string
 }
 
+/** Shape of the `main_string_meta` / `cross_string_meta` jsonb columns — mirrors HybridStringMeta in data/strings.ts. Display/admin metadata only, never a recommendation input. */
+export interface HybridStringMetaJson {
+  gauge?: number
+  material?: string
+  construction?: string
+  coating?: string
+  color?: string
+}
+
 /** Shape of the `dimensions` / `dimension_confidence` jsonb columns — mirrors SpecialistDimensions in data/stringSpecialistProfiles.ts. Sparse by design. */
 export interface SpecialistDimensionsJson {
   hardHitterFit?: number
@@ -74,6 +83,9 @@ export interface Database {
           product_url: string | null
           image_url: string | null
           colors: string[] | null
+          is_hybrid: boolean
+          main_string_meta: HybridStringMetaJson | null
+          cross_string_meta: HybridStringMetaJson | null
           created_at: string
           updated_at: string
         }
@@ -95,6 +107,9 @@ export interface Database {
           product_url?: string | null
           image_url?: string | null
           colors?: string[] | null
+          is_hybrid?: boolean
+          main_string_meta?: HybridStringMetaJson | null
+          cross_string_meta?: HybridStringMetaJson | null
           created_at?: string
           updated_at?: string
         }
@@ -116,6 +131,9 @@ export interface Database {
           product_url?: string | null
           image_url?: string | null
           colors?: string[] | null
+          is_hybrid?: boolean
+          main_string_meta?: HybridStringMetaJson | null
+          cross_string_meta?: HybridStringMetaJson | null
           created_at?: string
           updated_at?: string
         }
@@ -175,6 +193,7 @@ export interface Database {
           weaknesses: string[] | null
           specialist_tags: string[] | null
           subjective_notes: string | null
+          reviewer: string | null
           updated_at: string
         }
         Insert: {
@@ -190,6 +209,7 @@ export interface Database {
           weaknesses?: string[] | null
           specialist_tags?: string[] | null
           subjective_notes?: string | null
+          reviewer?: string | null
           updated_at?: string
         }
         Update: {
@@ -205,9 +225,18 @@ export interface Database {
           weaknesses?: string[] | null
           specialist_tags?: string[] | null
           subjective_notes?: string | null
+          reviewer?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'specialist_profiles_string_id_fkey'
+            columns: ['string_id']
+            isOneToOne: true
+            referencedRelation: 'strings'
+            referencedColumns: ['id']
+          },
+        ]
       }
 
       retailer_prices: {

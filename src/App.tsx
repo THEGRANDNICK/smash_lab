@@ -11,6 +11,7 @@ import StringFinder from './components/StringFinder'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 import AdminApp from './components/admin/AdminApp'
 import { useStringPool } from './hooks/useStringPool'
+import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 
 type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin'
 
@@ -20,7 +21,7 @@ function viewFromHash(): View {
   // Not linked from the public nav — a direct URL is the entry point.
   // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
   // this route being hard to find.
-  if (hash === 'admin' || hash === 'admin/inventory' || hash === 'admin/catalog') return 'admin'
+  if (hash === 'admin' || hash === 'admin/inventory' || hash === 'admin/catalog' || hash === 'admin/specialists') return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
   // by Vite, so this branch (and the SupabaseDebugPage import) is dead
   // code eliminated from production builds entirely.
@@ -31,6 +32,7 @@ function viewFromHash(): View {
 function App() {
   const [view, setView] = useState<View>(viewFromHash)
   const liveStrings = useStringPool()
+  const specialistProfiles = useSpecialistProfiles()
 
   useEffect(() => {
     const onHashChange = () => setView(viewFromHash())
@@ -61,7 +63,7 @@ function App() {
           <>
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
-            <StringComparison strings={liveStrings} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
             <WhyUs />
             <FAQ />
             <Contact />
@@ -70,13 +72,13 @@ function App() {
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">
-            <StringFinder onExit={() => goTo('home')} onCompare={() => goTo('compare')} pool={liveStrings} />
+            <StringFinder onExit={() => goTo('home')} onCompare={() => goTo('compare')} pool={liveStrings} specialistProfiles={specialistProfiles} />
           </div>
         )}
 
         {view === 'compare' && (
           <div className="pt-6">
-            <StringComparison strings={liveStrings} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
             <div className="text-center pb-16">
               <button
                 type="button"

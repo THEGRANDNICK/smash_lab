@@ -3,15 +3,25 @@ import { useAdminAuth } from '../../hooks/useAdminAuth'
 import AdminLogin from './AdminLogin'
 import InventoryAdminPage from './InventoryAdminPage'
 import CatalogAdminPage from './CatalogAdminPage'
+import SpecialistAdminPage from './SpecialistAdminPage'
 
 interface AdminAppProps {
   onExit: () => void
 }
 
-type AdminSection = 'inventory' | 'catalog'
+type AdminSection = 'inventory' | 'catalog' | 'specialists'
 
 function sectionFromHash(): AdminSection {
-  return window.location.hash.replace('#', '') === 'admin/catalog' ? 'catalog' : 'inventory'
+  const hash = window.location.hash.replace('#', '')
+  if (hash === 'admin/catalog') return 'catalog'
+  if (hash === 'admin/specialists') return 'specialists'
+  return 'inventory'
+}
+
+const SECTION_LABEL: Record<AdminSection, string> = {
+  inventory: 'Inventory',
+  catalog: 'Catalog',
+  specialists: 'Specialists',
 }
 
 export default function AdminApp({ onExit }: AdminAppProps) {
@@ -25,7 +35,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
   }, [])
 
   function goToSection(next: AdminSection) {
-    window.location.hash = next === 'inventory' ? 'admin/inventory' : 'admin/catalog'
+    window.location.hash = `admin/${next}`
     setSection(next)
   }
 
@@ -70,7 +80,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-court-900/10 dark:border-white/10">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Smash Lab Admin</p>
-          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">{section === 'inventory' ? 'Inventory' : 'Catalog'}</h1>
+          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">{SECTION_LABEL[section]}</h1>
         </div>
         <div className="flex items-center gap-4 text-sm font-semibold">
           <button
@@ -90,27 +100,20 @@ export default function AdminApp({ onExit }: AdminAppProps) {
         </div>
       </div>
 
-      <nav className="flex items-center gap-2 mb-8" aria-label="Admin sections">
-        <button
-          type="button"
-          onClick={() => goToSection('inventory')}
-          aria-current={section === 'inventory' ? 'page' : undefined}
-          className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
-            section === 'inventory' ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
-          }`}
-        >
-          Inventory
-        </button>
-        <button
-          type="button"
-          onClick={() => goToSection('catalog')}
-          aria-current={section === 'catalog' ? 'page' : undefined}
-          className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
-            section === 'catalog' ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
-          }`}
-        >
-          Catalog
-        </button>
+      <nav className="flex items-center gap-2 mb-8 flex-wrap" aria-label="Admin sections">
+        {(['inventory', 'catalog', 'specialists'] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => goToSection(s)}
+            aria-current={section === s ? 'page' : undefined}
+            className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+              section === s ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
+            }`}
+          >
+            {SECTION_LABEL[s]}
+          </button>
+        ))}
         <span
           aria-disabled="true"
           title="Coming in a later phase"
@@ -120,7 +123,9 @@ export default function AdminApp({ onExit }: AdminAppProps) {
         </span>
       </nav>
 
-      {section === 'inventory' ? <InventoryAdminPage /> : <CatalogAdminPage />}
+      {section === 'inventory' && <InventoryAdminPage />}
+      {section === 'catalog' && <CatalogAdminPage />}
+      {section === 'specialists' && <SpecialistAdminPage />}
     </div>
   )
 }

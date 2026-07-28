@@ -13,7 +13,8 @@
     "verify:catalog": "tsx scripts/verifyCatalog.ts",
     "migrate:inventory": "tsx scripts/migrateInventory.ts",
     "test:catalog": "tsx scripts/testCatalog.ts",
-    "test:catalog-admin": "tsx scripts/testCatalogAdmin.ts"
+    "test:catalog-admin": "tsx scripts/testCatalogAdmin.ts",
+    "test:specialist-admin": "tsx scripts/testSpecialistAdmin.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

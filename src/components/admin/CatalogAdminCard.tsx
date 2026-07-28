@@ -79,11 +79,14 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{row.name}</h3>
           <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40 font-mono">{row.id}</p>
         </div>
-        <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-court-900/5 dark:bg-white/10 text-ink-700 dark:text-shuttle-100 capitalize">{row.category}</span>
+        <div className="flex items-center gap-2">
+          {row.isHybrid && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-shuttle-500/20 text-shuttle-600">Hybrid</span>}
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-court-900/5 dark:bg-white/10 text-ink-700 dark:text-shuttle-100 capitalize">{row.category}</span>
+        </div>
       </div>
 
       <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-4">
-        <Field label="Gauge" value={row.gaugeMm == null ? '—' : `${row.gaugeMm}mm`} />
+        <Field label="Gauge" value={formatAdminGauge(row)} />
         <Field label="Repulsion" value={String(row.repulsion)} />
         <Field label="Durability" value={String(row.durability)} />
         <Field label="Control" value={String(row.control)} />
@@ -161,4 +164,17 @@ function Field({ label, value }: { label: string; value: string }) {
       <dd className="text-ink-900 dark:text-shuttle-50">{value}</dd>
     </div>
   )
+}
+
+/** Mirrors logic/formatGauge.ts's display rule, adapted for the admin row shape (which tracks main/cross metadata separately from the public StringItem model). */
+function formatAdminGauge(row: AdminCatalogRow): string {
+  if (row.isHybrid) {
+    const main = row.mainStringMeta?.gauge
+    const cross = row.crossStringMeta?.gauge
+    if (main != null && cross != null) return `${main} / ${cross}mm`
+    if (main != null) return `${main}mm (main)`
+    if (cross != null) return `${cross}mm (cross)`
+    return '—'
+  }
+  return row.gaugeMm == null ? '—' : `${row.gaugeMm}mm`
 }

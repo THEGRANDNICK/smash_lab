@@ -98,6 +98,8 @@ export interface StringSpecialistProfile {
   subjectiveNotes?: string
   experienceSource: ExperienceSource
   confidence: Confidence
+  /** Who made this assessment (a name, or e.g. "club consensus") — distinct from experienceSource (how the knowledge was gained) and confidence (how much to trust it). */
+  reviewer?: string
 }
 
 export const STRING_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {

@@ -91,6 +91,9 @@ export function toStringsRow(item: StringItem): StringsRow {
     product_url: item.productUrl ?? null,
     image_url: item.imageUrl ?? null,
     colors: item.colors ?? null,
+    is_hybrid: item.isHybrid ?? false,
+    main_string_meta: item.mainString ?? null,
+    cross_string_meta: item.crossString ?? null,
   }
 }
 

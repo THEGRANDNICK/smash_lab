@@ -112,6 +112,33 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
         </div>
       </fieldset>
 
+      <div className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4">
+        <label className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer">
+          <input type="checkbox" checked={input.isHybrid} onChange={(e) => set('isHybrid', e.target.checked)} disabled={saving} className="focus-ring rounded" />
+          Hybrid string (separate main + cross construction, e.g. Yonex AeroBite)
+        </label>
+        {input.isHybrid && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Main string</p>
+              <NumberField label="Gauge (mm)" value={input.mainGauge} onChange={(v) => set('mainGauge', v)} error={errors.mainGauge} disabled={saving} placeholder="optional" step="0.01" />
+              <TextField label="Material" value={input.mainMaterial} onChange={(v) => set('mainMaterial', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Construction" value={input.mainConstruction} onChange={(v) => set('mainConstruction', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Coating" value={input.mainCoating} onChange={(v) => set('mainCoating', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Color" value={input.mainColor} onChange={(v) => set('mainColor', v)} disabled={saving} placeholder="optional" />
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Cross string</p>
+              <NumberField label="Gauge (mm)" value={input.crossGauge} onChange={(v) => set('crossGauge', v)} error={errors.crossGauge} disabled={saving} placeholder="optional" step="0.01" />
+              <TextField label="Material" value={input.crossMaterial} onChange={(v) => set('crossMaterial', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Construction" value={input.crossConstruction} onChange={(v) => set('crossConstruction', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Coating" value={input.crossCoating} onChange={(v) => set('crossCoating', v)} disabled={saving} placeholder="optional" />
+              <TextField label="Color" value={input.crossColor} onChange={(v) => set('crossColor', v)} disabled={saving} placeholder="optional" />
+            </div>
+          </div>
+        )}
+      </div>
+
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
         <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Commerce &amp; description</summary>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">

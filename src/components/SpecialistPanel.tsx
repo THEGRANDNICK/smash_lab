@@ -96,6 +96,12 @@ export default function SpecialistPanel({ profile }: { profile: StringSpecialist
               <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">Confidence: </span>
               <span className="text-ink-900 dark:text-shuttle-50">{CONFIDENCE_LABEL[profile.confidence]}</span>
             </p>
+            {profile.reviewer && (
+              <p>
+                <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">Reviewer: </span>
+                <span className="text-ink-900 dark:text-shuttle-50">{profile.reviewer}</span>
+              </p>
+            )}
           </div>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
             Based on personal play, stringing observations and club experience — separate from the manufacturer ratings above.

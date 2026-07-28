@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { strings as defaultStrings, type StringItem } from '../data/strings'
+import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StringCard, { type PerformanceView } from './StringCard'
@@ -12,9 +13,11 @@ const MAX_COMPARE = 3
 interface StringComparisonProps {
   /** Defaults to the static catalog import when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
   strings?: StringItem[]
+  /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). */
+  specialistProfiles?: Record<string, StringSpecialistProfile>
 }
 
-export default function StringComparison({ strings: stringsProp }: StringComparisonProps) {
+export default function StringComparison({ strings: stringsProp, specialistProfiles }: StringComparisonProps) {
   const strings = stringsProp ?? defaultStrings
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [brand, setBrand] = useState<string>('all')
@@ -186,6 +189,7 @@ export default function StringComparison({ strings: stringsProp }: StringCompari
               compareSelected={compareIds.includes(item.id)}
               compareDisabled={compareIds.length >= MAX_COMPARE}
               onToggleCompare={toggleCompare}
+              specialistProfiles={specialistProfiles}
             />
           ))}
         </div>

@@ -18,7 +18,7 @@
 
 import { strings as allStrings, type StringItem } from '../data/strings.js'
 import {
-  getSpecialistProfile,
+  STRING_SPECIALIST_PROFILES,
   type StringSpecialistProfile,
   type SpecialistDimensionKey,
   type SpecialistDimensions,
@@ -175,8 +175,13 @@ interface SpecialistScoreResult {
   topDims: SpecialistDimensionKey[]
 }
 
-function scoreSpecialist(item: StringItem, specialistWeights: SpecialistWeightVector, totalWeightBudget: number): SpecialistScoreResult | undefined {
-  const profile = getSpecialistProfile(item.id)
+function scoreSpecialist(
+  item: StringItem,
+  specialistWeights: SpecialistWeightVector,
+  totalWeightBudget: number,
+  specialistProfiles: Record<string, StringSpecialistProfile>,
+): SpecialistScoreResult | undefined {
+  const profile = specialistProfiles[item.id]
   if (!profile) return undefined
 
   const availableDims = (Object.entries(profile.dimensions) as [SpecialistDimensionKey, number | undefined][]).filter(
@@ -204,10 +209,16 @@ function scoreSpecialist(item: StringItem, specialistWeights: SpecialistWeightVe
   return { percent, relevance, confidenceMultiplier, topDims }
 }
 
-/** Scores a single string by blending manufacturer data with Smash Lab specialist knowledge. */
-export function scoreString(item: StringItem, profile: DimensionWeights, specialistWeights: SpecialistWeightVector, specialistBudget: number): ScoredString {
+/** Scores a single string by blending manufacturer data with Smash Lab specialist knowledge. `specialistProfiles` defaults to the local data file — pass the live, Supabase-merged map from useSpecialistProfiles() to source it from there instead; the scoring math itself never changes. */
+export function scoreString(
+  item: StringItem,
+  profile: DimensionWeights,
+  specialistWeights: SpecialistWeightVector,
+  specialistBudget: number,
+  specialistProfiles: Record<string, StringSpecialistProfile> = STRING_SPECIALIST_PROFILES,
+): ScoredString {
   const manufacturer = scoreManufacturer(item, profile)
-  const specialist = scoreSpecialist(item, specialistWeights, specialistBudget)
+  const specialist = scoreSpecialist(item, specialistWeights, specialistBudget, specialistProfiles)
 
   let finalPercent = manufacturer.percent
   let influence = 0
@@ -268,9 +279,9 @@ function availabilityNote(item: StringItem): string {
 
 type ExplanationRole = 'best' | 'bestAvailable' | 'crossBrand' | 'specialist'
 
-function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: ExplanationRole): string {
+function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: ExplanationRole, specialistProfiles: Record<string, StringSpecialistProfile>): string {
   const { string: s } = scored
-  const profile = getSpecialistProfile(s.id)
+  const profile = specialistProfiles[s.id]
 
   const leadIn =
     role === 'best'
@@ -336,12 +347,25 @@ const CANDIDATE_MIN_POOL = 4
 const CROSS_BRAND_WINDOW = 16
 const SPECIALIST_CHOICE_WINDOW = 18
 
-export function recommendStrings(answers: QuizAnswers, pool: StringItem[] = allStrings): StringRecommendation {
+/**
+ * `specialistProfiles` defaults to the local data file (byte-identical to
+ * pre-Phase-6 behavior for any caller that doesn't pass it) — pass the
+ * live, Supabase-merged map from useSpecialistProfiles() to source
+ * specialist knowledge from there instead. The engine itself never knows
+ * or cares where either `pool` or `specialistProfiles` came from — see
+ * services/catalogService.ts and services/specialistProfileService.ts for
+ * that.
+ */
+export function recommendStrings(
+  answers: QuizAnswers,
+  pool: StringItem[] = allStrings,
+  specialistProfiles: Record<string, StringSpecialistProfile> = STRING_SPECIALIST_PROFILES,
+): StringRecommendation {
   const profile = buildPreferenceProfile(answers)
   const specialistWeights = buildSpecialistWeights(answers)
   const specialistBudget = ALL_SPECIALIST_KEYS.reduce((sum, k) => sum + specialistWeights[k], 0)
 
-  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget))
+  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles))
 
   // Ranked purely on how well each string fits this player — stock never
   // enters scoring or eligibility. We can order in strings we don't
@@ -396,10 +420,10 @@ export function recommendStrings(answers: QuizAnswers, pool: StringItem[] = allS
     specialistChoice,
     profile,
     explanations: {
-      best: buildExplanation(best, answers, 'best'),
-      bestAvailable: bestAvailable ? buildExplanation(bestAvailable, answers, 'bestAvailable') : undefined,
-      crossBrandAlternative: crossBrandAlternative ? buildExplanation(crossBrandAlternative, answers, 'crossBrand') : undefined,
-      specialistChoice: specialistChoice ? buildExplanation(specialistChoice, answers, 'specialist') : undefined,
+      best: buildExplanation(best, answers, 'best', specialistProfiles),
+      bestAvailable: bestAvailable ? buildExplanation(bestAvailable, answers, 'bestAvailable', specialistProfiles) : undefined,
+      crossBrandAlternative: crossBrandAlternative ? buildExplanation(crossBrandAlternative, answers, 'crossBrand', specialistProfiles) : undefined,
+      specialistChoice: specialistChoice ? buildExplanation(specialistChoice, answers, 'specialist', specialistProfiles) : undefined,
     },
   }
 }

@@ -14,7 +14,7 @@
 // merged with the local fallback to "fill the gaps" — that would risk a
 // silent, non-deterministic mix. See isLiveCatalogComplete() below.
 
-import { strings as localCatalog, type StringItem, type StringCategory, type StringTensionMeta } from '../data/strings.js'
+import { strings as localCatalog, type StringItem, type StringCategory, type StringTensionMeta, type HybridStringMeta } from '../data/strings.js'
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase.js'
 import type { Database } from '../types/database.js'
 
@@ -93,6 +93,36 @@ export function inRange(v: number, min: number, max: number): boolean {
   return v >= min && v <= max
 }
 
+/** True if `v` has at most `maxDecimals` decimal places (e.g. 9.5 passes at maxDecimals=1, 9.55 does not) — rejects over-precise input rather than silently rounding it, matching the database's own `= round(x, 1)` CHECK constraint on ratings. */
+export function hasDecimalPrecision(v: number, maxDecimals: number): boolean {
+  return Math.round(v * 10 ** maxDecimals) / 10 ** maxDecimals === v
+}
+
+/** Validates one side (main/cross) of a hybrid string's sparse jsonb metadata. Display/admin detail only — never feeds the recommendation engine. */
+function validateHybridSide(meta: unknown, side: 'main' | 'cross', id: string): { ok: true; value: HybridStringMeta | undefined } | { ok: false; reason: string } {
+  if (meta == null) return { ok: true, value: undefined }
+  if (typeof meta !== 'object') return { ok: false, reason: `${id}: ${side}_string_meta must be an object` }
+  const m = meta as Record<string, unknown>
+
+  if (m.gauge != null) {
+    if (!isFiniteNumber(m.gauge) || m.gauge < 0) return { ok: false, reason: `${id}: ${side}_string_meta.gauge must be a non-negative number` }
+  }
+  for (const key of ['material', 'construction', 'coating', 'color'] as const) {
+    if (m[key] != null && typeof m[key] !== 'string') {
+      return { ok: false, reason: `${id}: ${side}_string_meta.${key} must be a string` }
+    }
+  }
+
+  const value = {
+    ...(m.gauge != null ? { gauge: m.gauge as number } : {}),
+    ...(m.material != null ? { material: m.material as string } : {}),
+    ...(m.construction != null ? { construction: m.construction as string } : {}),
+    ...(m.coating != null ? { coating: m.coating as string } : {}),
+    ...(m.color != null ? { color: m.color as string } : {}),
+  }
+  return { ok: true, value: Object.keys(value).length > 0 ? value : undefined }
+}
+
 export type CatalogRowValidation = { ok: true; item: StringItem } | { ok: false; reason: string }
 
 /**
@@ -134,12 +164,18 @@ export function mapCatalogRow(row: StringsRow): CatalogRowValidation {
     if (!isFiniteNumber(value) || !inRange(value, RATING_MIN, RATING_MAX)) {
       return { ok: false, reason: `${id}: ${field} rating "${String(value)}" is not a number within ${RATING_MIN}-${RATING_MAX}` }
     }
+    if (!hasDecimalPrecision(value, 1)) {
+      return { ok: false, reason: `${id}: ${field} rating "${String(value)}" has more than one decimal place` }
+    }
   }
 
   let shockAbsorption: number | null = null
   if (row.shock_absorption != null) {
     if (!isFiniteNumber(row.shock_absorption) || !inRange(row.shock_absorption, RATING_MIN, RATING_MAX)) {
       return { ok: false, reason: `${id}: shockAbsorption "${String(row.shock_absorption)}" is not a number within ${RATING_MIN}-${RATING_MAX}` }
+    }
+    if (!hasDecimalPrecision(row.shock_absorption, 1)) {
+      return { ok: false, reason: `${id}: shockAbsorption "${String(row.shock_absorption)}" has more than one decimal place` }
     }
     shockAbsorption = row.shock_absorption
   }
@@ -230,6 +266,11 @@ export function mapCatalogRow(row: StringsRow): CatalogRowValidation {
 
   const notes = row.description != null && row.description.trim() !== '' ? row.description : undefined
 
+  const mainStringResult = validateHybridSide(row.main_string_meta, 'main', id)
+  if (!mainStringResult.ok) return mainStringResult
+  const crossStringResult = validateHybridSide(row.cross_string_meta, 'cross', id)
+  if (!crossStringResult.ok) return crossStringResult
+
   const item: StringItem = {
     id,
     brand,
@@ -251,6 +292,9 @@ export function mapCatalogRow(row: StringsRow): CatalogRowValidation {
     ...(popularityRank != null ? { popularityRank } : {}),
     ...(productUrl ? { productUrl } : {}),
     ...(imageUrl ? { imageUrl } : {}),
+    ...(row.is_hybrid ? { isHybrid: true } : {}),
+    ...(mainStringResult.value ? { mainString: mainStringResult.value } : {}),
+    ...(crossStringResult.value ? { crossString: crossStringResult.value } : {}),
   }
 
   return { ok: true, item }

@@ -7,7 +7,7 @@ export type StockLevel = 'in-stock' | 'low-stock' | 'unavailable'
 export type StringCategory = 'repulsion' | 'control' | 'durability'
 
 export interface StringTensionMeta {
-  /** Gauge in mm, if known (thinner strings tend to feel livelier). */
+  /** Gauge in mm, if known (thinner strings tend to feel livelier). For a hybrid string (see isHybrid below), this is left unset — use mainString.gauge / crossString.gauge instead, since a hybrid has no single overall gauge. */
   gauge?: number
   /** Small kg nudge applied on top of the base tension recommendation (-0.5 to +0.5 typical). */
   tensionAdjustment?: number
@@ -17,12 +17,28 @@ export interface StringTensionMeta {
   tensionNotes?: string
 }
 
+/**
+ * Sparse metadata for one side (main or cross) of a hybrid string —
+ * display/admin detail only, never a recommendation input. The manufacturer
+ * ratings on StringItem itself (repulsion/durability/control/etc.) already
+ * describe the hybrid as a whole exactly as a normal string's ratings do;
+ * this is purely "what is this side actually made of" detail.
+ */
+export interface HybridStringMeta {
+  /** Gauge in mm. */
+  gauge?: number
+  material?: string
+  construction?: string
+  coating?: string
+  color?: string
+}
+
 export interface StringItem {
   id: string
   brand: string
   name: string
   category: StringCategory
-  /** 0-11 relative ratings as supplied by the stringer. */
+  /** 0-11 relative ratings as supplied by the stringer — decimals allowed (e.g. 9.5), one decimal place. */
   repulsion: number
   durability: number
   hittingSound: number
@@ -34,6 +50,12 @@ export interface StringItem {
   /** Cost of the string itself in EUR. Kept separate from the service fee. */
   stringCost: number | null // null = price not set yet
   colors?: string[]
+  /** True for a dual-string (main+cross) construction, e.g. Yonex AeroBite. Display/admin metadata only — the recommendation engine scores the hybrid as a whole via the ratings above, exactly like any other string; it never special-cases isHybrid. */
+  isHybrid?: boolean
+  /** Only meaningful when isHybrid is true. */
+  mainString?: HybridStringMeta
+  /** Only meaningful when isHybrid is true. */
+  crossString?: HybridStringMeta
   /**
    * Real-world playing character — feel, shuttle hold, smash response,
    * durability behavior, trade-offs, etc. Kept deliberately separate from
@@ -235,7 +257,9 @@ export const strings: StringItem[] = [
     // thinner 0.61mm cross string for extra spin/shuttle grip (gauges via retailer listings).
     notes:
       "Yonex's hybrid string — thinner cross strings tuned for spin and shuttle grip on net play and flat exchanges, paired with a slightly thicker main string for power and durability.",
-    tension: { gauge: 0.67 },
+    isHybrid: true,
+    mainString: { gauge: 0.67 },
+    crossString: { gauge: 0.61 },
     productUrl: 'https://www.yonex.com/badminton/strings/bgab',
   },
   {
@@ -252,6 +276,9 @@ export const strings: StringItem[] = [
     setsAvailable: 1,
     stringCost: 10.9,
     notes: "A control-leaning variant of AeroBite's hybrid concept — the same spin-friendly thinner cross strings, tuned further toward control over outright repulsion.",
+    // Same hybrid concept as AeroBite, but no gauge figures for this specific
+    // variant have been confidently sourced yet — left unset rather than guessed.
+    isHybrid: true,
     productUrl: 'https://www.yonex.com/badminton/strings/bgabbt',
   },
   {
