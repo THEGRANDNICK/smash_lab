@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import type { StringItem } from '../data/strings'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { formatGauge } from '../logic/formatGauge'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
+import { allStringColors } from '../logic/stringColor'
+import { needsClamp } from '../logic/textClamp'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StockBadge from './StockBadge'
@@ -9,6 +12,7 @@ import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
+import StringColorSwatch from './StringColorSwatch'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
   repulsion: 'Quick Repulsion',
@@ -34,6 +38,9 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
   const orderable = item.stock !== 'unavailable'
   const specialistProfile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const gauge = formatGauge(item)
+  const swatches = allStringColors(item.colors)
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
+  const descriptionClamped = needsClamp(item.notes)
 
   return (
     <div
@@ -48,7 +55,16 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
+            {swatches.length > 0 && (
+              <span className="flex items-center gap-1">
+                {swatches.map((swatch) => (
+                  <StringColorSwatch key={swatch.hex} swatch={swatch} size="sm" />
+                ))}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
             {gauge != null && <> · {gauge}</>}
@@ -91,10 +107,25 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           ]}
           size={200}
           showValues
+          maxWidthClassName="max-w-[320px]"
         />
       )}
 
-      {item.notes && <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">{item.notes}</p>}
+      {item.notes && (
+        <div className="text-sm text-ink-700/70 dark:text-shuttle-100/70">
+          <p className={descriptionClamped && !descriptionExpanded ? 'line-clamp-3' : ''}>{item.notes}</p>
+          {descriptionClamped && (
+            <button
+              type="button"
+              onClick={() => setDescriptionExpanded((e) => !e)}
+              aria-expanded={descriptionExpanded}
+              className="focus-ring mt-1 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+            >
+              {descriptionExpanded ? 'Show less' : 'Read more'}
+            </button>
+          )}
+        </div>
+      )}
 
       {specialistProfile && <SpecialistPanel profile={specialistProfile} />}
 

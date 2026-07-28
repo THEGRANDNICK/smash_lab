@@ -7,6 +7,7 @@ import { buildRequestMailto } from '../logic/contactMessage'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { formatGauge } from '../logic/formatGauge'
 import { buildStructuredExplanation, buildAlternativeReasons } from '../logic/recommendationExplanation'
+import { primaryStringColor } from '../logic/stringColor'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { RetailerListing } from '../services/retailerPriceService'
@@ -15,6 +16,7 @@ import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
+import StringColorSwatch from './StringColorSwatch'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -64,12 +66,16 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
     )
   }
 
+  const bestSwatch = primaryStringColor(rec.best.string.colors)
+
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
         {/* Hero result card, styled like a match result / player card */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-court-900 via-court-800 to-court-700 text-white px-6 py-10 sm:px-10 sm:py-12 shadow-2xl">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-court-900 via-court-800 to-court-700 text-white px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 shadow-2xl">
           <div className="absolute inset-0 court-lines opacity-30" aria-hidden="true" />
+          {/* Very subtle string-bed weave — decorative only, no image asset, static (nothing to reduce for prefers-reduced-motion). */}
+          <div className="absolute inset-0 string-grid opacity-[0.07]" aria-hidden="true" />
           <motion.div
             className="absolute top-6 right-6 text-shuttle-400/40"
             animate={{ rotate: [0, 10, -10, 0], y: [0, -8, 0] }}
@@ -79,23 +85,26 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             <Shuttlecock className="w-20 h-20" />
           </motion.div>
 
-          <div className="relative">
+          <div className="relative max-w-2xl">
             <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
 
-            <div className="mt-4 flex items-center gap-4">
-              <div className="text-5xl sm:text-6xl font-display font-bold text-shuttle-400" aria-label={`${rec.best.matchPercent} percent match`}>
+            <div className="mt-5 flex items-center gap-4">
+              <div className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold text-shuttle-400 leading-none" aria-label={`${rec.best.matchPercent} percent match`}>
                 {rec.best.matchPercent}%
               </div>
               <div className="text-lg font-semibold text-white/80">match</div>
             </div>
 
-            <p className="mt-4 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-              {rec.best.string.name}
-              {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
-            </h1>
+            <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
+            <div className="mt-1 flex items-center gap-3">
+              {bestSwatch && <StringColorSwatch swatch={bestSwatch} size="lg" />}
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+                {rec.best.string.name}
+                {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
+              </h1>
+            </div>
             {bestExplanation.playerLevelFit && (
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
+              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
                 ⭐ {bestExplanation.playerLevelFit}
               </p>
             )}
@@ -168,36 +177,38 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             </div>
           )}
 
-          <p className="mt-4 text-ink-700/80 dark:text-shuttle-100/80">{bestExplanation.paragraph}</p>
-          <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">{tension.explanation}</p>
+          <div className="max-w-2xl">
+            <p className="mt-4 text-ink-700/80 dark:text-shuttle-100/80">{bestExplanation.paragraph}</p>
+            <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">{tension.explanation}</p>
+          </div>
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <ExplanationList title="Strengths" icon="✅" items={bestExplanation.strengths} />
             <ExplanationList title="Trade-offs" icon="⚖️" items={bestExplanation.tradeoffs} />
           </div>
 
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Manufacturer Ratings</h3>
-            <StatBars item={rec.best.string} />
+          <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-3">Manufacturer Ratings</h3>
+              <StatBars item={rec.best.string} />
+            </div>
+
+            <div className="space-y-5">
+              {bestSpecialist && <SpecialistPanel profile={bestSpecialist} />}
+
+              {bestListings && bestListings.length > 0 ? (
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Where to Buy</h3>
+                  <PurchaseOptions listings={bestListings} />
+                </div>
+              ) : (
+                <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No retailer listings available for this string yet.</p>
+              )}
+            </div>
           </div>
-
-          {bestSpecialist && (
-            <div className="mt-5">
-              <SpecialistPanel profile={bestSpecialist} />
-            </div>
-          )}
-
-          {bestListings && bestListings.length > 0 ? (
-            <div className="mt-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Where to Buy</h3>
-              <PurchaseOptions listings={bestListings} />
-            </div>
-          ) : (
-            <p className="mt-5 text-xs text-ink-700/50 dark:text-shuttle-100/50">No retailer listings available for this string yet.</p>
-          )}
         </section>
 
-        {/* Cross-brand alternative */}
+        {/* Cross-brand alternative — subtle cool (blue/cyan) accent */}
         {rec.crossBrandAlternative && (
           <AlternativeCard
             title="🌐 Cross-Brand Alternative"
@@ -205,10 +216,11 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             explanation={rec.explanations.crossBrandAlternative}
             baseline={rec.best}
             specialistProfiles={specialistProfiles}
+            variant="cross-brand"
           />
         )}
 
-        {/* Specialist choice */}
+        {/* Specialist choice — subtle gold accent */}
         {rec.specialistChoice && (
           <AlternativeCard
             title="⭐ Specialist Choice"
@@ -216,6 +228,7 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             explanation={rec.explanations.specialistChoice}
             baseline={rec.best}
             specialistProfiles={specialistProfiles}
+            variant="specialist"
             compact
           />
         )}
@@ -267,12 +280,21 @@ function ExplanationList({ title, icon, items }: { title: string; icon: string; 
   )
 }
 
+type AlternativeVariant = 'cross-brand' | 'specialist'
+
+/** Subtle accent per alternative type — a left border stripe + matching title color, not a fully-colored card, so both stay clearly subordinate to the Best Match panel and part of the same design system. */
+const VARIANT_ACCENT: Record<AlternativeVariant, { border: string; title: string }> = {
+  'cross-brand': { border: 'border-l-4 border-l-sky-500/60 dark:border-l-sky-400/50', title: 'text-sky-700 dark:text-sky-400' },
+  specialist: { border: 'border-l-4 border-l-shuttle-500/70 dark:border-l-shuttle-400/60', title: 'text-shuttle-700 dark:text-shuttle-400' },
+}
+
 function AlternativeCard({
   title,
   scored,
   explanation,
   baseline,
   specialistProfiles,
+  variant,
   compact,
 }: {
   title: string
@@ -280,22 +302,28 @@ function AlternativeCard({
   explanation?: string
   baseline: ScoredString
   specialistProfiles?: Record<string, StringSpecialistProfile>
+  variant: AlternativeVariant
   compact?: boolean
 }) {
   const profile = specialistProfiles ? specialistProfiles[scored.string.id] : getSpecialistProfile(scored.string.id)
   const baselineProfile = specialistProfiles ? specialistProfiles[baseline.string.id] : getSpecialistProfile(baseline.string.id)
   const reasons = useMemo(() => buildAlternativeReasons(scored, baseline, profile, baselineProfile), [scored, baseline, profile, baselineProfile])
+  const swatch = primaryStringColor(scored.string.colors)
+  const accent = VARIANT_ACCENT[variant]
 
   return (
-    <div className={`mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 p-6 ${compact ? 'bg-white/40 dark:bg-white/5' : 'bg-white/60 dark:bg-white/5'}`}>
-      <p className="text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60">{title}</p>
-      <div className="flex items-baseline gap-2 mt-1">
+    <div
+      className={`mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 ${accent.border} p-6 ${compact ? 'bg-white/40 dark:bg-white/5' : 'bg-white/60 dark:bg-white/5'}`}
+    >
+      <p className={`text-sm font-semibold ${accent.title}`}>{title}</p>
+      <div className="flex items-baseline gap-2 mt-1.5">
+        {swatch && <StringColorSwatch swatch={swatch} size="sm" />}
         <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
           {scored.string.brand} {scored.string.name}
         </h4>
         <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
       </div>
-      {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm">{explanation}</p>}
+      {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm max-w-2xl">{explanation}</p>}
       {reasons.length > 0 && (
         <ul className="mt-3 space-y-1 text-sm text-ink-700/70 dark:text-shuttle-100/70">
           {reasons.map((reason) => (
