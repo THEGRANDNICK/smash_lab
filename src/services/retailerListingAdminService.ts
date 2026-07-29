@@ -27,6 +27,7 @@ import type { Database, RetailerAvailabilityStatus, RetailerCurrency, RetailerPa
 import { isFiniteNumber, hasDecimalPrecision } from './catalogService.js'
 import { parseNullableUrl, value } from './catalogAdminService.js'
 import { RETAILER_CURRENCIES, RETAILER_AVAILABILITY_STATUSES, RETAILER_PACKAGE_TYPES } from './retailerPriceService.js'
+import { normalizeDecimalInput } from '../logic/decimalInput.js'
 
 type RetailerListingRow = Database['public']['Tables']['retailer_prices']['Row']
 type RetailerListingInsert = Database['public']['Tables']['retailer_prices']['Insert']
@@ -217,10 +218,11 @@ export type RetailerListingValidationResult =
   | { ok: true; payload: ValidatedRetailerListingPayload; warnings: string[] }
   | { ok: false; errors: RetailerListingFormErrors }
 
+/** A "," decimal separator (common on mobile keyboards) is normalized to "." before parsing — see logic/decimalInput.ts. */
 function parseNonNegativePrice(raw: string): { ok: true; value: number | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num)) return { ok: false, error: 'Price must be a number.' }
   if (num < 0) return { ok: false, error: 'Price cannot be negative.' }
   if (!hasDecimalPrecision(num, 2)) return { ok: false, error: 'Price allows at most 2 decimal places (e.g. 12.99).' }
@@ -230,7 +232,7 @@ function parseNonNegativePrice(raw: string): { ok: true; value: number | null } 
 function parsePositiveLength(raw: string): { ok: true; value: number | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num)) return { ok: false, error: 'Package length must be a number.' }
   if (num <= 0) return { ok: false, error: 'Package length must be greater than 0.' }
   return { ok: true, value: num }

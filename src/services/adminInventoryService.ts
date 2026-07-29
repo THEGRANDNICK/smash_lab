@@ -29,6 +29,10 @@ export interface AdminInventoryRow {
   color: string | null
   notes: string | null
   updatedAt: string
+  /** True for a hybrid catalog string (Yonex AeroBite, etc.) — lets the inventory admin preview a structured main/cross split when one exists, without this file owning hybrid editing (that stays in the Catalog admin form). */
+  isHybrid: boolean
+  mainColor?: string
+  crossColor?: string
 }
 
 export interface InventoryUpdateInput {
@@ -52,7 +56,7 @@ export async function fetchAdminInventory(): Promise<AdminResult<AdminInventoryR
   try {
     const { data, error } = await getSupabaseClient()
       .from('inventory')
-      .select('string_id, stock_status, quantity, package_type, color, notes, updated_at, strings(brand, name)')
+      .select('string_id, stock_status, quantity, package_type, color, notes, updated_at, strings(brand, name, is_hybrid, main_string_meta, cross_string_meta)')
 
     if (error) return { ok: false, error: error.message }
 
@@ -66,6 +70,9 @@ export async function fetchAdminInventory(): Promise<AdminResult<AdminInventoryR
       color: row.color,
       notes: row.notes,
       updatedAt: row.updated_at,
+      isHybrid: row.strings?.is_hybrid ?? false,
+      mainColor: (row.strings?.main_string_meta as { color?: string } | null)?.color,
+      crossColor: (row.strings?.cross_string_meta as { color?: string } | null)?.color,
     }))
 
     rows.sort((a, b) => a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name))

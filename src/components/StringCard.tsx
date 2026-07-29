@@ -51,9 +51,12 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
+          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50 flex flex-wrap items-center gap-1.5">
+            <span>{item.name}</span>
+            <ColorSwatchPreview item={item} size="sm" />
+          </h3>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
             {gauge != null && <> · {gauge}</>}
@@ -61,7 +64,6 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <StockBadge stock={item.stock} />
-          <ColorSwatchPreview item={item} size="sm" />
           {item.popularityRank === 1 ? (
             <span
               className="inline-flex items-center gap-1 rounded-full bg-shuttle-500 text-court-900 px-2.5 py-1 text-xs font-semibold"

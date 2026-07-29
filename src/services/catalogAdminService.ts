@@ -15,6 +15,8 @@ import { getSupabaseClient } from '../lib/supabase.js'
 import type { Database } from '../types/database.js'
 import type { StringCategory } from '../data/strings.js'
 import { VALID_CATEGORIES, RATING_MIN, RATING_MAX, SAFE_URL_PATTERN, isFiniteNumber, inRange, hasDecimalPrecision } from './catalogService.js'
+import { splitColorList } from '../logic/colorParsing.js'
+import { normalizeDecimalInput } from '../logic/decimalInput.js'
 
 type StringsRow = Database['public']['Tables']['strings']['Row']
 type StringsInsert = Database['public']['Tables']['strings']['Insert']
@@ -231,11 +233,11 @@ export function suggestCatalogId(brand: string, name: string): string {
   return slug
 }
 
-/** Ratings allow decimals (e.g. 9.5, matching real manufacturer-published values) but at most one decimal place — 9.55 is rejected rather than silently rounded, matching the database's own CHECK constraint. */
+/** Ratings allow decimals (e.g. 9.5, matching real manufacturer-published values) but at most one decimal place — 9.55 is rejected rather than silently rounded, matching the database's own CHECK constraint. A "," decimal separator (common on mobile keyboards) is normalized to "." before parsing — see logic/decimalInput.ts. */
 function parseRequiredRating(raw: string, label: string): { ok: true; value: number } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: false, error: `${label} is required.` }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num)) return { ok: false, error: `${label} must be a number.` }
   if (!inRange(num, RATING_MIN, RATING_MAX)) return { ok: false, error: `${label} must be between ${RATING_MIN} and ${RATING_MAX}.` }
   if (!hasDecimalPrecision(num, 1)) return { ok: false, error: `${label} allows at most one decimal place (e.g. 9.5).` }
@@ -245,7 +247,7 @@ function parseRequiredRating(raw: string, label: string): { ok: true; value: num
 function parseNullableRating(raw: string, label: string): { ok: true; value: number | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num)) return { ok: false, error: `${label} must be a number.` }
   if (!inRange(num, RATING_MIN, RATING_MAX)) return { ok: false, error: `${label} must be between ${RATING_MIN} and ${RATING_MAX}.` }
   if (!hasDecimalPrecision(num, 1)) return { ok: false, error: `${label} allows at most one decimal place (e.g. 9.5).` }
@@ -255,7 +257,7 @@ function parseNullableRating(raw: string, label: string): { ok: true; value: num
 function parseNullableNonNegative(raw: string, label: string): { ok: true; value: number | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num)) return { ok: false, error: `${label} must be a number.` }
   if (num < 0) return { ok: false, error: `${label} cannot be negative.` }
   return { ok: true, value: num }
@@ -264,7 +266,7 @@ function parseNullableNonNegative(raw: string, label: string): { ok: true; value
 function parseNullablePositiveInt(raw: string, label: string): { ok: true; value: number | null } | { ok: false; error: string } {
   const trimmed = raw.trim()
   if (trimmed === '') return { ok: true, value: null }
-  const num = Number(trimmed)
+  const num = Number(normalizeDecimalInput(trimmed))
   if (!isFiniteNumber(num) || !Number.isInteger(num)) return { ok: false, error: `${label} must be a whole number.` }
   if (num < 1) return { ok: false, error: `${label} must be 1 or greater.` }
   return { ok: true, value: num }
@@ -295,17 +297,15 @@ function buildHybridMeta(gauge: number | null, material: string, construction: s
   return Object.keys(meta).length > 0 ? meta : null
 }
 
-/** Splits, trims, and drops blanks exactly as before, plus (Phase 9) deduplicates case-insensitively so "Yellow, yellow" is saved as just "Yellow" — the first-seen casing wins. */
+/** Splits on commas AND semicolons (Phase 9 fix — real data used both), trims, drops blanks, and deduplicates case-insensitively so "Yellow, yellow" is saved as just "Yellow" — the first-seen casing wins. Never splits on a bare "/", so a value like "Black/Yellow" is preserved as one (likely-unmapped) entry rather than silently guessed apart. */
 function parseColors(raw: string): string[] | null {
   const seen = new Set<string>()
   const items: string[] = []
-  for (const candidate of raw.split(',')) {
-    const trimmed = candidate.trim()
-    if (trimmed.length === 0) continue
-    const key = trimmed.toLowerCase()
+  for (const candidate of splitColorList(raw)) {
+    const key = candidate.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
-    items.push(trimmed)
+    items.push(candidate)
   }
   return items.length > 0 ? items : null
 }
@@ -381,7 +381,7 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
   {
     const trimmed = input.tensionAdjustment.trim()
     if (trimmed !== '') {
-      const num = Number(trimmed)
+      const num = Number(normalizeDecimalInput(trimmed))
       if (!isFiniteNumber(num)) errors.tensionAdjustment = 'Tension adjustment must be a number.'
       else tensionAdjustment = num
     }

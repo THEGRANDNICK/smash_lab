@@ -8,6 +8,9 @@ import {
   type ValidationContext,
   type ValidatedCatalogPayload,
 } from '../../services/catalogAdminService'
+import { splitColorList } from '../../logic/colorParsing'
+import { resolveStringColor } from '../../logic/stringColor'
+import StringColorSwatch from '../StringColorSwatch'
 
 interface CatalogStringFormProps {
   mode: 'create' | 'edit'
@@ -126,6 +129,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Construction" value={input.mainConstruction} onChange={(v) => set('mainConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.mainCoating} onChange={(v) => set('mainCoating', v)} disabled={saving} placeholder="optional" />
               <TextField label="Color" value={input.mainColor} onChange={(v) => set('mainColor', v)} disabled={saving} placeholder="optional" hint="Shown as one half of the split swatch, only when Cross color is also set." />
+              <ColorsFieldPreview raw={input.mainColor} />
             </div>
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Cross string</p>
@@ -134,6 +138,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Construction" value={input.crossConstruction} onChange={(v) => set('crossConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.crossCoating} onChange={(v) => set('crossCoating', v)} disabled={saving} placeholder="optional" />
               <TextField label="Color" value={input.crossColor} onChange={(v) => set('crossColor', v)} disabled={saving} placeholder="optional" hint="Shown as the other half of the split swatch, only when Main color is also set." />
+              <ColorsFieldPreview raw={input.crossColor} />
             </div>
           </div>
         )}
@@ -173,14 +178,17 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
             <TextField label="Image URL" value={input.imageUrl} onChange={(v) => set('imageUrl', v)} error={errors.imageUrl} disabled={saving} placeholder="https://…" />
             {input.imageUrl.trim() !== '' && <ImagePreview url={input.imageUrl.trim()} />}
           </div>
-          <TextField
-            label="Colors"
-            value={input.colors}
-            onChange={(v) => set('colors', v)}
-            disabled={saving}
-            placeholder="comma-separated, e.g. Yellow, Pink, White"
-            hint="The general range this product ships in. Case-insensitive duplicates (e.g. Yellow, yellow) are merged automatically. Shown as a fallback whenever the Inventory page has no specific in-stock color set."
-          />
+          <div>
+            <TextField
+              label="Colors"
+              value={input.colors}
+              onChange={(v) => set('colors', v)}
+              disabled={saving}
+              placeholder="comma or semicolon-separated, e.g. Yellow, Pink; White"
+              hint="The general range this product ships in. Separate colors with a comma or semicolon — multi-word names like 'Sky Blue' are kept intact. Case-insensitive duplicates (e.g. Yellow, yellow) are merged automatically. Shown as a fallback whenever the Inventory page has no specific in-stock color set."
+            />
+            <ColorsFieldPreview raw={input.colors} />
+          </div>
         </div>
       </details>
 
@@ -195,7 +203,6 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
             disabled={saving}
             placeholder="e.g. -0.25 or 0.5"
             step="0.05"
-            allowNegative
           />
           <div />
           <NumberField
@@ -275,6 +282,25 @@ function FieldError({ message }: { message: string }) {
   )
 }
 
+/** Live preview of the Colors field's comma/semicolon-separated entries — a swatch for each recognized color, plus an inline warning (not a blocking error) for anything unrecognized, so a typo is visible before saving rather than after. */
+function ColorsFieldPreview({ raw }: { raw: string }) {
+  const tokens = splitColorList(raw)
+  if (tokens.length === 0) return null
+  const known = tokens.map((t) => resolveStringColor(t)).filter((s): s is NonNullable<typeof s> => s != null)
+  const unknown = tokens.filter((t) => !resolveStringColor(t))
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1.5">
+      {known.map((s) => (
+        <span key={s.hex} className="inline-flex items-center gap-1">
+          <StringColorSwatch swatch={s} size="sm" />
+          {s.label}
+        </span>
+      ))}
+      {unknown.length > 0 && <span className="text-amber-700 dark:text-amber-400 font-semibold">{unknown.join(', ')} ⚠ unmapped, will still save</span>}
+    </p>
+  )
+}
+
 interface TextFieldProps {
   label: string
   value: string
@@ -312,16 +338,16 @@ interface NumberFieldProps {
   disabled?: boolean
   placeholder?: string
   step?: string
-  allowNegative?: boolean
 }
 
-function NumberField({ label, value, onChange, error, disabled, placeholder, step, allowNegative }: NumberFieldProps) {
+/** "decimal" keeps the mobile numeric keypad (with a decimal key) even for fields that allow a negative value (e.g. tension adjustment) — most mobile decimal keypads still offer a "-", and that's a better default than falling back to a plain "text" keyboard, which used to lose the numeric keypad entirely for those fields. Accepts either "." or "," as the decimal separator (see logic/decimalInput.ts) — this input never restricts *which* characters can be typed, only how the resulting text is parsed downstream. */
+function NumberField({ label, value, onChange, error, disabled, placeholder, step }: NumberFieldProps) {
   return (
     <label className="block text-sm">
       <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{label}</span>
       <input
         type="text"
-        inputMode={allowNegative ? 'text' : 'decimal'}
+        inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}

@@ -212,6 +212,30 @@ export default function SupabaseDebugPage() {
             label="Hybrid strings missing a main/cross color"
             value={colorDiagnostics == null ? '—' : colorDiagnostics.hybridMissingColors.length === 0 ? 'None' : colorDiagnostics.hybridMissingColors.join(', ')}
           />
+          <Row
+            label="Strings with multiple available inventory colors"
+            value={colorDiagnostics == null ? '—' : String(colorDiagnostics.stringsWithMultipleAvailableInventoryColors)}
+          />
+          <Row
+            label="Hybrids using structured main/cross colors"
+            value={colorDiagnostics == null ? '—' : String(colorDiagnostics.hybridsUsingStructuredColors)}
+          />
+          <Row
+            label="Hybrids using a legacy combined-value fallback"
+            value={colorDiagnostics == null ? '—' : String(colorDiagnostics.hybridsUsingLegacyFallback)}
+          />
+          <Row
+            label="Inventory values with a comma/semicolon (multiple colors in one field)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.inventoryValuesWithDelimiters.length === 0 ? 'None' : colorDiagnostics.inventoryValuesWithDelimiters.join('; ')}
+          />
+          <Row
+            label="Ambiguous slash-separated values (need a human to interpret)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.ambiguousSlashValues.length === 0 ? 'None' : colorDiagnostics.ambiguousSlashValues.join('; ')}
+          />
+          <Row
+            label="Legacy/misspelled color aliases in use"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.canonicalizedAliasesUsed.length === 0 ? 'None' : colorDiagnostics.canonicalizedAliasesUsed.join('; ')}
+          />
         </dl>
 
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailers</p>
