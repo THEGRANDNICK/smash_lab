@@ -19,7 +19,8 @@
     "test:retailers": "tsx scripts/testRetailers.ts",
     "test:ui": "tsx scripts/testUiPresentation.ts",
     "test:ui-polish": "tsx scripts/testUiPolish.ts",
-    "test:catalog-polish": "tsx scripts/testCatalogPolish.ts"
+    "test:catalog-polish": "tsx scripts/testCatalogPolish.ts",
+    "test:color-inventory-fix": "tsx scripts/testColorInventoryFix.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

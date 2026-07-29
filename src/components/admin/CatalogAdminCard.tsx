@@ -161,39 +161,56 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
   )
 }
 
+/** One resolved side of a hybrid preview, or a raw-text-plus-warning if the entered value doesn't map to a known color. */
+function HybridSidePreview({ raw }: { raw: string | undefined }) {
+  if (!raw || raw.trim() === '') return <span>unset</span>
+  const swatch = resolveStringColor(raw)
+  if (swatch) {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <StringColorSwatch swatch={swatch} size="sm" />
+        {swatch.label}
+      </span>
+    )
+  }
+  return <span className="text-amber-700 dark:text-amber-400 font-semibold">{raw} ⚠</span>
+}
+
 /**
  * A quick visual sanity-check for the row's own `colors` list (and, for a
  * hybrid, its main/cross colors) — kept deliberately catalog-only, never
  * reading inventory data (that's a different admin page entirely, with
  * its own priority over this fallback on the public site — see
- * logic/stringColor.ts). Renders nothing when nothing resolves.
+ * logic/stringColor.ts). Shows every entered color (not capped at 3, the
+ * public-facing limit), flags any that don't resolve to a known color
+ * with a warning marker rather than hiding them, but never blocks
+ * saving. Renders nothing when nothing was entered at all.
  */
 function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
   if (row.isHybrid) {
-    const main = resolveStringColor(row.mainStringMeta?.color)
-    const cross = resolveStringColor(row.crossStringMeta?.color)
-    if (!main && !cross) return null
+    const mainRaw = row.mainStringMeta?.color
+    const crossRaw = row.crossStringMeta?.color
+    if (!mainRaw && !crossRaw) return null
     return (
       <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
         <span className="font-semibold uppercase tracking-wide">Colors</span>
-        {main && <StringColorSwatch swatch={main} size="sm" />}
-        {cross && <StringColorSwatch swatch={cross} size="sm" />}
-        <span>
-          {main?.label ?? 'unset'} main / {cross?.label ?? 'unset'} cross
-        </span>
+        <HybridSidePreview raw={mainRaw} /> main /<HybridSidePreview raw={crossRaw} /> cross
       </p>
     )
   }
 
-  const swatches = allStringColors(row.colors ?? undefined)
-  if (swatches.length === 0) return null
+  if (!row.colors || row.colors.length === 0) return null
+  const unknown = row.colors.filter((c) => !resolveStringColor(c))
   return (
-    <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
+    <p className="flex flex-wrap items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
       <span className="font-semibold uppercase tracking-wide">Colors</span>
-      {swatches.map((s) => (
-        <StringColorSwatch key={s.hex} swatch={s} size="sm" />
+      {allStringColors(row.colors, Infinity).map((s) => (
+        <span key={s.hex} className="inline-flex items-center gap-1">
+          <StringColorSwatch swatch={s} size="sm" />
+          {s.label}
+        </span>
       ))}
-      <span>{swatches.map((s) => s.label).join(', ')}</span>
+      {unknown.length > 0 && <span className="text-amber-700 dark:text-amber-400 font-semibold">{unknown.join(', ')} ⚠ unmapped</span>}
     </p>
   )
 }

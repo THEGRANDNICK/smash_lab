@@ -18,6 +18,7 @@
 import { getSupabaseClient } from '../lib/supabase.js'
 import type { Database } from '../types/database.js'
 import type { SpecialistFeel, ExperienceSource, Confidence, SpecialistDimensionKey } from '../data/stringSpecialistProfiles.js'
+import { normalizeDecimalInput } from '../logic/decimalInput.js'
 
 type SpecialistRow = Database['public']['Tables']['specialist_profiles']['Row']
 /** Upsert payload shape (string_id supplied separately by the caller) — deliberately based on Insert, not Update, since experience_source/confidence are NOT NULL columns with no default and every upsert here is expected to supply them (validateSpecialistInput always sets both). */
@@ -212,8 +213,8 @@ export function validateSpecialistInput(input: SpecialistFormInput): SpecialistV
       errors.personalTensionMinKg = 'Set both a min and max, or leave both blank.'
       errors.personalTensionMaxKg = 'Set both a min and max, or leave both blank.'
     } else {
-      const min = Number(minTrimmed)
-      const max = Number(maxTrimmed)
+      const min = Number(normalizeDecimalInput(minTrimmed))
+      const max = Number(normalizeDecimalInput(maxTrimmed))
       if (!Number.isFinite(min) || !Number.isFinite(max)) {
         errors.personalTensionMinKg = 'Tension range must be numbers.'
       } else if (min > max) {
@@ -230,7 +231,7 @@ export function validateSpecialistInput(input: SpecialistFormInput): SpecialistV
   for (const { key, label } of DIMENSION_OPTIONS) {
     const raw = (input.dimensions[key] ?? '').trim()
     if (raw === '') continue
-    const num = Number(raw)
+    const num = Number(normalizeDecimalInput(raw))
     if (!Number.isFinite(num)) {
       dimensionErrors[key] = `${label} must be a number.`
     } else if (num < DIMENSION_MIN || num > DIMENSION_MAX) {

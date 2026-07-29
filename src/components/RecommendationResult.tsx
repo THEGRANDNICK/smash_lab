@@ -93,9 +93,10 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
             </div>
 
             <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
-            <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
-              {rec.best.string.name}
-              {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
+            <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05] flex flex-wrap items-center gap-2.5">
+              <span>{rec.best.string.name}</span>
+              <ColorSwatchPreview item={rec.best.string} size="md" />
+              {bestGauge != null && <span className="text-base font-normal text-white/50">{bestGauge}</span>}
             </h1>
             {bestExplanation.playerLevelFit && (
               <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
@@ -150,14 +151,16 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400">Why this is your best match</p>
-              <h2 id="best-match-heading" className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">
-                {bestExplanation.headline}
-                {bestExplanation.headlineSecondary && <span className="text-ink-700/50 dark:text-shuttle-100/50 font-normal"> · {bestExplanation.headlineSecondary}</span>}
+              <h2 id="best-match-heading" className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1 flex flex-wrap items-center gap-2">
+                <span>
+                  {bestExplanation.headline}
+                  {bestExplanation.headlineSecondary && <span className="text-ink-700/50 dark:text-shuttle-100/50 font-normal"> · {bestExplanation.headlineSecondary}</span>}
+                </span>
+                <ColorSwatchPreview item={rec.best.string} size="md" />
               </h2>
             </div>
             <div className="flex flex-col items-end gap-1.5">
               <StockBadge stock={rec.best.string.stock} />
-              <ColorSwatchPreview item={rec.best.string} size="md" />
             </div>
           </div>
 
@@ -314,14 +317,16 @@ function AlternativeCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className={`text-sm font-semibold ${accent.title}`}>{title}</p>
-          <div className="flex items-baseline gap-2 mt-1.5">
-            <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
-              {scored.string.brand} {scored.string.name}
+          <div className="flex flex-wrap items-baseline gap-2 mt-1.5">
+            <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50 flex items-center gap-1.5">
+              <span>
+                {scored.string.brand} {scored.string.name}
+              </span>
+              <ColorSwatchPreview item={scored.string} size="sm" />
             </h4>
             <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
           </div>
         </div>
-        <ColorSwatchPreview item={scored.string} size="sm" />
       </div>
       {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm max-w-2xl">{explanation}</p>}
       {reasons.length > 0 && (

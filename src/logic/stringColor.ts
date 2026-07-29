@@ -12,20 +12,29 @@
 //      That's now fixed (see inventoryService.ts's Phase 9 comment) —
 //      this module reads the result via StringItem.inventoryColor.
 //
-// Display ordering (the "priority"): the inventory color — the one
-// specific color of the stock actually on hand, and only when that stock
-// is NOT `unavailable` (public.inventory has one row per string, so
-// there's only ever zero or one of these, never several "variants") —
-// comes first, followed by any remaining catalog `colors` not already
-// shown, deduplicated case-insensitively and alphabetically tie-broken.
-// Catalog colors are always shown as a general fallback/supplement, not
-// fully replaced by an inventory color the way earlier Phase 8/9 drafts
-// of this module did — the inventory color is the more specific, more
-// current fact, but the catalog range is still useful context. Never
+// Display ordering (the "priority"): the inventory color(s) — the
+// colors of the stock actually on hand, and only when that stock is NOT
+// `unavailable` — come first, followed by any remaining catalog `colors`
+// not already shown, deduplicated case-insensitively and alphabetically
+// tie-broken. Catalog colors are always shown as a general
+// fallback/supplement, never fully replaced by an inventory color. Never
 // invents a color: an unrecognized name, or no data at all, always
 // resolves to no swatch rather than a guessed placeholder.
+//
+// Phase 9 fix (real Supabase testing): `public.inventory` still has one
+// row per string (`string_id` is its primary key — see README's "Real
+// Supabase cleanup" section for why this module doesn't assume multiple
+// rows), so a stringer entering more than one currently-available color
+// has nowhere to put them except that single free-text field. This
+// module now safely splits that field on commas/semicolons
+// (logic/colorParsing.ts) so "White, Red" or "White; Red" render as two
+// swatches instead of one unresolved blob. A bare slash ("Black/Yellow")
+// is never guessed as two ordinary colors — it's only ever treated as a
+// hybrid main/cross pair (see buildColorPreview's hybrid branch), and
+// flagged in diagnostics otherwise.
 
 import type { HybridStringMeta, StringItem } from '../data/strings.js'
+import { splitColorList, parseLegacyHybridPair } from './colorParsing.js'
 
 export interface StringColorSwatch {
   /** Human-readable label, capitalized from the original catalog/inventory text (e.g. "Neon Yellow"). */
@@ -72,6 +81,18 @@ const COLOR_DEFINITIONS: Record<string, ColorDefinition> = {
   mint: { hex: '#6ee7b7', ringClassName: STRONG_RING },
   coral: { hex: '#fb7360', ringClassName: SUBTLE_RING },
   violet: { hex: '#7c3aed', ringClassName: SUBTLE_RING },
+  'cosmic gold': { hex: '#c9a227', ringClassName: SUBTLE_RING },
+}
+
+/**
+ * Legacy/misspelled real-world values mapped to a canonical
+ * COLOR_DEFINITIONS key — e.g. real Supabase data has "Turquois" where
+ * "Turquoise" was meant. Keys and values are both normalized (lowercase,
+ * single-spaced) `normalize()` output. Centralized here rather than
+ * guessed ad hoc in a component; add more as real data surfaces them.
+ */
+const COLOR_ALIASES: Record<string, string> = {
+  turquois: 'turquoise',
 }
 
 function normalize(name: string): string {
@@ -88,14 +109,28 @@ function titleCase(name: string): string {
 
 /**
  * Resolves one color name to a swatch, or undefined if the name isn't in
- * the known table — callers must render no swatch in that case rather
- * than a misleading neutral placeholder.
+ * the known table (after alias canonicalization) — callers must render
+ * no swatch in that case rather than a misleading neutral placeholder.
+ * An alias hit (e.g. "Turquois") displays the *canonical* label
+ * ("Turquoise"), fixing the misspelling for display without ever
+ * rewriting the stored raw value.
  */
 export function resolveStringColor(name: string | undefined | null): StringColorSwatch | undefined {
   if (!name) return undefined
-  const def = COLOR_DEFINITIONS[normalize(name)]
+  const normalized = normalize(name)
+  const canonicalKey = COLOR_ALIASES[normalized] ?? normalized
+  const def = COLOR_DEFINITIONS[canonicalKey]
   if (!def) return undefined
-  return { label: titleCase(name), hex: def.hex, ringClassName: def.ringClassName }
+  return { label: titleCase(canonicalKey), hex: def.hex, ringClassName: def.ringClassName }
+}
+
+/** For admin diagnostics only: if `name` matches a known alias (e.g. "Turquois"), returns the raw text and the canonical label it resolves to ("Turquoise"); undefined if `name` isn't an alias (whether or not it's otherwise a recognized color). */
+export function describeColorAlias(name: string | undefined | null): { raw: string; canonical: string } | undefined {
+  if (!name) return undefined
+  const normalized = normalize(name)
+  const canonicalKey = COLOR_ALIASES[normalized]
+  if (!canonicalKey) return undefined
+  return { raw: name, canonical: titleCase(canonicalKey) }
 }
 
 /** Recognized swatches from a name list, in order, deduplicated by resolved color (so "Yellow" and "yellow" don't both render). Unrecognized names are silently skipped, never guessed. */
@@ -147,50 +182,99 @@ function hybridSideColor(side: HybridStringMeta | undefined): StringColorSwatch 
   return resolveStringColor(side?.color)
 }
 
-/** A stock of `'unavailable'` means the inventory row's color no longer represents something a customer can actually get — see buildColorPreview's doc comment. */
+/** A stock of `'unavailable'` means the inventory row's color(s) no longer represent something a customer can actually get — see buildColorPreview's doc comment. */
 function isInventoryColorAvailable(item: Pick<StringItem, 'inventoryColor' | 'stock'>): boolean {
   return Boolean(item.inventoryColor) && item.stock !== 'unavailable'
 }
 
 /**
+ * Recognized swatches from the inventory's single free-text `color`
+ * field, in entry order — split on commas/semicolons only (see
+ * logic/colorParsing.ts), so "White, Red" yields two swatches while a
+ * bare slash is left untouched here (that's only ever a hybrid
+ * main/cross signal, handled separately in buildColorPreview). Empty
+ * when the row is out of stock (see isInventoryColorAvailable).
+ */
+function resolveInventoryColors(item: Pick<StringItem, 'inventoryColor' | 'stock'>): StringColorSwatch[] {
+  if (!isInventoryColorAvailable(item)) return []
+  return resolveAllColors(splitColorList(item.inventoryColor))
+}
+
+export type HybridColorSource =
+  | { kind: 'structured-both'; main: StringColorSwatch; cross: StringColorSwatch }
+  | { kind: 'structured-partial'; known: StringColorSwatch; missingSide: 'main' | 'cross' }
+  | { kind: 'legacy-pair'; main: StringColorSwatch; cross: StringColorSwatch }
+  | { kind: 'none' }
+
+/**
+ * Determines where a hybrid string's color(s) come from, in priority
+ * order — used by buildColorPreview and by colorDiagnostics.ts (which
+ * needs to know *which* path was used, not just the resulting swatches):
+ *   1. Structured `mainString.color`/`crossString.color` metadata (the
+ *      catalog admin's dedicated hybrid fields) — 'structured-both' when
+ *      both resolve, 'structured-partial' when only one does (never
+ *      inventing the other side).
+ *   2. If NEITHER structured side is known, the inventory row's raw text
+ *      ONLY if it parses unambiguously as a "Main/Cross" pair
+ *      (logic/colorParsing.ts's parseLegacyHybridPair) — e.g. real data
+ *      like "White/Red" for AeroBite entered before the catalog admin's
+ *      hybrid color fields were used. A hybrid never falls back to its
+ *      own top-level `colors` list (that would misrepresent which side
+ *      is which).
+ *   3. 'none' otherwise.
+ */
+export function hybridColorSource(item: Pick<StringItem, 'mainString' | 'crossString' | 'inventoryColor' | 'stock'>): HybridColorSource {
+  const structuredMain = hybridSideColor(item.mainString)
+  const structuredCross = hybridSideColor(item.crossString)
+  if (structuredMain && structuredCross) return { kind: 'structured-both', main: structuredMain, cross: structuredCross }
+  if (structuredMain) return { kind: 'structured-partial', known: structuredMain, missingSide: 'cross' }
+  if (structuredCross) return { kind: 'structured-partial', known: structuredCross, missingSide: 'main' }
+
+  const legacySource = isInventoryColorAvailable(item) ? item.inventoryColor : undefined
+  const pair = parseLegacyHybridPair(legacySource)
+  if (pair) {
+    const legacyMain = resolveStringColor(pair.main)
+    const legacyCross = resolveStringColor(pair.cross)
+    if (legacyMain && legacyCross) return { kind: 'legacy-pair', main: legacyMain, cross: legacyCross }
+  }
+  return { kind: 'none' }
+}
+
+/**
  * The single entry point every color-swatch-rendering component should
- * use.
- *
- * Hybrid strings: only render the true two-tone split when BOTH main and
- * cross colors are known (never inventing one side to pair with a known
- * other side — a single known side renders as an ordinary solid swatch
- * instead, since a "half known / half invented" split would misrepresent
- * the string).
- *
- * Non-hybrid strings: the inventory color (the one specific color of
- * stock actually on hand) is shown first, but ONLY when that stock isn't
- * `unavailable` — an inventory color on a string that's out of stock is
- * not "currently available from the stringing service" and is silently
- * excluded here (see logic/colorDiagnostics.ts for surfacing that on the
- * debug page instead of hiding it entirely). Any catalog `colors` not
- * already covered by the inventory color are appended after it,
- * deduplicated case-insensitively and sorted alphabetically by label —
- * catalog colors are a supplementary fallback, not simply discarded just
- * because a more specific inventory color exists. Never fabricates a
- * color for a name this module doesn't recognize.
+ * use. See hybridColorSource() for the hybrid priority order. Non-hybrid
+ * strings: the inventory row's color(s) — split safely on
+ * commas/semicolons, in entry order — are shown first, but ONLY when
+ * that stock isn't `unavailable` (see logic/colorDiagnostics.ts for
+ * surfacing hidden colors on the debug page instead of hiding them
+ * entirely). Any catalog `colors` not already covered by an inventory
+ * color are appended after, deduplicated case-insensitively and sorted
+ * alphabetically by label. Never fabricates a color for a name this
+ * module doesn't recognize.
  */
 export function buildColorPreview(item: Pick<StringItem, 'isHybrid' | 'mainString' | 'crossString' | 'inventoryColor' | 'colors' | 'stock'>, maxVisible = 3): ColorPreview {
   if (item.isHybrid) {
-    const main = hybridSideColor(item.mainString)
-    const cross = hybridSideColor(item.crossString)
-    if (main && cross) return { kind: 'hybrid', main, cross }
-    if (main) return { kind: 'solid', visible: [main], overflow: [] }
-    if (cross) return { kind: 'solid', visible: [cross], overflow: [] }
-    return { kind: 'none' }
+    const source = hybridColorSource(item)
+    switch (source.kind) {
+      case 'structured-both':
+        return { kind: 'hybrid', main: source.main, cross: source.cross }
+      case 'structured-partial':
+        return { kind: 'solid', visible: [source.known], overflow: [] }
+      case 'legacy-pair':
+        return { kind: 'hybrid', main: source.main, cross: source.cross }
+      case 'none':
+        return { kind: 'none' }
+    }
   }
 
-  const inventorySwatch = isInventoryColorAvailable(item) ? resolveStringColor(item.inventoryColor) : undefined
+  const inventorySwatches = resolveInventoryColors(item)
+  const inventoryHexes = new Set(inventorySwatches.map((s) => s.hex))
 
   const catalogSwatches = resolveAllColors(item.colors ?? [])
-    .filter((s) => !inventorySwatch || s.hex !== inventorySwatch.hex)
+    .filter((s) => !inventoryHexes.has(s.hex))
     .sort((a, b) => a.label.localeCompare(b.label))
 
-  const swatches = inventorySwatch ? [inventorySwatch, ...catalogSwatches] : catalogSwatches
+  const swatches = [...inventorySwatches, ...catalogSwatches]
   if (swatches.length === 0) return { kind: 'none' }
   return { kind: 'solid', visible: swatches.slice(0, maxVisible), overflow: swatches.slice(maxVisible) }
 }

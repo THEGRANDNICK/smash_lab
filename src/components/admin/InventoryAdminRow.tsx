@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import StockBadge from '../StockBadge'
-import StringColorSwatch from '../StringColorSwatch'
-import { resolveStringColor } from '../../logic/stringColor'
-import type { StockLevel } from '../../data/strings'
+import ColorSwatchPreview from '../ColorSwatchPreview'
+import { buildColorPreview } from '../../logic/stringColor'
+import { containsUnambiguousDelimiter, containsSlash, splitColorList } from '../../logic/colorParsing'
+import type { HybridStringMeta, StockLevel } from '../../data/strings'
 import {
   STOCK_STATUS_OPTIONS,
   PACKAGE_TYPE_OPTIONS,
@@ -101,12 +102,8 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
             <Field label="Package" value={row.packageType} />
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Color</dt>
-              <dd className="text-ink-900 dark:text-shuttle-50 flex items-center gap-1.5">
-                {(() => {
-                  const swatch = resolveStringColor(row.color)
-                  return swatch ? <StringColorSwatch swatch={swatch} size="sm" /> : null
-                })()}
-                {row.color || '—'}
+              <dd className="text-ink-900 dark:text-shuttle-50">
+                <InventoryColorPreview row={row} />
               </dd>
             </div>
             <Field label="Notes" value={row.notes || '—'} />
@@ -183,9 +180,21 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                 placeholder="e.g. Yellow — optional"
                 className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               />
-              <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
-                The specific color of the stock actually on hand — shown first on the public site, ahead of the catalog's general color list, but only while this string is in stock.
-              </span>
+              {row.isHybrid ? (
+                <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+                  This string is a hybrid — for the main/cross split swatch, prefer setting Main color and Cross color in the Catalog admin form. As a fallback only, you can enter "Main/Cross" here (e.g. "White/Red").
+                </span>
+              ) : (
+                <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+                  Enter one physical color for this inventory item, e.g. White or Sky Blue. To list more than one currently-available color, separate them with commas (e.g. "White, Red") — each shows as its own swatch.
+                </span>
+              )}
+              {!row.isHybrid && containsSlash(color) && (
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mt-1">A "/" is ambiguous here — use a comma to list multiple colors instead (e.g. "White, Red").</p>
+              )}
+              {containsUnambiguousDelimiter(color) && splitColorList(color).length > 1 && (
+                <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">Will be shown as {splitColorList(color).length} separate colors: {splitColorList(color).join(', ')}.</p>
+              )}
             </label>
           </div>
 
@@ -232,6 +241,39 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Shows the mapped swatch(es) beside the raw color text (the raw text
+ * always stays visible — this is admin UI, not the compact public
+ * card). Reuses buildColorPreview/ColorSwatchPreview so an admin sees
+ * exactly what the public site would render for this row, including the
+ * hybrid split (from structured Main/Cross catalog fields, or a legacy
+ * "Main/Cross" combined value as a fallback — see logic/stringColor.ts).
+ * A row whose raw text doesn't resolve to anything gets a "Needs
+ * mapping" marker rather than silently showing no swatch with no
+ * explanation.
+ */
+function InventoryColorPreview({ row }: { row: AdminInventoryRow }) {
+  const previewItem = {
+    isHybrid: row.isHybrid,
+    mainString: row.isHybrid ? ({ color: row.mainColor } as HybridStringMeta) : undefined,
+    crossString: row.isHybrid ? ({ color: row.crossColor } as HybridStringMeta) : undefined,
+    inventoryColor: row.color ?? undefined,
+    colors: undefined,
+    stock: row.stockStatus,
+  }
+  const preview = buildColorPreview(previewItem)
+  const hasRawColor = Boolean(row.color && row.color.trim() !== '')
+  const needsMapping = hasRawColor && preview.kind === 'none'
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <ColorSwatchPreview item={previewItem} size="sm" />
+      <span>{row.color || '—'}</span>
+      {needsMapping && <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">⚠ Needs mapping</span>}
     </div>
   )
 }
