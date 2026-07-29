@@ -8,6 +8,7 @@ import { readStoredComparisonView, writeStoredComparisonView, type ComparisonVie
 import StringCard, { type PerformanceView } from './StringCard'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
+import ComparisonOverlayBars from './ComparisonOverlayBars'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -31,6 +32,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   const [view, setView] = useState<PerformanceView>('bars')
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [compareView, setCompareView] = useState<ComparisonView>(() => readStoredComparisonView(typeof window === 'undefined' ? null : window.sessionStorage))
+  const [radarShowMore, setRadarShowMore] = useState(false)
 
   function chooseCompareView(next: ComparisonView) {
     setCompareView(next)
@@ -209,18 +211,37 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               </div>
 
               {compareView === 'radar' ? (
-                <div className="flex justify-center -mx-4 sm:-mx-5">
-                  <RadarChart
-                    size={360}
-                    maxWidthClassName="max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]"
-                    series={compareItems.map((item, i) => ({
-                      id: item.id,
-                      label: item.name,
-                      values: getPerformanceValues(item),
-                      strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
-                      fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
-                    }))}
-                  />
+                <div className="space-y-6">
+                  <div className="flex justify-center -mx-4 sm:-mx-5">
+                    <RadarChart
+                      size={360}
+                      showValues
+                      maxWidthClassName="max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]"
+                      series={compareItems.map((item, i) => ({
+                        id: item.id,
+                        label: item.name,
+                        values: getPerformanceValues(item),
+                        strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
+                        fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
+                      }))}
+                    />
+                  </div>
+                  <ComparisonOverlayBars items={compareItems} />
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setRadarShowMore((s) => !s)}
+                      aria-expanded={radarShowMore}
+                      className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                    >
+                      {radarShowMore ? 'Show fewer details' : 'Show more details'}
+                    </button>
+                    {radarShowMore && (
+                      <div className="mt-4">
+                        <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />

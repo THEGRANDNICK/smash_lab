@@ -11,10 +11,14 @@ import { orderRetailerListings, AVAILABILITY_LABELS, PACKAGE_TYPE_LABELS, type R
 
 export type ComparisonIndicatorKind = 'dots' | 'text'
 
+/** Progressive-disclosure grouping for ComparisonTable.tsx — 'primary' rows are always visible; 'performance' and 'availability' rows are tucked behind its "Show more details" toggle. Purely a display tag; never affects a row's computed value. */
+export type ComparisonRowGroup = 'primary' | 'performance' | 'availability'
+
 export interface ComparisonRow {
   key: string
   label: string
   kind: ComparisonIndicatorKind
+  group: ComparisonRowGroup
   /** Present when kind === 'dots'. */
   dots?: { filled: number; of: number }
   /** Always present — the human-readable value, used as the visible text for 'text' rows and as the accessible label for 'dots' rows. */
@@ -31,11 +35,12 @@ function dotsFromScale(value: number | null | undefined, max: number): { filled:
   return { filled, of: DOT_MAX }
 }
 
-function manufacturerRow(key: string, label: string, value: number | null | undefined): ComparisonRow {
+function manufacturerRow(key: string, label: string, value: number | null | undefined, group: ComparisonRowGroup): ComparisonRow {
   return {
     key,
     label,
     kind: 'dots',
+    group,
     dots: dotsFromScale(value, MANUFACTURER_MAX),
     text: value == null ? 'Not rated' : `${value} / ${MANUFACTURER_MAX}`,
   }
@@ -48,11 +53,12 @@ function specialistDimensionAverage(profile: StringSpecialistProfile | undefined
   return values.reduce((sum, v) => sum + v, 0) / values.length
 }
 
-function specialistRow(key: string, label: string, value: number | undefined): ComparisonRow {
+function specialistRow(key: string, label: string, value: number | undefined, group: ComparisonRowGroup): ComparisonRow {
   return {
     key,
     label,
     kind: 'dots',
+    group,
     dots: value != null ? dotsFromScale(value, SPECIALIST_MAX) : undefined,
     text: value == null ? 'Not rated' : `${Math.round(value * 10) / 10} / ${SPECIALIST_MAX}`,
   }
@@ -69,8 +75,11 @@ const POWER_DIMENSIONS: SpecialistDimensionKey[] = ['easyPower', 'hardHitterFit'
 /**
  * Builds the full set of compact comparison rows for one string, in display
  * order: Repulsion, Control, Durability, Feel, Tension retention, Hitting
- * sound, Power, Comfort, Overall specialist rating, Retail availability,
- * Package options, Retailer count.
+ * sound, Power, Shock Absorption / Comfort, Overall specialist rating,
+ * Retail availability, Package options, Retailer count. Each row also
+ * carries a `group` (primary/performance/availability) so ComparisonTable.tsx
+ * can show the 5 primary rows by default and tuck the rest behind a "Show
+ * more details" disclosure — a display tag only, never a value change.
  */
 export function buildComparisonRows(
   item: StringItem,
@@ -79,27 +88,28 @@ export function buildComparisonRows(
 ): ComparisonRow[] {
   const rows: ComparisonRow[] = []
 
-  rows.push(manufacturerRow('repulsion', 'Repulsion', item.repulsion))
-  rows.push(manufacturerRow('control', 'Control', item.control))
-  rows.push(manufacturerRow('durability', 'Durability', item.durability))
+  rows.push(manufacturerRow('repulsion', 'Repulsion', item.repulsion, 'primary'))
+  rows.push(manufacturerRow('control', 'Control', item.control, 'primary'))
+  rows.push(manufacturerRow('durability', 'Durability', item.durability, 'primary'))
 
   rows.push({
     key: 'feel',
     label: 'Feel',
     kind: 'text',
+    group: 'performance',
     text: specialistProfile?.feel ? FEEL_LABEL[specialistProfile.feel] : 'Not rated',
   })
 
-  rows.push(specialistRow('tensionRetention', 'Tension Retention', specialistProfile?.dimensions.tensionRetention))
-  rows.push(manufacturerRow('hittingSound', 'Hitting Sound', item.hittingSound))
-  rows.push(specialistRow('power', 'Power', specialistDimensionAverage(specialistProfile, POWER_DIMENSIONS)))
+  rows.push(specialistRow('tensionRetention', 'Tension Retention', specialistProfile?.dimensions.tensionRetention, 'performance'))
+  rows.push(manufacturerRow('hittingSound', 'Hitting Sound', item.hittingSound, 'primary'))
+  rows.push(specialistRow('power', 'Power', specialistDimensionAverage(specialistProfile, POWER_DIMENSIONS), 'performance'))
 
   const comfortValue = specialistProfile?.dimensions.comfort ?? (item.shockAbsorption != null ? (item.shockAbsorption / MANUFACTURER_MAX) * SPECIALIST_MAX : undefined)
-  rows.push(specialistRow('comfort', 'Comfort', comfortValue))
+  rows.push(specialistRow('comfort', 'Shock Absorption / Comfort', comfortValue, 'primary'))
 
   const allDimensionValues = specialistProfile ? Object.values(specialistProfile.dimensions).filter((v): v is number => v != null) : []
   const overallSpecialist = allDimensionValues.length > 0 ? allDimensionValues.reduce((sum, v) => sum + v, 0) / allDimensionValues.length : undefined
-  rows.push(specialistRow('overallSpecialist', 'Overall Specialist Rating', overallSpecialist))
+  rows.push(specialistRow('overallSpecialist', 'Overall Specialist Rating', overallSpecialist, 'performance'))
 
   const visibleListings = listings ?? []
   const ordered = orderRetailerListings(visibleListings)
@@ -107,6 +117,7 @@ export function buildComparisonRows(
     key: 'availability',
     label: 'Retail Availability',
     kind: 'text',
+    group: 'availability',
     text: ordered.length > 0 ? AVAILABILITY_LABELS[ordered[0].availabilityStatus] : 'No retailers listed',
   })
 
@@ -115,6 +126,7 @@ export function buildComparisonRows(
     key: 'packageOptions',
     label: 'Package Options',
     kind: 'text',
+    group: 'availability',
     text: packageTypes.length > 0 ? packageTypes.map((t) => PACKAGE_TYPE_LABELS[t]).join(', ') : '—',
   })
 
@@ -123,6 +135,7 @@ export function buildComparisonRows(
     key: 'retailerCount',
     label: 'Retailer Count',
     kind: 'text',
+    group: 'availability',
     text: String(retailerCount),
   })
 

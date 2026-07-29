@@ -11,7 +11,6 @@ import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
-import ColorSwatchPreview from './ColorSwatchPreview'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
   repulsion: 'Quick Repulsion',
@@ -53,10 +52,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50 flex flex-wrap items-center gap-1.5">
-            <span>{item.name}</span>
-            <ColorSwatchPreview item={item} size="sm" />
-          </h3>
+          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
           <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
             {gauge != null && <> · {gauge}</>}

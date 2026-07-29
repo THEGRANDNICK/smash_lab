@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import StockBadge from '../StockBadge'
-import ColorSwatchPreview from '../ColorSwatchPreview'
-import { buildColorPreview, resolveColor } from '../../logic/stringColor'
 import { containsUnambiguousDelimiter, containsSlash, splitColorList, parseLegacyHybridPair } from '../../logic/colorParsing'
-import StringColorSwatch from '../StringColorSwatch'
-import type { HybridStringMeta, StockLevel } from '../../data/strings'
+import type { StockLevel } from '../../data/strings'
 import {
   STOCK_STATUS_OPTIONS,
   PACKAGE_TYPE_OPTIONS,
@@ -275,24 +272,8 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
   )
 }
 
-const RESOLUTION_SOURCE_LABEL: Record<string, string> = {
-  explicit_css: 'Value entered is already a CSS color',
-  explicit_override: 'Explicit override',
-  css_named_color: 'Recognized CSS color name',
-  inferred_keyword: 'Resolved automatically from keyword',
-  alias: 'Resolved via known alias',
-}
-
-/**
- * A single-line color entry with a live resolved-swatch preview, so an
- * admin sees immediately whether "Fire Orange" or similar will render on
- * the public site, and why (Part 16: raw name + resolved swatch +
- * resolution source), without a separate override field here — the
- * hybrid override fields live in the Catalog admin form (see
- * CatalogStringForm.tsx's HybridColorField).
- */
+/** A plain single-line color name entry — raw manufacturer text only, no public-rendering preview. */
 function ColorNameField({ label, value, onChange, disabled, hint }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean; hint: string }) {
-  const resolution = resolveColor(value)
   return (
     <label className="block text-sm">
       <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{label}</span>
@@ -305,53 +286,13 @@ function ColorNameField({ label, value, onChange, disabled, hint }: { label: str
         className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
       <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{hint}</span>
-      {value.trim() !== '' && (
-        <p className="flex items-center gap-1.5 text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
-          {resolution.cssColor ? (
-            <>
-              <StringColorSwatch swatch={{ label: resolution.displayName, hex: resolution.cssColor, ringClassName: resolution.ringClassName }} size="sm" />
-              {RESOLUTION_SOURCE_LABEL[resolution.source] ?? resolution.source}
-            </>
-          ) : (
-            <span className="text-amber-700 dark:text-amber-400 font-semibold">Needs color value — no automatic match found</span>
-          )}
-        </p>
-      )}
     </label>
   )
 }
 
-/**
- * Shows the mapped swatch(es) beside the raw color text and the
- * resolution source (Part 16), the raw text always staying visible —
- * this is admin UI, not the compact public card. Reuses
- * buildColorPreview/ColorSwatchPreview so an admin sees exactly what the
- * public site would render for this row, including the hybrid split
- * (from structured Main/Cross catalog fields, or a legacy "Main/Cross"
- * combined value as a fallback — see logic/stringColor.ts). A row whose
- * raw text doesn't resolve to anything gets a "Needs mapping" marker
- * rather than silently showing no swatch with no explanation.
- */
+/** Plain raw color text for this row — public color rendering was removed in Phase 9; this stays so a stringer can see and edit the actual stocked color name. */
 function InventoryColorPreview({ row }: { row: AdminInventoryRow }) {
-  const previewItem = {
-    isHybrid: row.isHybrid,
-    mainString: row.isHybrid ? ({ color: row.mainColor } as HybridStringMeta) : undefined,
-    crossString: row.isHybrid ? ({ color: row.crossColor } as HybridStringMeta) : undefined,
-    inventoryColor: row.color ?? undefined,
-    colors: undefined,
-    stock: row.stockStatus,
-  }
-  const preview = buildColorPreview(previewItem)
-  const hasRawColor = Boolean(row.color && row.color.trim() !== '')
-  const needsMapping = hasRawColor && preview.kind === 'none'
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <ColorSwatchPreview item={previewItem} size="sm" />
-      <span>{row.color || '—'}</span>
-      {needsMapping && <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">⚠ Needs mapping</span>}
-    </div>
-  )
+  return <span>{row.color || '—'}</span>
 }
 
 function Field({ label, value }: { label: string; value: string }) {

@@ -21,7 +21,8 @@
     "test:ui-polish": "tsx scripts/testUiPolish.ts",
     "test:catalog-polish": "tsx scripts/testCatalogPolish.ts",
     "test:color-inventory-fix": "tsx scripts/testColorInventoryFix.ts",
-    "test:color-resolver-v2": "tsx scripts/testColorResolverV2.ts"
+    "test:color-resolver-v2": "tsx scripts/testColorResolverV2.ts",
+    "test:color-removal-overlay": "tsx scripts/testColorRemovalAndOverlay.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

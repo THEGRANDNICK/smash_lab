@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react'
 import CatalogStringForm from './CatalogStringForm'
-import { allStringColors, resolveStringColor } from '../../logic/stringColor'
-import StringColorSwatch from '../StringColorSwatch'
 import {
   updateString,
   deleteString,
@@ -161,59 +159,32 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
   )
 }
 
-/** One resolved side of a hybrid preview (honoring its own override, if any), or a raw-text-plus-warning if the entered value doesn't map to a known color. */
-function HybridSidePreview({ raw, override }: { raw: string | undefined; override: string | undefined }) {
-  if ((!raw || raw.trim() === '') && (!override || override.trim() === '')) return <span>unset</span>
-  const swatch = resolveStringColor(raw, override)
-  if (swatch) {
-    return (
-      <span className="inline-flex items-center gap-1">
-        <StringColorSwatch swatch={swatch} size="sm" />
-        {swatch.label}
-        {override && override.trim() !== '' && <span className="text-ink-700/40 dark:text-shuttle-100/40">(override)</span>}
-      </span>
-    )
-  }
-  return <span className="text-amber-700 dark:text-amber-400 font-semibold">{raw} ⚠</span>
-}
-
 /**
- * A quick visual sanity-check for the row's own `colors` list (and, for a
- * hybrid, its main/cross colors) — kept deliberately catalog-only, never
- * reading inventory data (that's a different admin page entirely, with
- * its own priority over this fallback on the public site — see
- * logic/stringColor.ts). Shows every entered color (not capped at 3, the
- * public-facing limit), flags any that don't resolve to a known color
- * with a warning marker rather than hiding them, but never blocks
- * saving. Renders nothing when nothing was entered at all.
+ * Plain-text display of the row's raw color data — this catalog's own
+ * `colors` list, or (for a hybrid) its main/cross color names. Public
+ * color rendering was removed in Phase 9 (see logic/stringColor.ts's
+ * header comment); this stays purely so a stringer can see and edit the
+ * raw manufacturer color text in admin. Renders nothing when nothing was
+ * entered at all.
  */
 function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
   if (row.isHybrid) {
     const mainRaw = row.mainStringMeta?.color
     const crossRaw = row.crossStringMeta?.color
-    const mainOverride = row.mainStringMeta?.colorOverride
-    const crossOverride = row.crossStringMeta?.colorOverride
-    if (!mainRaw && !crossRaw && !mainOverride && !crossOverride) return null
+    if (!mainRaw && !crossRaw) return null
     return (
       <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
         <span className="font-semibold uppercase tracking-wide">Colors</span>
-        <HybridSidePreview raw={mainRaw} override={mainOverride} /> main /<HybridSidePreview raw={crossRaw} override={crossOverride} /> cross
+        <span>{mainRaw || 'unset'} main / {crossRaw || 'unset'} cross</span>
       </p>
     )
   }
 
   if (!row.colors || row.colors.length === 0) return null
-  const unknown = row.colors.filter((c) => !resolveStringColor(c))
   return (
     <p className="flex flex-wrap items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
       <span className="font-semibold uppercase tracking-wide">Colors</span>
-      {allStringColors(row.colors, Infinity).map((s) => (
-        <span key={s.hex} className="inline-flex items-center gap-1">
-          <StringColorSwatch swatch={s} size="sm" />
-          {s.label}
-        </span>
-      ))}
-      {unknown.length > 0 && <span className="text-amber-700 dark:text-amber-400 font-semibold">{unknown.join(', ')} ⚠ unmapped</span>}
+      <span>{row.colors.join(', ')}</span>
     </p>
   )
 }

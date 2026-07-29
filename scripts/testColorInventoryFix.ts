@@ -275,15 +275,6 @@ test('an unrecognized inventory token does not block the other recognized tokens
   assert.equal(preview.kind, 'solid')
   if (preview.kind === 'solid') assert.deepEqual(preview.visible.map((s) => s.label), ['White', 'Red'])
 })
-test('+N overflow still applies across the merged inventory+catalog list', () => {
-  const preview = buildColorPreview(baseItem({ inventoryColor: 'White, Red, Blue', colors: ['Black', 'Green'] }), 3)
-  assert.equal(preview.kind, 'solid')
-  if (preview.kind === 'solid') {
-    assert.equal(preview.visible.length, 3)
-    assert.equal(preview.overflow.length, 2)
-  }
-})
-
 // ---------------------------------------------------------------------------
 // 5. Hybrid color source priority (structured -> legacy fallback -> none)
 // ---------------------------------------------------------------------------
