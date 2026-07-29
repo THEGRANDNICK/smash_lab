@@ -1,62 +1,50 @@
-// Layered, mostly-automatic color resolution (rewritten this round after
-// real-world testing showed the previous fixed name-to-hex table
-// couldn't keep up with new manufacturer color names). See
-// logic/cssColor.ts (safe CSS validation) and logic/baseColorInference.ts
-// (the small, fixed base-color vocabulary + tokenized inference) for the
-// two building blocks this module composes into resolveColor()'s
-// resolution order:
+// Color resolution logic — kept as an ADMIN DATA-CLEANUP helper only.
 //
-//   1. explicit_css        — the raw name IS itself valid CSS syntax
-//                             (hex/rgb()/hsl()), e.g. "#ff6600".
-//   2. explicit_override    — a separately stored, validated CSS value
-//                             (only available for hybrid main/cross
-//                             sides right now — see HybridStringMeta's
-//                             colorOverride).
-//   3. css_named_color      — the raw name IS exactly one standard CSS
-//                             keyword, e.g. "orange".
-//   4. inferred_keyword     — tokenizes a longer name for a recognizable
-//                             base-color word/phrase, e.g. "Fire Orange"
-//                             -> orange, "Cosmic Gold" -> gold. This is
-//                             what lets a brand-new manufacturer name
-//                             work automatically, with no code change,
-//                             whenever its base color is recognizable.
-//   5. alias                — a small, explicitly documented table for
-//                             the few cases inference can't handle (a
-//                             misspelling, a spelling variant) — see
-//                             baseColorInference.ts's ALIASES for the
-//                             full list and why each entry exists.
-//   6. unresolved           — no automatic match. Never guessed: the
-//                             raw name is kept for admin diagnostics,
-//                             and the public site renders no swatch.
+// Phase 9 went through several rounds trying to render physical string
+// colors publicly (single swatches, multi-color lists, hybrid split
+// circles, an automatic base-color resolver). Real-world testing found
+// the result too inconsistent to trust (hybrids sometimes showing a
+// solid color instead of a split, some normal colors silently
+// disappearing) relative to the value it added, so the public rendering
+// was removed. See README's "Public color display deferred" section for
+// the full writeup and the plan for a possible future, properly
+// normalized color model.
 //
-// Display ordering (the "priority" for MULTIPLE colors on one string):
-// the inventory color(s) — split safely on commas/semicolons
-// (logic/colorParsing.ts) and only counted when the string is NOT
-// `unavailable` — come first, followed by any remaining catalog `colors`
-// not already shown, deduplicated by resolved color and sorted
-// alphabetically by label. See hybridColorSource() for the separate
-// hybrid main/cross priority chain.
+// What remains here, and why: logic/colorDiagnostics.ts's admin-only
+// `/debug/supabase` diagnostics still use this module to explain what a
+// raw color name *would* resolve to, so a stringer can review and
+// progressively clean up real Supabase color data (aliases, unresolved
+// names, hybrid pairing) ahead of a future normalized implementation —
+// without that requiring any public rendering or a database migration.
+// Nothing in src/components/ (other than admin) reads from this module
+// anymore.
+//
+// The resolver still tries, in order: (1) the raw name is itself valid
+// CSS syntax (hex/rgb()/hsl()); (2) the raw name is exactly one standard
+// CSS named-color keyword; (3) automatic base-color keyword inference
+// (logic/baseColorInference.ts) — e.g. "Fire Orange" -> orange; (4) a
+// small alias table for a few cases inference can't handle (a
+// misspelling, a spelling variant); (5) unresolved — kept as a raw value
+// for the diagnostics page, never guessed.
 
 import type { HybridStringMeta, StringItem } from '../data/strings.js'
 import { splitColorList, parseLegacyHybridPair, containsUnambiguousDelimiter } from './colorParsing.js'
 import { isCssSyntaxColor, isCssNamedColorKeyword, isSafeCssColor, estimateHexLightness } from './cssColor.js'
 import { inferBaseColor, resolveAlias, lookupBaseColor, SUBTLE_RING, STRONG_RING, type BaseColorMatch } from './baseColorInference.js'
 
-export type ColorResolutionSource = 'explicit_css' | 'explicit_override' | 'css_named_color' | 'inferred_keyword' | 'alias' | 'unresolved'
+export type ColorResolutionSource = 'explicit_css' | 'css_named_color' | 'inferred_keyword' | 'alias' | 'unresolved'
 
 export interface ColorResolution {
   /** The raw, as-entered manufacturer color name — '' if none was given at all. */
   rawName: string
-  /** What to show a human (tooltip/admin text) — preserves the original name for inference/override/explicit hits; shows the corrected spelling for an alias hit. */
+  /** What to show a human (admin diagnostics text) — preserves the original name for inference/explicit hits; shows the corrected spelling for an alias hit. */
   displayName: string
-  /** The CSS color value to actually render, or undefined if unresolved. */
+  /** The CSS color value this name would resolve to, or undefined if unresolved. Diagnostics-only — nothing renders this publicly anymore. */
   cssColor: string | undefined
   ringClassName: string
   source: ColorResolutionSource
   confidence: 'high' | 'medium' | 'low'
-  /** Set when something about the input couldn't be used as given (e.g. an override value that isn't a safe CSS color) — informational, never blocks resolution of the rest. */
-  warning?: string
-  /** Normalized key identifying the resolved color (or the raw name's normalized form when unresolved) — used for dedup/diagnostics, not for display. */
+  /** Normalized key identifying the resolved color (or undefined when unresolved) — used for dedup/diagnostics, not for display. */
   canonicalKey: string | undefined
 }
 
@@ -83,51 +71,24 @@ function computeRing(cssColor: string, baseMatch?: BaseColorMatch): string {
 
 const UNRESOLVED_NO_INPUT: ColorResolution = { rawName: '', displayName: '', cssColor: undefined, ringClassName: SUBTLE_RING, source: 'unresolved', confidence: 'low', canonicalKey: undefined }
 
-/**
- * The layered color resolver — see this file's header comment for the
- * full six-tier order. `override`, when given, is only ever consulted
- * for hybrid main/cross sides right now (see HybridStringMeta's
- * colorOverride) — plain catalog/inventory color names have no separate
- * override field without a database migration (see README's "Manual
- * color override" section for why).
- */
-export function resolveColor(name: string | undefined | null, override?: string | undefined | null): ColorResolution {
+/** Diagnostics-only color resolver — see this file's header comment for the tier order and why nothing public consumes it anymore. */
+export function resolveColor(name: string | undefined | null): ColorResolution {
   const rawName = (name ?? '').trim()
-  const overrideTrimmed = (override ?? '').trim()
-  const overrideProvided = overrideTrimmed !== ''
-  const safeOverride = overrideProvided ? isSafeCssColor(overrideTrimmed) : undefined
-  const overrideInvalid = overrideProvided && !safeOverride
-  const overrideWarning = overrideInvalid ? 'The color override value is not a safe CSS color and was ignored.' : undefined
-
-  if (rawName === '' && !safeOverride) {
-    return overrideInvalid ? { ...UNRESOLVED_NO_INPUT, warning: overrideWarning } : UNRESOLVED_NO_INPUT
-  }
+  if (rawName === '') return UNRESOLVED_NO_INPUT
 
   // Tier 1: the raw name itself is explicit CSS syntax (hex/rgb()/hsl()).
-  if (rawName !== '' && isCssSyntaxColor(rawName)) {
+  if (isCssSyntaxColor(rawName)) {
     const value = isSafeCssColor(rawName)!
-    return { rawName, displayName: rawName, cssColor: value, ringClassName: computeRing(value), source: 'explicit_css', confidence: 'high', canonicalKey: normalize(rawName), warning: overrideWarning }
-  }
-
-  // Tier 2: an explicit, validated override.
-  if (safeOverride) {
-    const displayName = rawName !== '' ? titleCase(rawName) : overrideTrimmed
-    return { rawName: rawName || overrideTrimmed, displayName, cssColor: safeOverride, ringClassName: computeRing(safeOverride), source: 'explicit_override', confidence: 'high', canonicalKey: normalize(displayName) }
-  }
-
-  if (rawName === '') {
-    return { ...UNRESOLVED_NO_INPUT, warning: overrideWarning }
+    return { rawName, displayName: rawName, cssColor: value, ringClassName: computeRing(value), source: 'explicit_css', confidence: 'high', canonicalKey: normalize(rawName) }
   }
 
   // An exact-whole-name alias hit (e.g. "Grey") is checked here, ahead of
-  // the plain named-keyword tier below, rather than after inference as
-  // the general order lists — deliberately: "grey" is itself a valid CSS
-  // keyword, so if checked in strict listed order it would always resolve
-  // as a bare keyword and never reach the alias table meant to
-  // canonicalize its spelling. The alias table is small and curated (see
-  // baseColorInference.ts's ALIASES), so checking an exact match early
-  // never causes an incorrect guess — it only ever fires for the exact
-  // handful of documented words.
+  // the plain named-keyword tier below, rather than after inference —
+  // deliberately: "grey" is itself a valid CSS keyword, so if checked in
+  // strict tier order it would always resolve as a bare keyword and never
+  // reach the alias table meant to canonicalize its spelling. The alias
+  // table is small and curated (see baseColorInference.ts's ALIASES), so
+  // checking an exact match early never causes an incorrect guess.
   const earlyAliasMatch = resolveAlias(rawName)
   if (earlyAliasMatch) {
     return {
@@ -138,49 +99,37 @@ export function resolveColor(name: string | undefined | null, override?: string 
       source: 'alias',
       confidence: 'medium',
       canonicalKey: earlyAliasMatch.canonicalKey,
-      warning: overrideWarning,
     }
   }
 
-  // Tier 3: the raw name is exactly one standard CSS named-color keyword.
+  // Tier: the raw name is exactly one standard CSS named-color keyword.
   // Prefers this module's own curated value when the keyword is ALSO one
-  // of our base colors (e.g. "yellow" typed directly), so it renders
-  // identically to the same color found via inference from a longer name
-  // (e.g. "Neon Yellow") — otherwise falls back to the literal keyword.
+  // of our base colors (e.g. "yellow" typed directly), so it matches the
+  // same color found via inference from a longer name (e.g. "Neon
+  // Yellow") — otherwise falls back to the literal keyword.
   if (isCssNamedColorKeyword(rawName)) {
     const lower = rawName.toLowerCase()
     const baseMatch = lookupBaseColor(lower)
     const cssColor = baseMatch?.cssColor ?? lower
-    return { rawName, displayName: titleCase(rawName), cssColor, ringClassName: computeRing(cssColor, baseMatch), source: 'css_named_color', confidence: 'high', canonicalKey: lower, warning: overrideWarning }
+    return { rawName, displayName: titleCase(rawName), cssColor, ringClassName: computeRing(cssColor, baseMatch), source: 'css_named_color', confidence: 'high', canonicalKey: lower }
   }
 
-  // Tier 4: automatic base-color keyword inference (tokenized). (Tier 5,
-  // the alias table, was already checked above — see the comment there
-  // for why it has to run before tier 3, not after tier 4 as listed.)
+  // Tier: automatic base-color keyword inference (tokenized).
   const inferred = inferBaseColor(rawName)
   if (inferred) {
-    return { rawName, displayName: titleCase(rawName), cssColor: inferred.cssColor, ringClassName: computeRing(inferred.cssColor, inferred), source: 'inferred_keyword', confidence: 'medium', canonicalKey: inferred.canonicalKey, warning: overrideWarning }
+    return { rawName, displayName: titleCase(rawName), cssColor: inferred.cssColor, ringClassName: computeRing(inferred.cssColor, inferred), source: 'inferred_keyword', confidence: 'medium', canonicalKey: inferred.canonicalKey }
   }
 
-  // Tier 6: unresolved — never guessed.
-  return {
-    rawName,
-    displayName: rawName,
-    cssColor: undefined,
-    ringClassName: SUBTLE_RING,
-    source: 'unresolved',
-    confidence: 'low',
-    canonicalKey: undefined,
-    warning: overrideInvalid ? 'No automatic color found, and the override value is not a safe CSS color.' : 'No automatic color found.',
-  }
+  // Unresolved — never guessed.
+  return { rawName, displayName: rawName, cssColor: undefined, ringClassName: SUBTLE_RING, source: 'unresolved', confidence: 'low', canonicalKey: undefined }
 }
 
 export interface StringColorSwatch {
-  /** What a tooltip/aria-label should say — the original manufacturer name, or the corrected spelling for an alias hit. */
+  /** What a tooltip/admin diagnostics view should say — the original manufacturer name, or the corrected spelling for an alias hit. */
   label: string
-  /** CSS color value for the swatch fill — a keyword, hex, or rgb()/hsl() string; any of these work directly as a `backgroundColor` style value. */
+  /** CSS color value this name would render as — a keyword, hex, or rgb()/hsl() string. Diagnostics-only; nothing renders this publicly anymore. */
   hex: string
-  /** Tailwind ring classes tuned for visibility against both light and dark. */
+  /** Tailwind ring classes tuned for visibility against both light and dark, computed for admin-diagnostics consistency with the resolver's confidence tiers. */
   ringClassName: string
 }
 
@@ -189,14 +138,10 @@ function toSwatch(resolution: ColorResolution): StringColorSwatch | undefined {
   return { label: resolution.displayName, hex: resolution.cssColor, ringClassName: resolution.ringClassName }
 }
 
-/**
- * Resolves one color name (optionally with an override) to a swatch, or
- * undefined if it isn't resolvable by any tier — callers must render no
- * swatch in that case rather than a misleading neutral placeholder.
- */
-export function resolveStringColor(name: string | undefined | null, override?: string | undefined | null): StringColorSwatch | undefined {
-  if (!name && !override) return undefined
-  return toSwatch(resolveColor(name, override))
+/** Resolves one color name, or undefined if it isn't resolvable by any tier. Diagnostics-only — see this file's header comment. */
+export function resolveStringColor(name: string | undefined | null): StringColorSwatch | undefined {
+  if (!name) return undefined
+  return toSwatch(resolveColor(name))
 }
 
 /** For admin diagnostics: if `name` resolved via the small exceptional alias table (not automatic inference), returns the raw text and the canonical label it resolves to; undefined otherwise. */
@@ -220,18 +165,6 @@ function resolveAllColors(names: readonly string[]): StringColorSwatch[] {
   return result
 }
 
-/** @deprecated Superseded by buildColorPreview()'s inventory→catalog priority and hybrid handling — kept only as a thin wrapper for callers/tests still using the single-swatch Phase 8 API. */
-export function primaryStringColor(colors: readonly string[] | undefined): StringColorSwatch | undefined {
-  if (!colors) return undefined
-  return resolveAllColors(colors)[0]
-}
-
-/** @deprecated Superseded by buildColorPreview() — kept only as a thin wrapper for callers/tests still using the Phase 8 API. */
-export function allStringColors(colors: readonly string[] | undefined, max = 3): StringColorSwatch[] {
-  if (!colors) return []
-  return resolveAllColors(colors).slice(0, max)
-}
-
 export interface HybridColorPreview {
   kind: 'hybrid'
   main: StringColorSwatch
@@ -240,10 +173,8 @@ export interface HybridColorPreview {
 
 export interface SolidColorPreview {
   kind: 'solid'
-  /** Swatches to render immediately, up to the caller's `maxVisible`. */
+  /** Every recognized swatch, in order — diagnostics-only, not capped for public display anymore. */
   visible: StringColorSwatch[]
-  /** Remaining recognized swatches beyond `maxVisible`, shown after a "+N" control is activated. */
-  overflow: StringColorSwatch[]
 }
 
 export interface NoColorPreview {
@@ -252,25 +183,16 @@ export interface NoColorPreview {
 
 export type ColorPreview = HybridColorPreview | SolidColorPreview | NoColorPreview
 
-/** A structured hybrid side's color, honoring its own explicit override (see HybridStringMeta.colorOverride) ahead of automatic resolution of its name — this is where tiers 2-and-3-combined of the class header comment's order actually apply for hybrids. */
 function hybridSideColor(side: HybridStringMeta | undefined): StringColorSwatch | undefined {
-  if (!side) return undefined
-  return resolveStringColor(side.color, side.colorOverride)
+  return resolveStringColor(side?.color)
 }
 
-/** A stock of `'unavailable'` means the inventory row's color(s) no longer represent something a customer can actually get — see buildColorPreview's doc comment. */
+/** A stock of `'unavailable'` means the inventory row's color(s) no longer represent something a customer can actually get. */
 function isInventoryColorAvailable(item: Pick<StringItem, 'inventoryColor' | 'stock'>): boolean {
   return Boolean(item.inventoryColor) && item.stock !== 'unavailable'
 }
 
-/**
- * Recognized swatches from the inventory's single free-text `color`
- * field, in entry order — split on commas/semicolons only (see
- * logic/colorParsing.ts), so "White, Red" yields two swatches while a
- * bare slash is left untouched here (that's only ever a hybrid
- * main/cross signal, handled separately in hybridColorSource). Empty
- * when the row is out of stock (see isInventoryColorAvailable).
- */
+/** Recognized swatches from the inventory's single free-text `color` field, in entry order — split on commas/semicolons only (see logic/colorParsing.ts). Empty when the row is out of stock. Diagnostics-only. */
 function resolveInventoryColors(item: Pick<StringItem, 'inventoryColor' | 'stock'>): StringColorSwatch[] {
   if (!isInventoryColorAvailable(item)) return []
   return resolveAllColors(splitColorList(item.inventoryColor))
@@ -284,26 +206,20 @@ export type HybridColorSource =
   | { kind: 'none' }
 
 /**
- * Determines where a hybrid string's color(s) come from, in priority
- * order — used by buildColorPreview and by colorDiagnostics.ts (which
- * needs to know *which* path was used, not just the resulting swatches):
+ * Determines where a hybrid string's color(s) would come from, in
+ * priority order — used by colorDiagnostics.ts (which needs to know
+ * *which* path was used, not just the resulting swatches) to help an
+ * admin understand and clean up real data. Diagnostics-only.
  *
  *   1. Structured `mainString.color`/`crossString.color` metadata from
- *      the catalog admin's dedicated hybrid fields — each side honors
- *      its own explicit override first (HybridStringMeta.colorOverride)
- *      before falling back to automatic resolution of its color name.
- *      'structured-both' when both sides resolve; 'structured-partial'
- *      when only one does (never inventing the other side).
- *   2. If NEITHER structured catalog side resolves, fall back to the
- *      inventory row's single legacy text value: a genuine "Main/Cross"
- *      pair (exactly one slash, two clean tokens — logic/colorParsing.ts's
- *      parseLegacyHybridPair) becomes 'legacy-pair'; a single plain color
- *      name with no delimiter at all becomes 'legacy-solid' (we don't
- *      know which side it names, so it renders as one ordinary swatch,
- *      same as a structured-partial result). A comma/semicolon-separated
- *      value ("White, Red") is deliberately NOT treated as a hybrid pair
- *      here — that's an ordinary two-color list, which a hybrid never
- *      reads from its own top-level `colors`/inventory list anyway.
+ *      the catalog admin's dedicated hybrid fields — 'structured-both'
+ *      when both resolve, 'structured-partial' when only one does.
+ *   2. If NEITHER structured side resolves, the inventory row's single
+ *      legacy text value: a genuine "Main/Cross" pair (exactly one
+ *      slash, two clean tokens) becomes 'legacy-pair'; a single plain
+ *      value with no delimiter becomes 'legacy-solid'. A comma/
+ *      semicolon-separated value ("White, Red") is never treated as a
+ *      hybrid pair — that's an ordinary two-color list.
  *   3. 'none' otherwise.
  */
 export function hybridColorSource(item: Pick<StringItem, 'mainString' | 'crossString' | 'inventoryColor' | 'stock'>): HybridColorSource {
@@ -329,29 +245,25 @@ export function hybridColorSource(item: Pick<StringItem, 'mainString' | 'crossSt
 }
 
 /**
- * The single entry point every color-swatch-rendering component should
- * use. See hybridColorSource() for the hybrid priority order. Non-hybrid
- * strings: the inventory row's color(s) — split safely on
- * commas/semicolons, in entry order — are shown first, but ONLY when
- * that stock isn't `unavailable` (see logic/colorDiagnostics.ts for
- * surfacing hidden colors on the debug page instead of hiding them
- * entirely). Any catalog `colors` not already covered by an inventory
- * color are appended after, deduplicated case-insensitively and sorted
- * alphabetically by label. Never fabricates a color for a name this
- * module doesn't recognize.
+ * Diagnostics-only preview of what a string's color(s) would resolve to
+ * — used by logic/colorDiagnostics.ts, not by any public component
+ * anymore. See hybridColorSource() for the hybrid priority order.
+ * Non-hybrid strings: the inventory row's color(s) come first (only
+ * when in stock), followed by any remaining catalog `colors`,
+ * deduplicated and sorted alphabetically by label.
  */
-export function buildColorPreview(item: Pick<StringItem, 'isHybrid' | 'mainString' | 'crossString' | 'inventoryColor' | 'colors' | 'stock'>, maxVisible = 3): ColorPreview {
+export function buildColorPreview(item: Pick<StringItem, 'isHybrid' | 'mainString' | 'crossString' | 'inventoryColor' | 'colors' | 'stock'>): ColorPreview {
   if (item.isHybrid) {
     const source = hybridColorSource(item)
     switch (source.kind) {
       case 'structured-both':
         return { kind: 'hybrid', main: source.main, cross: source.cross }
       case 'structured-partial':
-        return { kind: 'solid', visible: [source.known], overflow: [] }
+        return { kind: 'solid', visible: [source.known] }
       case 'legacy-pair':
         return { kind: 'hybrid', main: source.main, cross: source.cross }
       case 'legacy-solid':
-        return { kind: 'solid', visible: [source.known], overflow: [] }
+        return { kind: 'solid', visible: [source.known] }
       case 'none':
         return { kind: 'none' }
     }
@@ -366,5 +278,5 @@ export function buildColorPreview(item: Pick<StringItem, 'isHybrid' | 'mainStrin
 
   const swatches = [...inventorySwatches, ...catalogSwatches]
   if (swatches.length === 0) return { kind: 'none' }
-  return { kind: 'solid', visible: swatches.slice(0, maxVisible), overflow: swatches.slice(maxVisible) }
+  return { kind: 'solid', visible: swatches }
 }

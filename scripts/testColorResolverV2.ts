@@ -240,34 +240,6 @@ for (const ambiguous of ['Ocean', 'Flash', 'Pearl', 'Ice', 'Smoke', 'Graphite', 
 }
 
 // ---------------------------------------------------------------------------
-// 6. Explicit override priority + invalid override handling
-// ---------------------------------------------------------------------------
-
-console.log('\n=== Explicit color override ===')
-
-test('a valid override takes priority over automatic resolution', () => {
-  const resolution = resolveColor('Ocean', '#1ca3ec')
-  assert.equal(resolution.source, 'explicit_override')
-  assert.equal(resolution.cssColor, '#1ca3ec')
-  assert.equal(resolution.displayName, 'Ocean')
-})
-test('an override still wins even when the name would otherwise infer automatically', () => {
-  const resolution = resolveColor('Fire Orange', '#123456')
-  assert.equal(resolution.source, 'explicit_override')
-  assert.equal(resolution.cssColor, '#123456')
-})
-test('an invalid override value is rejected, falling back to automatic resolution with a warning', () => {
-  const resolution = resolveColor('Fire Orange', 'url(evil.svg)')
-  assert.equal(resolution.source, 'inferred_keyword')
-  assert.ok(resolution.warning)
-})
-test('an invalid override with an otherwise-unresolvable name stays unresolved, with a warning', () => {
-  const resolution = resolveColor('Ocean', 'var(--x)')
-  assert.equal(resolution.source, 'unresolved')
-  assert.ok(resolution.warning)
-})
-
-// ---------------------------------------------------------------------------
 // 7. Normal multi-color lists vs. hybrid pairs
 // ---------------------------------------------------------------------------
 
@@ -305,12 +277,6 @@ test('structured main/cross catalog metadata produces a true split swatch', () =
     assert.equal(preview.main.label, 'White')
     assert.equal(preview.cross.label, 'Red')
   }
-})
-test('a structured override on one side takes priority over that side\'s automatic resolution', () => {
-  const item = baseItem({ isHybrid: true, mainString: { color: 'Ocean', colorOverride: '#1ca3ec' }, crossString: { color: 'Red' } })
-  const preview = buildColorPreview(item)
-  assert.equal(preview.kind, 'hybrid')
-  if (preview.kind === 'hybrid') assert.equal(preview.main.hex, '#1ca3ec')
 })
 test('AeroBite-style legacy fallback: no structured colors, but inventory "White/Red" produces a split swatch', () => {
   const item = baseItem({ isHybrid: true, inventoryColor: 'White/Red' })
@@ -358,17 +324,6 @@ test('inferredColorNames records raw -> base color pairs, deduplicated', () => {
   assert.equal(summary.inferredColorNames.length, 1)
   assert.match(summary.inferredColorNames[0], /Fire Orange → orange/)
 })
-test('explicitOverridesUsed and invalidOverrideValues are tracked per hybrid side', () => {
-  const items = [
-    baseItem({ id: 'a', isHybrid: true, mainString: { color: 'Ocean', colorOverride: '#1ca3ec' }, crossString: { color: 'Red' } }),
-    baseItem({ id: 'b', isHybrid: true, mainString: { color: 'Ocean', colorOverride: 'url(x)' }, crossString: { color: 'Red' } }),
-  ]
-  const summary = summarizeColorDiagnostics(items)
-  assert.equal(summary.explicitOverridesUsed.length, 1)
-  assert.match(summary.explicitOverridesUsed[0], /a \(main\)/)
-  assert.equal(summary.invalidOverrideValues.length, 1)
-  assert.match(summary.invalidOverrideValues[0], /b \(main\)/)
-})
 test('partialHybridPairs and hybridMissingColors are distinct categories', () => {
   const items = [
     baseItem({ id: 'a', isHybrid: true, mainString: { color: 'White' } }),
@@ -386,27 +341,6 @@ test('omittedDueToUnresolvedColor counts strings that HAD color data but none of
 })
 test('summarizeColorDiagnostics never throws on the real catalog', () => {
   assert.doesNotThrow(() => summarizeColorDiagnostics(localCatalog))
-})
-
-// ---------------------------------------------------------------------------
-// 10. Catalog admin: color override validation end-to-end
-// ---------------------------------------------------------------------------
-
-console.log('\n=== Catalog admin hybrid override validation ===')
-
-test('a valid hybrid color override saves onto main_string_meta.colorOverride', () => {
-  const result = validateCatalogInput(validCatalogInput({ isHybrid: true, mainColor: 'Ocean', mainColorOverride: '#1ca3ec', crossColor: 'Red' }), CATALOG_CONTEXT)
-  assert.equal(result.ok, true)
-  if (result.ok) assert.equal(result.payload.update.main_string_meta?.colorOverride, '#1ca3ec')
-})
-test('an invalid hybrid color override is rejected with a form error, not silently dropped', () => {
-  const result = validateCatalogInput(validCatalogInput({ isHybrid: true, mainColor: 'Ocean', mainColorOverride: 'url(evil.svg)' }), CATALOG_CONTEXT)
-  assert.equal(result.ok, false)
-  if (!result.ok) assert.ok(result.errors.mainColorOverride)
-})
-test('an empty override is fine (optional field, no error)', () => {
-  const result = validateCatalogInput(validCatalogInput({ isHybrid: true, mainColor: 'White', crossColor: 'Red' }), CATALOG_CONTEXT)
-  assert.equal(result.ok, true)
 })
 
 // ---------------------------------------------------------------------------

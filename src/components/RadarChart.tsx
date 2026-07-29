@@ -1,4 +1,4 @@
-import { PERFORMANCE_AXES, PERFORMANCE_MAX, type PerformanceDimension } from './performanceAxes'
+import { PERFORMANCE_AXES, PERFORMANCE_MAX, RADAR_COMPARE_COLORS, type PerformanceDimension } from './performanceAxes'
 
 export interface RadarSeries {
   id: string
@@ -51,14 +51,19 @@ function describeSeries(series: RadarSeries): string {
 interface RadarChartProps {
   series: RadarSeries[]
   size?: number
-  /** Show exact numeric values at each vertex — only sensible with a single series. */
+  /** Show exact numeric values — a single series shows one value per vertex; 2–3 series instead show every series' value, in matching chart-series colors, as a line beneath each axis label. */
   showValues?: boolean
   /** Tailwind max-width classes capping the rendered (CSS) size — the SVG always scales via `w-full` beneath this, so it never overflows its container regardless of `size`. Defaults to the original compact cap used everywhere before Phase 8 polish. */
   maxWidthClassName?: string
 }
 
 export default function RadarChart({ series, size = 220, showValues = false, maxWidthClassName = 'max-w-[260px]' }: RadarChartProps) {
-  const padding = size * 0.24
+  const showAxisValues = showValues && series.length > 1
+  // Multi-series axis values need a second line of text beneath each label
+  // — a bit more padding keeps that line (and the label above it) inside
+  // the viewBox at every axis angle instead of clipping. Single-series
+  // layout (the common case, used on every string card) is untouched.
+  const padding = size * (showAxisValues ? 0.3 : 0.24)
   const center = size / 2
   const radius = size / 2 - padding
   const rings = [0.25, 0.5, 0.75, 1]
@@ -136,6 +141,23 @@ export default function RadarChart({ series, size = 220, showValues = false, max
             return (
               <text key={axis.key} x={x} y={y - 6} textAnchor="middle" className="fill-ink-900 dark:fill-shuttle-50 text-[9px] font-semibold" aria-hidden="true">
                 {raw}
+              </text>
+            )
+          })}
+
+        {/* Optional exact values, 2–3 series: one line beneath each axis label, in matching chart-series colors, so a difference is readable without hovering or cross-referencing a separate legend. Already covered by an accessible text equivalent via the chart's own aria-label/title (describeSeries), so this line is decorative-only. */}
+        {showAxisValues &&
+          PERFORMANCE_AXES.map((axis, i) => {
+            const { x, y } = pointAt(i, 1.1, center, radius)
+            const { anchor, dy } = labelAnchor(i)
+            const valueDy = dy >= 0 ? dy + 11 : dy - 11
+            return (
+              <text key={`${axis.key}-values`} x={x} y={y + valueDy} textAnchor={anchor} className="text-[9px] font-bold" aria-hidden="true">
+                {series.map((s, idx) => (
+                  <tspan key={s.id} className={RADAR_COMPARE_COLORS[idx]?.svgTextClassName} dx={idx === 0 ? 0 : 6}>
+                    {s.values[axis.key] ?? '—'}
+                  </tspan>
+                ))}
               </text>
             )
           })}

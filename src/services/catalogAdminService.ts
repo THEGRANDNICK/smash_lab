@@ -17,7 +17,6 @@ import type { StringCategory } from '../data/strings.js'
 import { VALID_CATEGORIES, RATING_MIN, RATING_MAX, SAFE_URL_PATTERN, isFiniteNumber, inRange, hasDecimalPrecision } from './catalogService.js'
 import { splitColorList } from '../logic/colorParsing.js'
 import { normalizeDecimalInput } from '../logic/decimalInput.js'
-import { isSafeCssColor } from '../logic/cssColor.js'
 
 type StringsRow = Database['public']['Tables']['strings']['Row']
 type StringsInsert = Database['public']['Tables']['strings']['Insert']
@@ -58,7 +57,6 @@ interface HybridMeta {
   construction?: string
   coating?: string
   color?: string
-  colorOverride?: string
 }
 
 function fromRow(row: StringsRow): AdminCatalogRow {
@@ -133,13 +131,11 @@ export interface CatalogFormInput {
   mainConstruction: string
   mainCoating: string
   mainColor: string
-  mainColorOverride: string
   crossGauge: string
   crossMaterial: string
   crossConstruction: string
   crossCoating: string
   crossColor: string
-  crossColorOverride: string
 }
 
 export function emptyCatalogFormInput(): CatalogFormInput {
@@ -170,13 +166,11 @@ export function emptyCatalogFormInput(): CatalogFormInput {
     mainConstruction: '',
     mainCoating: '',
     mainColor: '',
-    mainColorOverride: '',
     crossGauge: '',
     crossMaterial: '',
     crossConstruction: '',
     crossCoating: '',
     crossColor: '',
-    crossColorOverride: '',
   }
 }
 
@@ -208,13 +202,11 @@ export function catalogFormInputFromRow(row: AdminCatalogRow): CatalogFormInput 
     mainConstruction: row.mainStringMeta?.construction ?? '',
     mainCoating: row.mainStringMeta?.coating ?? '',
     mainColor: row.mainStringMeta?.color ?? '',
-    mainColorOverride: row.mainStringMeta?.colorOverride ?? '',
     crossGauge: row.crossStringMeta?.gauge != null ? String(row.crossStringMeta.gauge) : '',
     crossMaterial: row.crossStringMeta?.material ?? '',
     crossConstruction: row.crossStringMeta?.construction ?? '',
     crossCoating: row.crossStringMeta?.coating ?? '',
     crossColor: row.crossStringMeta?.color ?? '',
-    crossColorOverride: row.crossStringMeta?.colorOverride ?? '',
   }
 }
 
@@ -293,24 +285,14 @@ export function value<T>(result: { ok: true; value: T } | { ok: false; error: st
   return result.value
 }
 
-/** An override is optional, but if something was typed it must be a safe CSS color — matches this app's existing pattern of validating optional-but-present fields (e.g. parseNullableUrl) rather than silently dropping bad input. */
-function parseColorOverride(raw: string, label: string): { ok: true; value: string | null } | { ok: false; error: string } {
-  const trimmed = raw.trim()
-  if (trimmed === '') return { ok: true, value: null }
-  const safe = isSafeCssColor(trimmed)
-  if (!safe) return { ok: false, error: `${label} must be a valid CSS color (e.g. a name like "orange", a hex like "#ff5a1f", or rgb()/hsl()).` }
-  return { ok: true, value: safe }
-}
-
 /** Builds a sparse hybrid-side metadata object, or null if nothing was entered — never an object with only empty/undefined values. */
-function buildHybridMeta(gauge: number | null, material: string, construction: string, coating: string, color: string, colorOverride: string | null): HybridMeta | null {
+function buildHybridMeta(gauge: number | null, material: string, construction: string, coating: string, color: string): HybridMeta | null {
   const meta: HybridMeta = {
     ...(gauge != null ? { gauge } : {}),
     ...(material.trim() !== '' ? { material: material.trim() } : {}),
     ...(construction.trim() !== '' ? { construction: construction.trim() } : {}),
     ...(coating.trim() !== '' ? { coating: coating.trim() } : {}),
     ...(color.trim() !== '' ? { color: color.trim() } : {}),
-    ...(colorOverride ? { colorOverride } : {}),
   }
   return Object.keys(meta).length > 0 ? meta : null
 }
@@ -422,10 +404,6 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
   if (!mainGaugeResult.ok) errors.mainGauge = mainGaugeResult.error
   const crossGaugeResult = parseNullableNonNegative(input.crossGauge, 'Cross string gauge')
   if (!crossGaugeResult.ok) errors.crossGauge = crossGaugeResult.error
-  const mainColorOverrideResult = parseColorOverride(input.mainColorOverride, 'Main string color override')
-  if (!mainColorOverrideResult.ok) errors.mainColorOverride = mainColorOverrideResult.error
-  const crossColorOverrideResult = parseColorOverride(input.crossColorOverride, 'Cross string color override')
-  if (!crossColorOverrideResult.ok) errors.crossColorOverride = crossColorOverrideResult.error
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors }
@@ -444,8 +422,8 @@ export function validateCatalogInput(input: CatalogFormInput, context: Validatio
       }
     : null
 
-  const mainStringMeta = buildHybridMeta(value(mainGaugeResult), input.mainMaterial, input.mainConstruction, input.mainCoating, input.mainColor, value(mainColorOverrideResult))
-  const crossStringMeta = buildHybridMeta(value(crossGaugeResult), input.crossMaterial, input.crossConstruction, input.crossCoating, input.crossColor, value(crossColorOverrideResult))
+  const mainStringMeta = buildHybridMeta(value(mainGaugeResult), input.mainMaterial, input.mainConstruction, input.mainCoating, input.mainColor)
+  const crossStringMeta = buildHybridMeta(value(crossGaugeResult), input.crossMaterial, input.crossConstruction, input.crossCoating, input.crossColor)
 
   const sharedFields = {
     brand,

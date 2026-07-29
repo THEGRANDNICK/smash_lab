@@ -24,7 +24,7 @@ import { recommendStrings } from '../src/logic/recommendationEngine.js'
 import { recommendTension } from '../src/logic/tensionRecommendation.js'
 import type { QuizAnswers } from '../src/logic/types.js'
 import { mergeInventoryIntoCatalog, type InventoryMap } from '../src/services/inventoryService.js'
-import { resolveStringColor, buildColorPreview, primaryStringColor, allStringColors } from '../src/logic/stringColor.js'
+import { resolveStringColor, buildColorPreview } from '../src/logic/stringColor.js'
 import { summarizeColorDiagnostics } from '../src/logic/colorDiagnostics.js'
 import { formatDisplayVersion, resolveEnvironmentLabel, buildVersionInfo } from '../src/logic/version.js'
 
@@ -208,49 +208,36 @@ test('neon colors resolve via automatic base-color inference this round (Phase 9
 
 console.log('\n=== Color swatch preview: solid strings ===')
 
-test('one recognized color renders as a single visible swatch, no overflow', () => {
+test('one recognized color renders as a single visible swatch', () => {
   const preview = buildColorPreview(baseItem({ colors: ['Yellow'] }))
   assert.equal(preview.kind, 'solid')
   if (preview.kind === 'solid') {
     assert.equal(preview.visible.length, 1)
     assert.equal(preview.visible[0].label, 'Yellow')
-    assert.equal(preview.overflow.length, 0)
   }
 })
 
-test('two recognized colors render as two visible swatches, no overflow', () => {
+test('two recognized colors render as two visible swatches', () => {
   const preview = buildColorPreview(baseItem({ colors: ['Yellow', 'White'] }))
   assert.equal(preview.kind, 'solid')
   if (preview.kind === 'solid') {
     assert.equal(preview.visible.length, 2)
-    assert.equal(preview.overflow.length, 0)
   }
 })
 
-test('three recognized colors render as three visible swatches, no overflow (at the default maxVisible)', () => {
+test('three recognized colors render as three visible swatches', () => {
   const preview = buildColorPreview(baseItem({ colors: ['Yellow', 'White', 'Black'] }))
   assert.equal(preview.kind, 'solid')
   if (preview.kind === 'solid') {
     assert.equal(preview.visible.length, 3)
-    assert.equal(preview.overflow.length, 0)
   }
 })
 
-test('more than three colors overflow beyond maxVisible, available for expansion', () => {
-  const preview = buildColorPreview(baseItem({ colors: ['Black', 'White', 'Red', 'Blue', 'Green'] }), 3)
+test('more than three colors all remain visible — no public swatch cap applies anymore', () => {
+  const preview = buildColorPreview(baseItem({ colors: ['Black', 'White', 'Red', 'Blue', 'Green'] }))
   assert.equal(preview.kind, 'solid')
   if (preview.kind === 'solid') {
-    assert.equal(preview.visible.length, 3)
-    assert.equal(preview.overflow.length, 2)
-  }
-})
-
-test('a custom maxVisible is respected', () => {
-  const preview = buildColorPreview(baseItem({ colors: ['Yellow', 'White', 'Black'] }), 1)
-  assert.equal(preview.kind, 'solid')
-  if (preview.kind === 'solid') {
-    assert.equal(preview.visible.length, 1)
-    assert.equal(preview.overflow.length, 2)
+    assert.equal(preview.visible.length, 5)
   }
 })
 
@@ -293,8 +280,8 @@ test('catalog-only colors (no inventory) are alphabetically ordered', () => {
 
 test('buildColorPreview never reorders randomly between calls (fully deterministic)', () => {
   const item = baseItem({ colors: ['Yellow', 'White', 'Black', 'Red'] })
-  const a = buildColorPreview(item, 3)
-  const b = buildColorPreview(item, 3)
+  const a = buildColorPreview(item)
+  const b = buildColorPreview(item)
   assert.deepEqual(a, b)
 })
 
@@ -407,17 +394,6 @@ test('real catalog data: mergeInventoryIntoCatalog + buildColorPreview never thr
     const preview = buildColorPreview(item)
     assert.ok(preview.kind === 'none' || preview.kind === 'solid' || preview.kind === 'hybrid')
   }
-})
-
-console.log('\n=== Deprecated Phase 8 API still works (backward compatibility) ===')
-
-test('primaryStringColor still resolves the first recognized color', () => {
-  assert.equal(primaryStringColor(['Unknown', 'Blue', 'Red'])?.label, 'Blue')
-})
-
-test('allStringColors still caps and dedupes', () => {
-  const swatches = allStringColors(['Yellow', 'yellow', 'Red', 'Blue'], 2)
-  assert.equal(swatches.length, 2)
 })
 
 // ---------------------------------------------------------------------------

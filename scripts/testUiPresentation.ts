@@ -284,7 +284,7 @@ const EXPECTED_ROW_LABELS = [
   'Tension Retention',
   'Hitting Sound',
   'Power',
-  'Comfort',
+  'Shock Absorption / Comfort',
   'Overall Specialist Rating',
   'Retail Availability',
   'Package Options',

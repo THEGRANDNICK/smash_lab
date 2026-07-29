@@ -19,7 +19,7 @@ import { STRING_SPECIALIST_PROFILES } from '../src/data/stringSpecialistProfiles
 import { recommendStrings } from '../src/logic/recommendationEngine.js'
 import { recommendTension } from '../src/logic/tensionRecommendation.js'
 import type { QuizAnswers } from '../src/logic/types.js'
-import { resolveStringColor, primaryStringColor, allStringColors } from '../src/logic/stringColor.js'
+import { resolveStringColor } from '../src/logic/stringColor.js'
 import { needsClamp, DEFAULT_CLAMP_THRESHOLD } from '../src/logic/textClamp.js'
 import {
   readStoredComparisonView,
@@ -152,32 +152,6 @@ test('resolveStringColor title-cases multi-word names for display', () => {
   assert.equal(neon!.label, 'Neon Yellow')
 })
 
-test('primaryStringColor picks the first recognized color, in list order', () => {
-  const swatch = primaryStringColor(['Unknown Shade', 'Blue', 'Red'])
-  assert.equal(swatch!.label, 'Blue')
-})
-
-test('primaryStringColor returns undefined when the string has no colors at all', () => {
-  assert.equal(primaryStringColor(undefined), undefined)
-  assert.equal(primaryStringColor([]), undefined)
-})
-
-test('primaryStringColor returns undefined when none of the listed colors are recognized (never a misleading fallback)', () => {
-  assert.equal(primaryStringColor(['Sparkle Fusion', 'Mystery Hue']), undefined)
-})
-
-test('allStringColors deduplicates and caps at max', () => {
-  const swatches = allStringColors(['Yellow', 'yellow', 'Red', 'Blue', 'Green'], 2)
-  assert.equal(swatches.length, 2)
-  assert.equal(swatches[0].label, 'Yellow')
-  assert.equal(swatches[1].label, 'Red')
-})
-
-test('allStringColors is deterministic', () => {
-  const colors = ['White', 'Black', 'Silver']
-  assert.deepEqual(allStringColors(colors), allStringColors(colors))
-})
-
 test('every known color name in the brief resolves to a swatch', () => {
   const names = ['yellow', 'white', 'black', 'red', 'blue', 'green', 'orange', 'pink', 'purple', 'silver', 'grey', 'gray', 'natural', 'neon yellow', 'turquoise', 'lime']
   for (const name of names) {
@@ -187,10 +161,8 @@ test('every known color name in the brief resolves to a swatch', () => {
 
 test('real catalog data: every populated StringItem.colors entry either resolves or is deliberately omitted, never throws', () => {
   for (const item of localCatalog) {
-    const swatch = primaryStringColor(item.colors)
     if (item.colors && item.colors.length > 0) {
-      // ok either way — just proving this never throws for any real catalog row
-      void swatch
+      assert.doesNotThrow(() => item.colors!.map((c) => resolveStringColor(c)))
     }
   }
 })

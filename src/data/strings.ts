@@ -31,16 +31,6 @@ export interface HybridStringMeta {
   construction?: string
   coating?: string
   color?: string
-  /**
-   * An explicit, safe CSS color value (e.g. "#ff5a1f") for this side,
-   * used only when `color`'s manufacturer name doesn't resolve
-   * automatically (see logic/stringColor.ts's layered resolver) — takes
-   * priority over automatic resolution when present. Stored inside this
-   * same sparse jsonb metadata blob (main_string_meta/cross_string_meta
-   * already tolerate new optional keys with no schema change) rather
-   * than a new column.
-   */
-  colorOverride?: string
 }
 
 export interface StringItem {
