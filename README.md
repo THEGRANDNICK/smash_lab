@@ -299,6 +299,12 @@ npm run test:color-inventory-fix
 
 Covers the Phase 9 fix round: a fourth recommendation/ranking/tension regression pin; `logic/colorParsing.ts`'s comma/semicolon splitting, never-split-on-slash, multi-word preservation, and `parseLegacyHybridPair()`'s unambiguous-pair rules; the `Cosmic Gold` color and the `Turquois` → `Turquoise` alias (including `describeColorAlias()`); multiple inventory colors from one free-text field (comma/semicolon-parsed, inventory-first, stock-gated, merged with catalog colors without duplication, `+N` overflow across the merged list); `hybridColorSource()`'s full priority chain (structured-both, structured-partial, legacy-pair, none) including AeroBite/AeroBite-Boost-style legacy split reconstruction and confirmation the legacy fallback never applies while out of stock; the six new `ColorDiagnosticsSummary` fields; the catalog admin's semicolon-aware, still-deduplicating `parseColors()`; and the full mobile-decimal-input matrix (`normalizeDecimalInput()` in isolation, plus wired end-to-end through `validateCatalogInput()`'s ratings/tension-adjustment/cost fields and `validateSpecialistInput()`'s tension range) proving `"10,5"` and `"10.5"` parse identically while `"12"`/`"-1"`/`"5,,"`/`"5.5.5"` still fail. Also local/automated only — the swatches beside the string name, the admin color-entry warnings, and the mobile numeric keypad's on-device behavior were verified in a real browser/viewport instead (see this round's report).
 
+```bash
+npm run test:color-resolver-v2
+```
+
+Covers the second Phase 9 fix round's layered color resolver: `logic/cssColor.ts`'s safe validation (named colors, hex, `rgb()`, `hsl()` in both comma and CSS4 space syntax, and rejection of `url()`/`var()`/`calc()`/injection attempts); `logic/baseColorInference.ts`'s tokenized inference for every documented example (Fire Orange → orange, Ivory White → white, Cosmic Gold → gold, Royal Blue → blue, Neon Yellow → yellow, Dark Green → green, Light Pink → pink, Metallic Silver → silver, Graphite Black → black), multi-word base-color preservation, and that every base color is end-to-end resolvable; the small alias table (Turquois → Turquoise, Grey → Gray, and confirmation Cosmic Gold is deliberately *not* a full alias entry); unresolved/ambiguous names (Ocean, Flash, Pearl, Ice, Smoke, Graphite, Amber) staying unresolved; explicit override priority (including overriding an otherwise-inferable name) and invalid-override fallback behavior; the "White, Red" vs. "White/Red" vs. hybrid-only-slash-pair distinction; the full hybrid priority chain including a structured override on one side and the AeroBite-style legacy fallback; the extended diagnostics (resolution-source counts, inferred-name list, explicit/invalid override tracking, partial-vs-missing hybrid pairs); the catalog admin's hybrid override validation end-to-end (valid save, rejected invalid value, optional-and-blank is fine); and a fresh mobile-decimal-input regression check. Also local/automated only — the swatches beside the string name, the removed physical-color dots in comparison chips, the native color picker, and the admin form's live resolution-source text were verified in a real browser instead (see this round's report).
+
 ### Verifying your setup
 
 ```bash
@@ -657,7 +663,7 @@ An unrecognized inventory color name never blocks catalog colors from showing (i
 
 ### Color mapping & unknown-color behavior
 
-`resolveStringColor()` maps a fixed, case-insensitive, trimmed table of 23 names — yellow, white, black, red, blue, green, orange, pink, purple, silver, grey, gray, natural, neon yellow, neon green, turquoise, lime, navy, sky blue, royal blue, mint, coral, violet — to a hex value and a Tailwind ring class. White/black/silver/natural/neon colors get a stronger, more visible ring in both light and dark mode; other colors get a subtler one. Neon colors get a vivid flat fill — no glow or animation. An unrecognized color name is **never** guessed or invented: it's omitted from the swatch preview, while the raw string is retained for admin diagnostics (see below).
+As of the second fix round below, color names resolve through a **layered, mostly-automatic resolver** (`logic/stringColor.ts`'s `resolveColor()`) rather than a large fixed name table — see that section for the full six-tier order (explicit CSS syntax → explicit override → exact CSS keyword → automatic base-color inference → a small alias table → unresolved). An unrecognized color name is still **never** guessed or invented: it's omitted from the swatch preview, while the raw string is retained for admin diagnostics (see below).
 
 ### Color swatch preview & expansion
 
@@ -673,7 +679,7 @@ Swatches sit directly beside the string name (moved there in the fix round below
 
 ### Comparison experience improvements
 
-- **Comparison chips** — replaced the plain legend row with removable chips: chart-series dot + string name + physical color-swatch preview + a per-string `✕` remove button (in addition to the existing "Clear comparison," which still clears all at once). A subtle hint line under the chips row clarifies that the small dot is the chart series color while the circles are the string's actual colors — no large permanent instruction block.
+- **Comparison chips** — replaced the plain legend row with removable chips: chart-series dot + string name + a per-string `✕` remove button (in addition to the existing "Clear comparison," which still clears all at once). As of the second fix round below, the chips no longer also show a physical color-swatch preview or the chart-vs-physical-color hint text — that made the compact chip row feel visually overloaded; physical colors remain visible in catalog cards, recommendation cards, and the comparison table's own column headings, just not repeated inside the chip.
 - **Bigger radar** — the default comparison view's chart cap grew again this phase, to `max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]`, so it reads as the comparison panel's primary visualization rather than a small chart in a lot of empty space, without clipping any axis labels. Radar values themselves are unchanged.
 - **Full-width table** — `ComparisonTable.tsx`'s `<table>` uses `w-full` so its columns stretch to use the panel's full width on desktop for both 2- and 3-string comparisons, while still scrolling horizontally within its own container on mobile.
 - **Radar/Table switch** — unchanged in spirit: a segmented control, Radar the default, the choice remembered for the current tab only via `sessionStorage` (no database persistence, no reload).
@@ -746,6 +752,84 @@ Not code changes — data hygiene the diagnostics page above is built to help wi
 - Review "Legacy/misspelled color aliases in use" and consider correcting the stored spelling to the canonical form (not required — the alias will keep resolving correctly either way).
 - Review "Strings with multiple available inventory colors" — if a string consistently needs more than one color, that's the strongest signal it's worth approving the multiple-inventory-rows migration described above.
 - Review "Hybrids using a legacy combined-value fallback" and, when convenient, move that data into the catalog admin's structured Main/Cross color fields instead — it'll keep working as-is either way, but the structured fields are the more precise, future-proof home for it.
+
+### Phase 9 fix round 2 — automatic color resolver & a clearer hybrid workflow
+
+Real testing showed the fixed name-to-hex table from the rounds above couldn't keep up: every new manufacturer color name ("Fire Orange", "Ivory White") needed a code change, hybrid strings still felt confusing, and the comparison chips felt visually busy. This round replaces the fixed table with a **layered, mostly-automatic resolver**, clarifies the hybrid color workflow, and simplifies the chips — still with no changes to recommendation scoring, ranking, tension logic, specialist selection, retailer architecture, Supabase auth/RLS, or existing migrations.
+
+#### Layered color resolution order
+
+`logic/stringColor.ts`'s `resolveColor(name, override?)` is the new single entry point, trying each tier in order and stopping at the first match:
+
+1. **`explicit_css`** — the raw name is itself valid CSS syntax (a hex code, `rgb()`, or `hsl()`) — e.g. a string entered as `"#ff6600"` directly.
+2. **`explicit_override`** — a separately stored, validated CSS value takes priority over automatic resolution of the name (currently available for hybrid main/cross sides only — see "Manual color override" below).
+3. **`css_named_color`** — the raw name is exactly one standard CSS color keyword (e.g. `"orange"`).
+4. **`inferred_keyword`** — **the core of "minimal hard-coded names."** The name is tokenized and checked for a recognizable base-color word, checked from the *end* of the name backward (manufacturer names consistently put the base color last): `"Fire Orange"` → `orange`, `"Ivory White"` → `white`, `"Cosmic Gold"` → `gold`, `"Royal Blue"` → `blue`, `"Neon Yellow"` → `yellow`. Multi-word base colors (`"sky blue"`) are matched as a whole phrase, not split.
+5. **`alias`** — a small, explicit table (see below) for the few cases inference genuinely can't handle.
+6. **`unresolved`** — no automatic match. Never guessed: the public site renders no swatch, and the raw name is kept for admin diagnostics.
+
+Every resolution returns `{ rawName, displayName, cssColor, ringClassName, source, confidence, warning?, canonicalKey }` — `source` and `confidence` are what the admin previews and diagnostics use to explain *why* something rendered the way it did.
+
+#### Safe CSS value rules
+
+`logic/cssColor.ts`'s `isSafeCssColor()` is a strict allowlist: a valid hex (3/4/6/8-digit), `rgb()`/`rgba()`/`hsl()`/`hsla()` (both comma- and CSS4 space-separated syntax, e.g. `hsl(24 100% 50%)`), or one of the ~150 standard CSS Level 4 named-color keywords. `url(...)`, `var(...)`, `calc(...)`, semicolons, braces, and anything else are rejected outright before any shape-matching even runs. This same function backs both tier 1 (is the raw name itself CSS?) and the override validator.
+
+#### Automatic base-color inference
+
+`logic/baseColorInference.ts` holds a compact, fixed set of ~24 base colors (red, orange, yellow, lime, green, mint, turquoise, cyan, sky blue, blue, navy, purple, violet, pink, coral, white, ivory, black, gray, silver, gold, natural, beige, brown) — real CSS keywords wherever one reads well, a small hand-picked hex only where no keyword gives adequate visibility (yellow, mint, natural). This is deliberately **not** a manufacturer-name table: it's the fixed vocabulary of common color *words* the inference step looks for inside a longer name. The original display label is always preserved (a tooltip still says "Fire Orange"), even though the rendered swatch uses the inferred base color.
+
+#### Remaining aliases (and why each exists)
+
+Only two entries remain in `logic/baseColorInference.ts`'s `ALIASES` table:
+
+- `"Turquois"` → `"turquoise"` — a real misspelling found in production data; inference can't fix a misspelled single word.
+- `"Grey"` → `"gray"` — canonicalizes the alternate spelling to one consistent display label. (Checked *before* the exact-CSS-keyword tier, as a deliberate, documented exception — "grey" is itself also a valid CSS keyword, so left in the general listed order it would never reach the alias table at all.)
+
+Cosmic Gold, Fire Orange, Royal Blue, and Neon Yellow are explicitly **not** alias entries — they resolve automatically through inference instead, exactly as intended.
+
+#### Unresolved names
+
+Names with no recognizable base color (`"Ocean"`, `"Flash"`, `"Pearl"`, `"Ice"`, `"Smoke"`, `"Graphite"`, `"Amber"`) stay unresolved rather than guessed. Publicly, no swatch renders. In the admin previews (`InventoryAdminRow.tsx`'s `ColorNameField`, `CatalogAdminCard.tsx`'s hybrid preview), the raw text stays visible with a "Needs color value"/"Needs mapping" marker — never blocking save.
+
+#### Manual color override
+
+An admin can pair a manufacturer color name with an explicit CSS override that takes priority over automatic resolution — implemented for **hybrid main/cross sides only** (`CatalogStringForm.tsx`'s `HybridColorField`, a text field plus a native `<input type="color">` for convenience, both writing the same validated value). Persisted as `HybridStringMeta.colorOverride` inside the existing `main_string_meta`/`cross_string_meta` **jsonb** columns — adding a new optional key to an already-flexible jsonb blob is not a schema migration, so no database change was needed for this part. An invalid override value is rejected with a form error rather than silently dropped or saved unsafely.
+
+**Plain (non-hybrid) catalog colors and the single inventory `color` text field have no separate override slot** — `strings.colors` is a `text[]` (can't attach a parallel override to one array element without a type change) and `inventory.color` is a single `text` column. Adding a genuine override there would need a real migration (e.g. a new `color_override text` column, or converting `colors` to a `jsonb` array of `{name, cssOverride}`). **That migration was not made this round** — per the brief, only the automatic resolver was implemented, and this proposal is reported here for approval rather than applied. In the meantime, typing a hex/rgb()/hsl() value directly into the existing Colors/Color field already works immediately (tier 1 of the resolver) — a real, if less structured, way to force an exact color today.
+
+#### Hybrid package/schema findings (Part 10) — no migration made
+
+Investigated `public.inventory.package_type`'s constraint: `check (package_type in ('reel', 'set', 'mixed', 'unknown'))`. The requested `Set / Reel / Hybrid Set / Hybrid Reel / Other` options aren't representable under this constraint — introducing them would need an `ALTER TABLE ... DROP CONSTRAINT` + a new `CHECK`, plus a safe data-conversion rule for existing `'mixed'`/`'unknown'` rows (e.g. `'mixed' → 'other'`, `'unknown' → 'other'`). **Not implemented** — reported here for approval. Instead, the *functional* goal (show Main/Cross fields only for a hybrid string) was achieved using the catalog's existing `is_hybrid` flag, which the inventory admin already had plumbed in from the prior round — no schema change needed for that part.
+
+#### Hybrid color priority (updated)
+
+`hybridColorSource()`'s priority, in the terms this app can actually represent without a migration:
+
+1. **Structured catalog `mainString.color`/`crossString.color`**, each honoring its own override first (folded into tiers 2-3 of `resolveColor()` per side) — `'structured-both'` when both resolve, `'structured-partial'` when only one does.
+2. **The inventory row's single legacy text value** — a genuine `"Main/Cross"` pair (exactly one slash, two clean tokens) becomes a real split (`'legacy-pair'`); a single plain value with no delimiter becomes `'legacy-solid'` (we don't know which side it names, so it renders as one ordinary swatch). A comma/semicolon-separated value (`"White, Red"`) is **never** treated as a hybrid pair — that's an ordinary two-color list, and a hybrid never reads its own top-level `colors`/inventory list that way regardless.
+3. **`'none'`** otherwise.
+
+#### Hybrid form behavior — no more slashes to type
+
+`InventoryAdminRow.tsx` now shows two separate "Main string color" / "Cross string color" fields for a hybrid string (instead of one ambiguous "Color" field with slash guidance) — on save, they're joined into the same single legacy `"Main/Cross"` text value the resolver already knows how to split back apart, so the admin never types the slash themselves. Editing pre-fills both fields only when the stored value already parses as a clean pair. `CatalogStringForm.tsx`'s hybrid Main/Cross fields gained the paired name + override + native color-picker UI described above.
+
+#### Comparison chip simplification
+
+Chips now show only the chart-series dot, the string name, and the remove button — the physical color-swatch preview and the "chart color · physical string color" hint were removed from the compact chip row, which real testing found visually overloaded. Physical colors remain visible in catalog cards, the Best Match hero/detail, alternative cards, and the comparison table's own column headings. Radar (default), Table, the segmented switch, and all comparison logic are unchanged.
+
+#### Likely future: a reusable color-definition table
+
+If the inventory package-type migration above is ever approved, a natural companion would be a small `color_definitions` table (canonical key, display label, css value, ring treatment) that both this resolver's base-color set and any future admin override UI could read from — turning today's two static TypeScript modules (`baseColorInference.ts`, the alias table) into editable data without a code deploy. Not needed yet: the current in-code table is small, stable, and exactly matches "minimal hard-coded names."
+
+### Manual verification checklist (fix round 2)
+
+1. Catalog: confirm "Fire Orange", "Ivory White", "Royal Blue", "Neon Yellow" each render one correctly-colored swatch beside the name (orange/white/blue/yellow respectively), and that "Cosmic Gold"/"Turquois" (from the earlier round) still resolve correctly.
+2. Confirm an unresolved name ("Ocean") renders no swatch at all, publicly.
+3. Confirm a hybrid side with an unresolvable name ("Ocean") plus a valid explicit override (e.g. `#1ca3ec`) renders that override color as one half of the split swatch.
+4. Confirm AeroBite/AeroBite Boost-style legacy `"Main/Cross"` inventory values still produce a real split swatch with no structured catalog colors set.
+5. Confirm comparison chips show only the chart dot, name, and remove button (no physical swatch, no hint text), while the comparison table's column headings still show physical swatches.
+6. Confirm a mobile-style comma decimal (`"10,5"`) still works in an admin numeric field — no regression from the prior round's fix.
+7. Resize to 1440px and 375px and confirm no page-level horizontal overflow anywhere touched this round.
 
 ## Copyright
 

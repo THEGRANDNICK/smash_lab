@@ -8,7 +8,6 @@ import { readStoredComparisonView, writeStoredComparisonView, type ComparisonVie
 import StringCard, { type PerformanceView } from './StringCard'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
-import ColorSwatchPreview from './ColorSwatchPreview'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -165,7 +164,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-1.5">
+          <div className="flex flex-wrap gap-2 mb-5">
             {compareItems.map((item, i) => (
               <span
                 key={item.id}
@@ -173,7 +172,6 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               >
                 <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color — identifies this string in the radar/table" />
                 <span className="truncate max-w-[10rem]">{item.name}</span>
-                <ColorSwatchPreview item={item} size="sm" maxVisible={2} />
                 <button
                   type="button"
                   onClick={() => toggleCompare(item.id)}
@@ -185,10 +183,6 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               </span>
             ))}
           </div>
-          <p className="text-[11px] text-ink-700/40 dark:text-shuttle-100/40 mb-5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-court-700 dark:bg-shuttle-400 align-middle mr-1" aria-hidden="true" /> chart color ·{' '}
-            <span aria-hidden="true">●</span> physical string color
-          </p>
 
           {compareItems.length === 1 ? (
             <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Pick one more string (up to {MAX_COMPARE}) to see them side by side.</p>

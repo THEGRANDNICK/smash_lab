@@ -236,6 +236,34 @@ export default function SupabaseDebugPage() {
             label="Legacy/misspelled color aliases in use"
             value={colorDiagnostics == null ? '—' : colorDiagnostics.canonicalizedAliasesUsed.length === 0 ? 'None' : colorDiagnostics.canonicalizedAliasesUsed.join('; ')}
           />
+          <Row
+            label="Resolution source counts (explicit css / override / named color / inferred / alias / unresolved)"
+            value={
+              colorDiagnostics == null
+                ? '—'
+                : `${colorDiagnostics.resolutionSourceCounts.explicit_css} / ${colorDiagnostics.resolutionSourceCounts.explicit_override} / ${colorDiagnostics.resolutionSourceCounts.css_named_color} / ${colorDiagnostics.resolutionSourceCounts.inferred_keyword} / ${colorDiagnostics.resolutionSourceCounts.alias} / ${colorDiagnostics.resolutionSourceCounts.unresolved}`
+            }
+          />
+          <Row
+            label="Automatically inferred color names (raw → base color)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.inferredColorNames.length === 0 ? 'None' : colorDiagnostics.inferredColorNames.join('; ')}
+          />
+          <Row
+            label="Explicit hybrid color overrides in use"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.explicitOverridesUsed.length === 0 ? 'None' : colorDiagnostics.explicitOverridesUsed.join('; ')}
+          />
+          <Row
+            label="Invalid hybrid color override values (rejected)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.invalidOverrideValues.length === 0 ? 'None' : colorDiagnostics.invalidOverrideValues.join('; ')}
+          />
+          <Row
+            label="Hybrid strings with only one side known (partial pair)"
+            value={colorDiagnostics == null ? '—' : colorDiagnostics.partialHybridPairs.length === 0 ? 'None' : colorDiagnostics.partialHybridPairs.join(', ')}
+          />
+          <Row
+            label="Strings with color data that couldn't be resolved (omitted publicly)"
+            value={colorDiagnostics == null ? '—' : String(colorDiagnostics.omittedDueToUnresolvedColor)}
+          />
         </dl>
 
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailers</p>

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import StockBadge from '../StockBadge'
 import ColorSwatchPreview from '../ColorSwatchPreview'
-import { buildColorPreview } from '../../logic/stringColor'
-import { containsUnambiguousDelimiter, containsSlash, splitColorList } from '../../logic/colorParsing'
+import { buildColorPreview, resolveColor } from '../../logic/stringColor'
+import { containsUnambiguousDelimiter, containsSlash, splitColorList, parseLegacyHybridPair } from '../../logic/colorParsing'
+import StringColorSwatch from '../StringColorSwatch'
 import type { HybridStringMeta, StockLevel } from '../../data/strings'
 import {
   STOCK_STATUS_OPTIONS,
@@ -28,6 +29,9 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
   const [quantityText, setQuantityText] = useState(row.quantity == null ? '' : String(row.quantity))
   const [packageType, setPackageType] = useState<PackageType>(row.packageType)
   const [color, setColor] = useState(row.color ?? '')
+  const initialPair = parseLegacyHybridPair(row.color ?? undefined)
+  const [mainColorText, setMainColorText] = useState(initialPair?.main ?? '')
+  const [crossColorText, setCrossColorText] = useState(initialPair?.cross ?? '')
   const [notes, setNotes] = useState(row.notes ?? '')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -38,6 +42,9 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
     setQuantityText(row.quantity == null ? '' : String(row.quantity))
     setPackageType(row.packageType)
     setColor(row.color ?? '')
+    const pair = parseLegacyHybridPair(row.color ?? undefined)
+    setMainColorText(pair?.main ?? '')
+    setCrossColorText(pair?.cross ?? '')
     setNotes(row.notes ?? '')
     setValidationError(null)
     setSaveError(null)
@@ -60,11 +67,21 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
     setSaveError(null)
     setState('saving')
 
+    // For a hybrid row, the two clean Main/Cross fields are joined into
+    // the same single legacy "Main/Cross" text value the public site
+    // already knows how to split back apart (logic/colorParsing.ts's
+    // parseLegacyHybridPair) — the admin never has to type the slash.
+    const resolvedColor = row.isHybrid
+      ? mainColorText.trim() && crossColorText.trim()
+        ? `${mainColorText.trim()}/${crossColorText.trim()}`
+        : mainColorText.trim() || crossColorText.trim() || ''
+      : color
+
     const patch: InventoryUpdateInput = {
       stockStatus,
       quantity: parsedQuantity.value,
       packageType,
-      color: normalizeOptionalText(color),
+      color: normalizeOptionalText(resolvedColor),
       notes: normalizeOptionalText(notes),
     }
 
@@ -170,32 +187,45 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
               </select>
             </label>
 
-            <label className="block text-sm">
-              <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Color</span>
-              <input
-                type="text"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                disabled={state === 'saving'}
-                placeholder="e.g. Yellow — optional"
-                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
-              />
-              {row.isHybrid ? (
-                <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
-                  This string is a hybrid — for the main/cross split swatch, prefer setting Main color and Cross color in the Catalog admin form. As a fallback only, you can enter "Main/Cross" here (e.g. "White/Red").
-                </span>
-              ) : (
+            {row.isHybrid ? (
+              <>
+                <ColorNameField
+                  label="Main string color"
+                  value={mainColorText}
+                  onChange={setMainColorText}
+                  disabled={state === 'saving'}
+                  hint="The main string's currently-stocked color, e.g. White."
+                />
+                <ColorNameField
+                  label="Cross string color"
+                  value={crossColorText}
+                  onChange={setCrossColorText}
+                  disabled={state === 'saving'}
+                  hint="The cross string's currently-stocked color, e.g. Red."
+                />
+              </>
+            ) : (
+              <label className="block text-sm">
+                <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Color</span>
+                <input
+                  type="text"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  disabled={state === 'saving'}
+                  placeholder="e.g. Yellow — optional"
+                  className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                />
                 <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
                   Enter one physical color for this inventory item, e.g. White or Sky Blue. To list more than one currently-available color, separate them with commas (e.g. "White, Red") — each shows as its own swatch.
                 </span>
-              )}
-              {!row.isHybrid && containsSlash(color) && (
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mt-1">A "/" is ambiguous here — use a comma to list multiple colors instead (e.g. "White, Red").</p>
-              )}
-              {containsUnambiguousDelimiter(color) && splitColorList(color).length > 1 && (
-                <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">Will be shown as {splitColorList(color).length} separate colors: {splitColorList(color).join(', ')}.</p>
-              )}
-            </label>
+                {containsSlash(color) && (
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mt-1">A "/" is ambiguous here — use a comma to list multiple colors instead (e.g. "White, Red").</p>
+                )}
+                {containsUnambiguousDelimiter(color) && splitColorList(color).length > 1 && (
+                  <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">Will be shown as {splitColorList(color).length} separate colors: {splitColorList(color).join(', ')}.</p>
+                )}
+              </label>
+            )}
           </div>
 
           <label className="block text-sm">
@@ -245,16 +275,62 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
   )
 }
 
+const RESOLUTION_SOURCE_LABEL: Record<string, string> = {
+  explicit_css: 'Value entered is already a CSS color',
+  explicit_override: 'Explicit override',
+  css_named_color: 'Recognized CSS color name',
+  inferred_keyword: 'Resolved automatically from keyword',
+  alias: 'Resolved via known alias',
+}
+
 /**
- * Shows the mapped swatch(es) beside the raw color text (the raw text
- * always stays visible — this is admin UI, not the compact public
- * card). Reuses buildColorPreview/ColorSwatchPreview so an admin sees
- * exactly what the public site would render for this row, including the
- * hybrid split (from structured Main/Cross catalog fields, or a legacy
- * "Main/Cross" combined value as a fallback — see logic/stringColor.ts).
- * A row whose raw text doesn't resolve to anything gets a "Needs
- * mapping" marker rather than silently showing no swatch with no
- * explanation.
+ * A single-line color entry with a live resolved-swatch preview, so an
+ * admin sees immediately whether "Fire Orange" or similar will render on
+ * the public site, and why (Part 16: raw name + resolved swatch +
+ * resolution source), without a separate override field here — the
+ * hybrid override fields live in the Catalog admin form (see
+ * CatalogStringForm.tsx's HybridColorField).
+ */
+function ColorNameField({ label, value, onChange, disabled, hint }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean; hint: string }) {
+  const resolution = resolveColor(value)
+  return (
+    <label className="block text-sm">
+      <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        placeholder="optional"
+        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+      />
+      <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{hint}</span>
+      {value.trim() !== '' && (
+        <p className="flex items-center gap-1.5 text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+          {resolution.cssColor ? (
+            <>
+              <StringColorSwatch swatch={{ label: resolution.displayName, hex: resolution.cssColor, ringClassName: resolution.ringClassName }} size="sm" />
+              {RESOLUTION_SOURCE_LABEL[resolution.source] ?? resolution.source}
+            </>
+          ) : (
+            <span className="text-amber-700 dark:text-amber-400 font-semibold">Needs color value — no automatic match found</span>
+          )}
+        </p>
+      )}
+    </label>
+  )
+}
+
+/**
+ * Shows the mapped swatch(es) beside the raw color text and the
+ * resolution source (Part 16), the raw text always staying visible —
+ * this is admin UI, not the compact public card. Reuses
+ * buildColorPreview/ColorSwatchPreview so an admin sees exactly what the
+ * public site would render for this row, including the hybrid split
+ * (from structured Main/Cross catalog fields, or a legacy "Main/Cross"
+ * combined value as a fallback — see logic/stringColor.ts). A row whose
+ * raw text doesn't resolve to anything gets a "Needs mapping" marker
+ * rather than silently showing no swatch with no explanation.
  */
 function InventoryColorPreview({ row }: { row: AdminInventoryRow }) {
   const previewItem = {

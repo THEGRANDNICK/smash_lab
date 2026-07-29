@@ -41,6 +41,7 @@ export interface HybridStringMetaJson {
   construction?: string
   coating?: string
   color?: string
+  colorOverride?: string
 }
 
 /** Shape of the `dimensions` / `dimension_confidence` jsonb columns — mirrors SpecialistDimensions in data/stringSpecialistProfiles.ts. Sparse by design. */

@@ -161,15 +161,16 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
   )
 }
 
-/** One resolved side of a hybrid preview, or a raw-text-plus-warning if the entered value doesn't map to a known color. */
-function HybridSidePreview({ raw }: { raw: string | undefined }) {
-  if (!raw || raw.trim() === '') return <span>unset</span>
-  const swatch = resolveStringColor(raw)
+/** One resolved side of a hybrid preview (honoring its own override, if any), or a raw-text-plus-warning if the entered value doesn't map to a known color. */
+function HybridSidePreview({ raw, override }: { raw: string | undefined; override: string | undefined }) {
+  if ((!raw || raw.trim() === '') && (!override || override.trim() === '')) return <span>unset</span>
+  const swatch = resolveStringColor(raw, override)
   if (swatch) {
     return (
       <span className="inline-flex items-center gap-1">
         <StringColorSwatch swatch={swatch} size="sm" />
         {swatch.label}
+        {override && override.trim() !== '' && <span className="text-ink-700/40 dark:text-shuttle-100/40">(override)</span>}
       </span>
     )
   }
@@ -190,11 +191,13 @@ function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
   if (row.isHybrid) {
     const mainRaw = row.mainStringMeta?.color
     const crossRaw = row.crossStringMeta?.color
-    if (!mainRaw && !crossRaw) return null
+    const mainOverride = row.mainStringMeta?.colorOverride
+    const crossOverride = row.crossStringMeta?.colorOverride
+    if (!mainRaw && !crossRaw && !mainOverride && !crossOverride) return null
     return (
       <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
         <span className="font-semibold uppercase tracking-wide">Colors</span>
-        <HybridSidePreview raw={mainRaw} /> main /<HybridSidePreview raw={crossRaw} /> cross
+        <HybridSidePreview raw={mainRaw} override={mainOverride} /> main /<HybridSidePreview raw={crossRaw} override={crossOverride} /> cross
       </p>
     )
   }
