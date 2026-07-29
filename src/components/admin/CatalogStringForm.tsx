@@ -9,7 +9,7 @@ import {
   type ValidatedCatalogPayload,
 } from '../../services/catalogAdminService'
 import { splitColorList } from '../../logic/colorParsing'
-import { resolveStringColor } from '../../logic/stringColor'
+import { resolveStringColor, resolveColor } from '../../logic/stringColor'
 import StringColorSwatch from '../StringColorSwatch'
 
 interface CatalogStringFormProps {
@@ -128,8 +128,16 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Material" value={input.mainMaterial} onChange={(v) => set('mainMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.mainConstruction} onChange={(v) => set('mainConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.mainCoating} onChange={(v) => set('mainCoating', v)} disabled={saving} placeholder="optional" />
-              <TextField label="Color" value={input.mainColor} onChange={(v) => set('mainColor', v)} disabled={saving} placeholder="optional" hint="Shown as one half of the split swatch, only when Cross color is also set." />
-              <ColorsFieldPreview raw={input.mainColor} />
+              <HybridColorField
+                label="Main string"
+                color={input.mainColor}
+                onColorChange={(v) => set('mainColor', v)}
+                override={input.mainColorOverride}
+                onOverrideChange={(v) => set('mainColorOverride', v)}
+                overrideError={errors.mainColorOverride}
+                disabled={saving}
+                hint="Shown as one half of the split swatch, only when Cross color is also known."
+              />
             </div>
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Cross string</p>
@@ -137,8 +145,16 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               <TextField label="Material" value={input.crossMaterial} onChange={(v) => set('crossMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.crossConstruction} onChange={(v) => set('crossConstruction', v)} disabled={saving} placeholder="optional" />
               <TextField label="Coating" value={input.crossCoating} onChange={(v) => set('crossCoating', v)} disabled={saving} placeholder="optional" />
-              <TextField label="Color" value={input.crossColor} onChange={(v) => set('crossColor', v)} disabled={saving} placeholder="optional" hint="Shown as the other half of the split swatch, only when Main color is also set." />
-              <ColorsFieldPreview raw={input.crossColor} />
+              <HybridColorField
+                label="Cross string"
+                color={input.crossColor}
+                onColorChange={(v) => set('crossColor', v)}
+                override={input.crossColorOverride}
+                onOverrideChange={(v) => set('crossColorOverride', v)}
+                overrideError={errors.crossColorOverride}
+                disabled={saving}
+                hint="Shown as the other half of the split swatch, only when Main color is also known."
+              />
             </div>
           </div>
         )}
@@ -298,6 +314,90 @@ function ColorsFieldPreview({ raw }: { raw: string }) {
       ))}
       {unknown.length > 0 && <span className="text-amber-700 dark:text-amber-400 font-semibold">{unknown.join(', ')} ⚠ unmapped, will still save</span>}
     </p>
+  )
+}
+
+/** A CSS keyword resolves to a 6-digit hex reliably enough for the native color picker only when it's literally already hex; otherwise the picker falls back to a neutral gray rather than guessing — the text field next to it is what actually carries any CSS value (name, hex, rgb(), hsl()). */
+function pickerSafeHex(cssColor: string | undefined): string {
+  return cssColor && /^#[0-9a-f]{6}$/i.test(cssColor) ? cssColor : '#808080'
+}
+
+const SOURCE_DESCRIPTION: Record<string, string> = {
+  explicit_css: 'the value you entered is already a CSS color',
+  explicit_override: 'your override value',
+  css_named_color: 'a recognized CSS color name',
+  inferred_keyword: 'automatically, from the keyword',
+  alias: 'a known spelling alias',
+}
+
+/**
+ * One hybrid side's color entry: the manufacturer color name (resolved
+ * automatically wherever possible), plus an optional explicit override
+ * (validated CSS value, paired with a native color picker per Part 9 —
+ * neither replaces the text field, since the picker can't represent
+ * every CSS format and typing/pasting a known value is often faster).
+ * The override always takes priority over automatic resolution — see
+ * logic/stringColor.ts's resolveColor().
+ */
+function HybridColorField({
+  label,
+  color,
+  onColorChange,
+  override,
+  onOverrideChange,
+  overrideError,
+  disabled,
+  hint,
+}: {
+  label: string
+  color: string
+  onColorChange: (v: string) => void
+  override: string
+  onOverrideChange: (v: string) => void
+  overrideError?: string
+  disabled?: boolean
+  hint: string
+}) {
+  const resolution = resolveColor(color, override)
+  return (
+    <div className="space-y-2">
+      <TextField label={`${label} color`} value={color} onChange={onColorChange} disabled={disabled} placeholder="optional, e.g. White" hint={hint} />
+      <label className="block text-sm">
+        <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{label} color override (optional)</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={override}
+            onChange={(e) => onOverrideChange(e.target.value)}
+            disabled={disabled}
+            placeholder="e.g. #ff5a1f, rgb(255, 90, 31)"
+            className="focus-ring flex-1 min-w-0 rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 font-mono text-xs text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          />
+          <input
+            type="color"
+            value={pickerSafeHex(resolution.source === 'explicit_override' ? resolution.cssColor : undefined)}
+            onChange={(e) => onOverrideChange(e.target.value)}
+            disabled={disabled}
+            aria-label={`${label} color picker`}
+            className="focus-ring h-9 w-9 shrink-0 rounded border-2 border-court-900/10 dark:border-white/15 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          />
+        </div>
+        {overrideError && <FieldError message={overrideError} />}
+      </label>
+      <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50">
+        {resolution.cssColor ? (
+          <>
+            <StringColorSwatch swatch={{ label: resolution.displayName, hex: resolution.cssColor, ringClassName: resolution.ringClassName }} size="sm" />
+            <span>
+              Resolved {SOURCE_DESCRIPTION[resolution.source] ?? 'automatically'}
+              {resolution.source === 'inferred_keyword' || resolution.source === 'alias' ? ` "${resolution.canonicalKey}"` : ''}.
+            </span>
+          </>
+        ) : color.trim() !== '' ? (
+          <span className="text-amber-700 dark:text-amber-400 font-semibold">No automatic color found for "{color}" — add an override above if you want a swatch.</span>
+        ) : null}
+      </p>
+    </div>
   )
 }
 

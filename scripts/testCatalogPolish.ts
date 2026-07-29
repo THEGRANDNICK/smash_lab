@@ -193,11 +193,11 @@ test('silver and natural get a distinct visible outline understandable in both t
   assert.ok(natural.ringClassName.includes('ring-black/30') && natural.ringClassName.includes('dark:ring-white/50'))
 })
 
-test('neon colors get a vivid fill (no animation/glow classes involved — plain hex + ring only)', () => {
+test('neon colors resolve via automatic base-color inference this round (Phase 9 fix v2), not a bespoke neon entry (no animation/glow classes involved — plain color + ring only)', () => {
   const neonYellow = resolveStringColor('neon yellow')!
   const neonGreen = resolveStringColor('neon green')!
-  assert.equal(neonYellow.hex, '#e3ff00')
-  assert.equal(neonGreen.hex, '#39ff14')
+  assert.equal(neonYellow.hex, resolveStringColor('yellow')!.hex)
+  assert.equal(neonGreen.hex, resolveStringColor('green')!.hex)
   assert.ok(!neonYellow.ringClassName.includes('animate'))
   assert.ok(!neonGreen.ringClassName.includes('animate'))
 })
@@ -451,13 +451,15 @@ test('flags same-string case-insensitive duplicate colors', () => {
   assert.ok(summary.duplicateCaseInsensitiveColors[0].startsWith('yonex-test:'))
 })
 
-test('flags hybrid strings missing a main or cross color', () => {
+test('flags hybrid strings with neither side known separately from a partial (one-side-known) pair (Phase 9 fix v2 refinement)', () => {
   const items = [
     baseItem({ id: 'complete-hybrid', isHybrid: true, mainString: { color: 'White' }, crossString: { color: 'Red' } }),
-    baseItem({ id: 'incomplete-hybrid', isHybrid: true, mainString: { color: 'White' }, crossString: undefined }),
+    baseItem({ id: 'partial-hybrid', isHybrid: true, mainString: { color: 'White' }, crossString: undefined }),
+    baseItem({ id: 'missing-hybrid', isHybrid: true }),
   ]
   const summary = summarizeColorDiagnostics(items)
-  assert.deepEqual(summary.hybridMissingColors, ['incomplete-hybrid'])
+  assert.deepEqual(summary.hybridMissingColors, ['missing-hybrid'])
+  assert.deepEqual(summary.partialHybridPairs, ['partial-hybrid'])
 })
 
 test('counts inventory colors hidden because the string is out of stock', () => {
