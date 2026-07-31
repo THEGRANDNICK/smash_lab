@@ -869,6 +869,44 @@ None of this touched `recommendationEngine.ts`, `tensionRecommendation.ts`, cata
 
 A properly normalized color model — most plausibly a small `color_definitions` table (canonical key, display label, CSS value) that catalog/inventory/hybrid color names resolve against, replacing today's in-code inference — would need its own migration and its own explicitly-approved phase before any public color rendering returns. Until then, admin color fields stay exactly as useful for manual data entry and cleanup as they've always been; nothing about this round makes that harder.
 
+## Comparison experience refinement (Phase 10)
+
+Phase 10 was scoped as a focused public comparison-experience phase — not the color-normalization work speculated in the "Likely Phase 10 scope" note above (that remains a possible future phase, still unstarted). Before writing any code, this phase audited the comparison architecture Phase 9 already shipped and found it had already built nearly everything a first Phase 10 brief would ask for: removable comparison chips, a large default Radar view, exact per-axis radar values for 2–3 strings, a compact five-metric overlay-bar comparison beneath it, and a progressively-disclosed comparison table. Per the brief's own instruction not to duplicate existing work, this phase **refined and completed** that design rather than rebuilding it: two real gaps were found and fixed, plus a small admin placeholder-copy tweak.
+
+### What Phase 9 already had (confirmed, not rebuilt)
+
+- `logic/comparisonViewPreference.ts` — Radar/Table state with `sessionStorage` persistence, Radar as `DEFAULT_COMPARISON_VIEW`.
+- `StringComparison.tsx`'s comparison chips — chart-series dot + string name + a `Remove {name} from comparison`-labeled remove button, plus the existing "Clear comparison" control. No physical string colors in the chip, matching Phase 9's color-removal round.
+- `RadarChart.tsx` — a large, centered radar (`size=360`, capped at `max-w-[840px]` on wide screens) using the 5 core manufacturer dimensions, with exact per-axis values already rendering for 2–3 series in matching chart-series colors.
+- `logic/comparisonOverlay.ts` + `components/ComparisonOverlayBars.tsx` — the compact five-metric overlay-bar comparison, with the two-string overlapping-bar treatment and the three-string stacked-mini-bar treatment already built and already accessible (a screen-reader sentence per row).
+- `logic/comparisonMetrics.ts` + `components/ComparisonTable.tsx` — the table's progressive disclosure (5 primary rows, "Show more details" revealing Performance details + Availability, `aria-expanded`, keyboard-operable) was already in place.
+
+### What this phase actually changed
+
+1. **Table column-width distribution (the one real gap in Part 12's brief).** `ComparisonTable.tsx`'s `<table>` previously used the browser's default (`auto`) layout algorithm with only a `min-w-[8rem]` hint per string column — width distribution between the Metric column and the compared-string columns wasn't deterministic. It now uses `table-layout: fixed` with an explicit `<colgroup>`: the Metric column gets one fixed width (`11rem`, wide enough for "Shock Absorption / Comfort" to wrap onto two clean lines instead of three), and every compared-string column is left unset — under fixed-table layout, columns with no explicit width automatically split whatever space remains equally. Verified in-browser: at 1440px, 2 strings produce two 457px-wide value columns; 3 strings produce three 305px-wide value columns (144px). No large unused area on the right, in either case.
+2. **One shared value-formatting helper, actually shared (Part 9).** `RadarChart.tsx` previously had its own inline logic for both the single-series vertex label and the multi-series per-axis value line (a bare `{raw}` and a bare `{value ?? '—'}`), independent of `logic/comparisonOverlay.ts`'s `formatMetricValue()` that the overlay bars already used. Both spots now call `formatMetricValue()` directly, so there is exactly one formatting rule (preserve the value as-is, no destructive rounding, `"—"` for null) shared by the radar and the overlay bars, with `tabular-nums` added to both for consistent digit alignment.
+3. **Admin Dashboard placeholder copy (Part 17, trivial).** The disabled "Dashboard" tab's tooltip changed from "Coming in a later phase" to "Dashboard analytics coming in Phase 11" — text only. See "Admin Dashboard current state" below for what Phase 11 will actually need to build.
+
+No other comparison logic changed: `logic/comparisonMetrics.ts`'s row values/grouping, `logic/comparisonOverlay.ts`'s percent/format math, and `RadarChart.tsx`'s `pointAt`/`polygonPoints` calculations are byte-for-byte what Phase 9 shipped.
+
+### Admin Dashboard current state (Phase 11 scoping only — nothing implemented here)
+
+`components/admin/AdminApp.tsx`'s section switcher (`AdminSection`) only recognizes `'inventory' | 'catalog' | 'specialists' | 'retailers' | 'retailerListings'` — **"Dashboard" isn't a real section at all**. It renders as a plain, non-interactive `<span aria-disabled="true">` in the nav row, not a button, with no hash route (`#admin/dashboard` doesn't exist) and no case in the `{section === '...' && <Page />}` block below. It triggers zero Supabase queries and has no backing service or hook of its own. Real data hooks/services already exist elsewhere in the app that a Phase 11 dashboard could read from without new backend work: `services/catalogAdminService.ts` (`fetchAdminCatalog`), `services/adminInventoryService.ts`, `services/specialistAdminService.ts`, `services/retailerAdminService.ts`/`retailerListingAdminService.ts`, and the public-facing `hooks/useStringPool.ts`/`useRetailerPrices.ts`/`useSpecialistProfiles.ts` for read-only aggregate views. None of that was touched this phase.
+
+### Manual verification checklist (Phase 10)
+
+1. Compare 2 strings with equal values, a one-point difference, and a larger difference; confirm the overlay bars keep both series visible in every case and the exact values on the right match.
+2. Compare 2 strings where the *first* chip's value is shorter, then a pair where the *second* chip's value is shorter; confirm the shorter series is never hidden behind the longer one in either direction.
+3. Compare 3 strings; confirm the overlay bars are 3 stacked mini-bars per row in chip order, and the table's value columns each take an equal, deterministic share of the remaining width (verified: 305px each at 1440px).
+4. Remove the middle chip out of 3 (not the first or last) and confirm exactly that string drops out, in both the chip row and every downstream view; confirm "Clear comparison" removes the whole panel.
+5. Toggle Radar → Table → Radar; confirm the disclosure control's `aria-expanded` state and label ("Show more details"/"Show fewer details") work correctly in both views, and that switching back to Radar still shows it as the visually pressed default.
+6. Resize to 320px, 375px, 390px, 768px, 1024px, 1440px, and 1920px; confirm the comparison panel itself never causes horizontal overflow and stays legible and centered (not stretched edge-to-edge) even at 1920px. (The pre-existing, unrelated 320px overflow from the "Have a question?" contact block, noted in the Phase 9 section above, is unchanged and still out of this phase's scope.)
+7. Confirm no physical-color swatch or dot reappears anywhere in the comparison surface — only the chart-series dot in each chip and table column heading.
+
+### Likely Phase 11 scope
+
+A real Admin Dashboard: an `AdminSection` entry, a hash route, and a page component that aggregates read-only summaries from the services already listed above (catalog size, inventory stock levels, specialist coverage, retailer listing counts) — no new Supabase tables should be needed for a first version, since every number it would show is already queryable through existing services. The color-normalization idea from the Phase 9 section remains a separate, still-unscheduled possibility.
+
 ## Copyright
 
 © 2026 Nicolas Vogt. All rights reserved.

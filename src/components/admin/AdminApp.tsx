@@ -130,7 +130,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
         ))}
         <span
           aria-disabled="true"
-          title="Coming in a later phase"
+          title="Dashboard analytics coming in Phase 11"
           className="rounded-full px-4 py-1.5 text-sm font-semibold border-2 border-court-900/10 dark:border-white/10 text-ink-700/30 dark:text-shuttle-100/30 cursor-not-allowed select-none"
         >
           Dashboard

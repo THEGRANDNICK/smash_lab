@@ -1,4 +1,5 @@
 import { PERFORMANCE_AXES, PERFORMANCE_MAX, RADAR_COMPARE_COLORS, type PerformanceDimension } from './performanceAxes'
+import { formatMetricValue } from '../logic/comparisonOverlay'
 
 export interface RadarSeries {
   id: string
@@ -139,8 +140,8 @@ export default function RadarChart({ series, size = 220, showValues = false, max
             const ratio = Math.max(0, Math.min(1, raw / PERFORMANCE_MAX))
             const { x, y } = pointAt(i, ratio, center, radius)
             return (
-              <text key={axis.key} x={x} y={y - 6} textAnchor="middle" className="fill-ink-900 dark:fill-shuttle-50 text-[9px] font-semibold" aria-hidden="true">
-                {raw}
+              <text key={axis.key} x={x} y={y - 6} textAnchor="middle" className="fill-ink-900 dark:fill-shuttle-50 text-[9px] font-semibold tabular-nums" aria-hidden="true">
+                {formatMetricValue(raw)}
               </text>
             )
           })}
@@ -152,10 +153,10 @@ export default function RadarChart({ series, size = 220, showValues = false, max
             const { anchor, dy } = labelAnchor(i)
             const valueDy = dy >= 0 ? dy + 11 : dy - 11
             return (
-              <text key={`${axis.key}-values`} x={x} y={y + valueDy} textAnchor={anchor} className="text-[9px] font-bold" aria-hidden="true">
+              <text key={`${axis.key}-values`} x={x} y={y + valueDy} textAnchor={anchor} className="text-[9px] font-bold tabular-nums" aria-hidden="true">
                 {series.map((s, idx) => (
                   <tspan key={s.id} className={RADAR_COMPARE_COLORS[idx]?.svgTextClassName} dx={idx === 0 ? 0 : 6}>
-                    {s.values[axis.key] ?? '—'}
+                    {formatMetricValue(s.values[axis.key])}
                   </tspan>
                 ))}
               </text>
