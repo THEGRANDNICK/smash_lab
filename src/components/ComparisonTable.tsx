@@ -60,7 +60,7 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
           muted ? 'odd:bg-transparent even:bg-court-900/[0.015] dark:even:bg-white/[0.015]' : 'odd:bg-transparent even:bg-court-900/[0.02] dark:even:bg-white/[0.02]'
         }`}
       >
-        <th scope="row" className={`text-left font-medium px-3 py-2 whitespace-nowrap ${muted ? 'text-ink-700/50 dark:text-shuttle-100/50' : 'text-ink-700/70 dark:text-shuttle-100/70'}`}>
+        <th scope="row" className={`text-left font-medium px-3 py-2 ${muted ? 'text-ink-700/50 dark:text-shuttle-100/50' : 'text-ink-700/70 dark:text-shuttle-100/70'}`}>
           {label}
         </th>
         {perItemRows.map((rows, itemIndex) => {
@@ -98,15 +98,22 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
 
   return (
     <div className="overflow-x-auto rounded-xl border border-court-900/10 dark:border-white/10">
-      <table className="w-full text-sm border-collapse" style={{ minWidth: `${8 + items.length * 9}rem` }}>
+      <table className="w-full table-fixed text-sm border-collapse" style={{ minWidth: `${8 + items.length * 9}rem` }}>
         <caption className="sr-only">Side-by-side comparison of {items.map((i) => i.name).join(', ')}</caption>
+        {/* table-fixed + an explicit width only on the Metric column: the compared-string columns carry no width of their own, so under fixed layout they automatically split whatever's left equally — 2 strings get half each, 3 strings get a third each, with no unused space on the right. */}
+        <colgroup>
+          <col style={{ width: '11rem' }} />
+          {items.map((item) => (
+            <col key={item.id} />
+          ))}
+        </colgroup>
         <thead>
           <tr className="bg-court-900/[0.03] dark:bg-white/[0.03]">
-            <th scope="col" className="text-left font-semibold text-ink-700/70 dark:text-shuttle-100/70 px-3 py-2 whitespace-nowrap">
+            <th scope="col" className="text-left font-semibold text-ink-700/70 dark:text-shuttle-100/70 px-3 py-2">
               Metric
             </th>
             {items.map((item, i) => (
-              <th key={item.id} scope="col" className="text-left font-semibold text-ink-900 dark:text-shuttle-50 px-3 py-2 min-w-[8rem]">
+              <th key={item.id} scope="col" className="text-left font-semibold text-ink-900 dark:text-shuttle-50 px-3 py-2">
                 <span className="inline-flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color" />
                   <span className="truncate">{item.name}</span>
