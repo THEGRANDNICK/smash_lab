@@ -907,6 +907,102 @@ No other comparison logic changed: `logic/comparisonMetrics.ts`'s row values/gro
 
 A real Admin Dashboard: an `AdminSection` entry, a hash route, and a page component that aggregates read-only summaries from the services already listed above (catalog size, inventory stock levels, specialist coverage, retailer listing counts) — no new Supabase tables should be needed for a first version, since every number it would show is already queryable through existing services. The color-normalization idea from the Phase 9 section remains a separate, still-unscheduled possibility.
 
+## Admin operational dashboard (Phase 11)
+
+Phase 11 turns the previously-disabled "Dashboard" admin tab into a real, read-only operational overview — how large the catalog is, what inventory needs attention, how complete specialist coverage is, how healthy the retailer/listing data is, which data-quality issues are worth a look, and what changed recently. It deliberately stays out of accounting, revenue, customer/order management, user analytics, and recommendation analytics — those are explicitly out of scope for this phase.
+
+### Dashboard route and default behavior
+
+`AdminApp.tsx`'s `AdminSection` union gained a `'dashboard'` member alongside the existing five. Bare `#admin` (and any unrecognized `#admin/...` hash) now resolves to `'dashboard'` instead of `'inventory'` — the only behavior change to existing routing — while every previously-bookmarked explicit hash (`#admin/inventory`, `#admin/catalog`, `#admin/specialists`, `#admin/retailers`, `#admin/retailer-listings`) is unaffected and still opens exactly that section. The new `#admin/dashboard` hash was also added to `App.tsx`'s outer `viewFromHash()` matcher (which only decides "does this hash belong to the isolated admin app at all," before `AdminApp.tsx`'s own `sectionFromHash()` picks the specific section) — without this addition, a direct link to `#admin/dashboard` would have fallen through to the public homepage instead of entering the admin app. Security is unchanged: the same Supabase Auth + RLS gate every admin section already had (`useAdminAuth`'s `is_admin` RPC check) gates the dashboard exactly the same way — there is no separate, weaker check for the new tab.
+
+### Dashboard data service
+
+`services/adminDashboardService.ts` is the dashboard's only data source, and it makes **zero Supabase queries of its own**. It calls the five *existing* admin fetch functions in parallel — `fetchAdminCatalog`, `fetchAdminInventory`, `fetchAdminSpecialistList`, `fetchAdminRetailers`, `fetchAdminRetailerListings` — and derives every card, list, and figure from those same five arrays entirely client-side, the same reshaping pattern `logic/comparisonMetrics.ts` already uses for the public comparison table. This means: no new RLS policy, no new table, no service-role key, and no dashboard-specific query that could bypass what an admin can already see through the existing CRUD pages. A source that fails to load doesn't blank the whole page — each of the five fetches is independent, so one Supabase hiccup shows a compact per-section "Unavailable" state while every other panel still renders from what did load.
+
+Retailer/listing health specifically **reuses** `retailerPriceService.ts`'s existing `summarizeRetailerDiagnostics()` (preferred-conflict detection, duplicate-candidate detection, missing-last-checked count) rather than reimplementing that logic — run here over the *full* admin listing set (including inactive retailers), unlike the public `/debug/supabase` page's active-retailer-only view, since an admin specifically needs to see listings tied to a retailer they've deactivated.
+
+**A note on `AdminSection`'s new home.** The type moved from `AdminApp.tsx` into `adminDashboardService.ts` (with `AdminApp.tsx` now re-exporting it) — not a style preference, but a real compile constraint: this project's `scripts/` directory is checked under a stricter TypeScript config (`tsconfig.node.json`, Node-style module resolution) than `src/components/` (`tsconfig.app.json`, bundler resolution with JSX). The new Phase 11 test script needs to import the dashboard service directly (to unit-test its pure aggregation functions without a live Supabase connection), and that import chain can never be allowed to pull in a `.tsx` component file, which the stricter config can't process. Keeping the shared type in a plain `.ts` service file avoids that entirely.
+
+### Summary-card definitions
+
+- **Catalog** — total row count only (`fetchAdminCatalog().length`). The `strings` table has no "active" flag of its own — availability lives on the *inventory* row instead, which is why it's a separate card.
+- **Inventory** — in-stock / low-stock / unavailable counts (from `inventory.stock_status`), plus a "missing quantity" figure surfaced only in the data-quality panel, not the compact card.
+- **Specialists** — `withProfile` of `totalCatalogStrings`, and a rounded coverage percentage. "Has a profile" means a real row in Supabase's `specialist_profiles` table (via `fetchAdminSpecialistList`) — **not** the separate local `data/stringSpecialistProfiles.ts` static file the public recommendation engine blends in; those are two different specialist-data sources by design (see `catalogAdminService.ts`'s existing comment on `deleteString()`), and the dashboard only reports on the admin-editable Supabase one.
+- **Retailers** — active / inactive counts (`retailers.active`).
+- **Retailer listings** — total, rows missing a price, and rows "stale" per the threshold below.
+
+### Inventory-attention rules
+
+One prioritized list, capped at 10 rows (`totalNeedingAttention` reports the true count when more exist), sorted:
+
+1. `unavailable` stock status
+2. `low-stock` stock status
+3. otherwise in-stock rows with a data problem — a null `quantity` or an `unknown` package type ("data-issue")
+4. alphabetical (brand, then name) as the tie-break within each group
+
+A fully healthy in-stock row with a real quantity and a known package type never appears in this list at all. Each row links to the existing Inventory admin page — the dashboard never edits inventory itself.
+
+### Specialist-coverage definition
+
+`present / total` where `total` is every catalog string and `present` is how many have a real `specialist_profiles` row, rounded to the nearest whole percent (0% when the catalog is empty, never `NaN`). The same two numbers back both the compact Specialists summary card and the fuller Catalog & Specialist Coverage panel, which additionally reports: strings missing a description, missing a product URL, missing an image URL, missing a shock-absorption rating (the *only* nullable manufacturer rating — repulsion/control/durability/hitting-sound are `NOT NULL` at the database level, so they can never be "incomplete"), and hybrid strings with no structured main/cross metadata on *either* side.
+
+**Omitted, and why:** a "strings with unresolved color diagnostic warnings" check (`logic/colorDiagnostics.ts`) was considered but left out — that module operates on the public `StringItem` shape produced by `mergeInventoryIntoCatalog()`, not the raw `AdminCatalogRow`/`AdminInventoryRow` shapes the dashboard already has loaded; building a second, parallel merge just for this one check risked drifting from the real merge logic rather than reusing it cleanly. A future pass could adapt it properly; this phase didn't invent a shortcut version.
+
+### Retailer stale threshold
+
+`services/adminDashboardService.ts` exports one constant, `STALE_LISTING_DAYS = 30`, and every "stale" computation (the summary card, the retailer-health panel, the data-quality issue) reads it from that single place — never a magic number repeated per component. A listing with no `last_checked_at` at all is reported separately as "never checked," not lumped in with "stale" (missing and stale are different problems). The comparison is strictly greater-than the threshold — a listing checked exactly 30 days ago is not yet stale.
+
+### Recent-updates behavior
+
+Combines the five sources' own `updated_at` timestamps (no new audit-log table — none was needed or added), sorted descending, capped at 10. A specialist "row" with no actual Supabase profile is never included (there's nothing to call "updated"). Never attributes a change to a person — there's no audit identity in this schema to attribute it to — and the panel is titled "Recent data updates," not "activity log," per the brief. Timestamps render via a small new pure helper, `logic/relativeTime.ts`'s `formatRelativeTime()` ("Just now" / "5 minutes ago" / "3 hours ago" / "Yesterday" / "5 days ago" / a formatted date beyond a week), inside a semantic `<time dateTime="...">` element for screen readers.
+
+### Data-quality panel
+
+A short, severity-tagged list — `critical` / `warning` / `info`, no invented scoring — built from the same five arrays, each entry only appearing when its count is greater than zero:
+
+- **Critical:** catalog strings with no matching inventory row at all (a genuine structural gap; every `createString()` call already creates one atomically, so this should be rare, but a manually-deleted inventory row would produce it).
+- **Warning:** inventory rows missing a quantity or with an unknown package type; retailer listings missing a price, missing a product URL, or stale; an inactive retailer with existing listings; strings with more than one listing marked "preferred."
+- **Info:** strings missing a specialist profile, a description, a shock-absorption rating, or (for hybrids) structured main/cross metadata — all expected to be sparse/incomplete by design at various points, not urgent.
+
+### Loading, partial-failure, and refresh behavior
+
+`DashboardPage.tsx` tracks `loading` → `ready` (or `full-error` if all five sources fail). A partial failure (1–4 sources down) never blanks the page: the affected summary card shows "Unavailable right now," the affected wider panel shows the same, and a single amber notice above everything lists exactly which sources failed with their error message and a Retry button. Refresh re-runs the exact same `fetchDashboardData()` call, is disabled (and shows "Refreshing…") while in flight to prevent duplicate-click spam, and the currently-rendered data stays on screen throughout — nothing clears back to a loading state on refresh. The panel shows "Last refreshed \<relative time\>" after every successful cycle. No automatic polling was added — refresh is entirely manual, per the brief.
+
+### Accessibility
+
+`AdminApp.tsx` already renders the page's one `<h1>` (the section name); `DashboardPage.tsx` only ever uses `<h2>`/`<h3>`, preserving a single top-level heading. Every card/list/issue navigates via a real `<button type="button">` (reusing the exact same pattern `AdminApp.tsx`'s own section nav already uses) — never a `<div onClick>`. The specialist-coverage bar is a real `role="progressbar"` with `aria-valuenow`/`aria-valuemin`/`aria-valuemax` and a text `aria-label` carrying the same number shown visually. Stock status reuses the existing `StockBadge` component (dot **and** text label, never color alone). Refresh exposes `aria-busy` while in flight. No animations were added, so reduced-motion is trivially satisfied.
+
+### Security review
+
+No service-role key anywhere in `adminDashboardService.ts` (it only calls the existing `getSupabaseClient()`-based admin fetch functions, same as every CRUD page). No RLS policy was touched, added, or weakened. Refresh and every dashboard read are read-only — nothing in this file issues an insert/update/delete. Error messages shown in the partial-failure notice are exactly the same `AdminResult.error` strings the existing CRUD pages already surface (typically a Postgres/PostgREST message, never a stack trace or a secret value). "Quick actions" only navigate to an existing protected admin section — none of them open a hidden create-form deep-link (see below).
+
+### Quick actions — a deliberate non-feature
+
+Investigated whether "Add catalog string," "Add inventory entry," etc. could deep-link straight into each section's existing create form. They can't, cleanly: every `*AdminPage.tsx`'s "+ New" flow is driven by a plain local `useState` boolean with no hash or prop entry point at all. Wiring a deep-link would mean threading a new prop through five separate page components for a single phase's convenience feature. Per the brief's own guidance ("otherwise link to the corresponding section without inventing fragile deep-link behavior"), Quick Actions here are plain navigation buttons to each section — the admin still clicks that section's own "+ New" button once there.
+
+### Incidental fix: Contact block overflow at 320px (flagged, not fixed, in Phase 9 and 10)
+
+Root-caused this round: `Contact.tsx`'s `ContactRow` put the email/location text in a flex child with no `min-width: 0` — a flex item's default `min-width: auto` lets its content's *unwrapped* intrinsic width (the full length of "inquiries.smashlab@gmail.com," which has no space to break on) force the row wider than its container, regardless of the parent grid's own sizing. Fixed with `min-w-0` on the row's flex container and its text wrapper, plus `break-words` on the value text, so long values wrap inside the card instead of pushing the page wider. Verified in a real browser: `document.body.scrollWidth` now equals the viewport width at 320/375/390/768/1024/1440/1920px (previously 372px of overflow at 320px specifically). A small, low-risk, purely-CSS fix — no data, layout structure, or unrelated component touched.
+
+### Manual verification checklist (Phase 11)
+
+1. In the admin panel (requires real Supabase), sign in and confirm you land on Dashboard by default; confirm `#admin/inventory` etc. still open exactly that section directly.
+2. Confirm the five summary cards show real counts matching what each section's own page shows, and that each card's link navigates there.
+3. Confirm the Inventory-attention list shows unavailable rows first, then low-stock, then any in-stock row with a data problem, alphabetically within each group; confirm "View all inventory" and "Open" both navigate correctly.
+4. Confirm the Specialist-coverage bar's percentage matches `withProfile / total`, and that it links to Specialists.
+5. Confirm Retailer & listing health shows active/inactive retailer counts, listing totals, and any inactive-retailer-with-listings correctly, including a listing whose retailer you've just deactivated.
+6. Confirm Recent Data Updates shows your most recent edit across any of the five sections within a few seconds of saving it, without needing a manual refresh trigger beforehand (i.e. it appears after the next Refresh).
+7. Click Refresh; confirm the button disables and reads "Refreshing…" while in flight, the page never blanks, and "Last refreshed" updates.
+8. Temporarily break one data source (e.g. revoke network to Supabase, or test with an expired session on one query) and confirm the rest of the dashboard still renders with a clear per-source notice, rather than the whole page failing.
+9. Resize to 320px, 375px, 390px, 768px, 1024px, 1440px, and 1920px; confirm cards stack cleanly, nothing overflows the page, and the admin nav (including the new Dashboard tab) stays usable on mobile.
+10. Confirm the admin footer still reads `Smash Lab Admin · v0.9.0-beta · <Production|Development>`.
+
+**Not performed this round:** real/live Supabase verification (Part 20) — this sandbox has no Supabase project credentials and no local Docker daemon available to stand up a Postgres+PostgREST+auth stack, so the authenticated dashboard flow itself (login → Dashboard → real counts → refresh → partial-failure → navigation) could not be exercised in an actual browser. What *was* verified in a real browser: `#admin`, `#admin/dashboard`, and `#admin/inventory` all resolve without crashing (each currently shows the same pre-existing "Admin area unavailable" state this sandbox has always shown for every admin route, with no Supabase configured); the Contact-block fix; and that Phase 9/10's comparison feature is unaffected. Every dashboard aggregation function itself (summary math, attention prioritization, coverage/health calculations, data-quality detection, recent-updates sorting) is covered by 53 dedicated unit tests using realistic fixtures shaped exactly like the real Supabase row types.
+
+### Likely Phase 12 scope
+
+The full Admin Dashboard build-out this phase deliberately deferred: richer per-metric drill-downs, a real "create new X" quick-action flow (once/if the underlying admin pages grow a deep-linkable create-mode), and possibly the color-normalization work still sitting in the Phase 9 section's backlog. Also worth a look: adapting `logic/colorDiagnostics.ts` to the dashboard's already-loaded admin row shapes (the omission noted above), and a genuine local Postgres+PostgREST+auth-stub environment for this sandbox specifically, so future phases touching the admin area can get real browser verification instead of relying on unit tests alone.
+
 ## Copyright
 
 © 2026 Nicolas Vogt. All rights reserved.

@@ -10,9 +10,9 @@
 // write surfaced as a normal error result here, never a crash and never
 // a client-side check standing in for the real database-level rule.
 
-import { getSupabaseClient } from '../lib/supabase'
-import type { StockLevel } from '../data/strings'
-import type { PackageType } from './inventoryService'
+import { getSupabaseClient } from '../lib/supabase.js'
+import type { StockLevel } from '../data/strings.js'
+import type { PackageType } from './inventoryService.js'
 
 export type { PackageType }
 
@@ -45,6 +45,18 @@ export interface InventoryUpdateInput {
 
 export type AdminResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
+/** Shape returned by the joined inventory+strings select below — annotated explicitly because a hand-written embedded-resource select string (rather than the fully generic query builder) doesn't get inferred consistently across this project's two tsconfigs (bundler vs nodenext module resolution). */
+interface InventoryJoinedRow {
+  string_id: string
+  stock_status: StockLevel
+  quantity: number | null
+  package_type: PackageType
+  color: string | null
+  notes: string | null
+  updated_at: string
+  strings: { brand: string; name: string; is_hybrid: boolean; main_string_meta: { color?: string } | null; cross_string_meta: { color?: string } | null } | null
+}
+
 /**
  * Fetches every inventory row joined with just enough catalog context
  * (brand/name) to identify each string in the admin UI. This does NOT
@@ -60,7 +72,7 @@ export async function fetchAdminInventory(): Promise<AdminResult<AdminInventoryR
 
     if (error) return { ok: false, error: error.message }
 
-    const rows: AdminInventoryRow[] = (data ?? []).map((row) => ({
+    const rows: AdminInventoryRow[] = ((data ?? []) as InventoryJoinedRow[]).map((row) => ({
       stringId: row.string_id,
       brand: row.strings?.brand ?? '(unknown brand)',
       name: row.strings?.name ?? row.string_id,

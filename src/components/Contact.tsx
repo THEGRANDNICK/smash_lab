@@ -20,21 +20,21 @@ export default function Contact() {
 
 function ContactRow({ emoji, label, value }: { emoji: string; label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="text-2xl" aria-hidden="true">
+    <div className="flex items-start gap-3 min-w-0">
+      <span className="text-2xl shrink-0" aria-hidden="true">
         {emoji}
       </span>
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{label}</p>
         {label === 'Email' ? (
           <a
             href={`mailto:${value}`}
-            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline"
+            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline break-words"
            >
              {value}
            </a>
          ) : (
-           <p className="font-semibold text-ink-900 dark:text-shuttle-50">{value}</p>
+           <p className="font-semibold text-ink-900 dark:text-shuttle-50 break-words">{value}</p>
         )}
       </div>
     </div>
