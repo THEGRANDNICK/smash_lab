@@ -234,6 +234,72 @@ export function pricePerMetre(listing: RetailerListing): number | null {
   return Math.round((listing.price / listing.packageLengthM) * 100) / 100
 }
 
+export interface BestPricePerMetre {
+  listing: RetailerListing
+  pricePerMetre: number
+}
+
+/**
+ * Phase 12 — Part 13/15's ONE shared "which price-per-metre represents
+ * this string" rule, used identically by catalog sorting and by any
+ * "From €X/m" display. Unlike areListingsComparable() (same package type
+ * AND length required — used for showing "listing A is cheaper than
+ * listing B" between otherwise-identical listings), price-per-metre is
+ * exactly the normalization that makes a 10m set and a 200m reel of the
+ * SAME string legitimately comparable, so every listing with a valid
+ * price-per-metre for this string is a candidate here regardless of its
+ * package type or length.
+ *
+ * Preference order: available listings before unavailable ones (an
+ * out-of-stock bargain is never used as the headline value while an
+ * available listing exists), then lowest price-per-metre, then retailer
+ * name/id for a fully deterministic tie-break. Returns null if nothing has
+ * a valid price-per-metre at all — callers must never invent one from a
+ * local catalog price.
+ */
+export function bestPricePerMetre(listings: readonly RetailerListing[]): BestPricePerMetre | null {
+  const candidates = listings
+    .map((listing) => ({ listing, pricePerMetre: pricePerMetre(listing) }))
+    .filter((entry): entry is BestPricePerMetre => entry.pricePerMetre != null)
+
+  if (candidates.length === 0) return null
+
+  candidates.sort((a, b) => {
+    const availabilityDiff = AVAILABILITY_RANK[a.listing.availabilityStatus] - AVAILABILITY_RANK[b.listing.availabilityStatus]
+    if (availabilityDiff !== 0) return availabilityDiff
+    if (a.pricePerMetre !== b.pricePerMetre) return a.pricePerMetre - b.pricePerMetre
+    return a.listing.retailerName.localeCompare(b.listing.retailerName) || a.listing.id - b.listing.id
+  })
+
+  return candidates[0]
+}
+
+export interface PricePerMetreSummary {
+  pricePerMetre: number
+  /** e.g. "€0.60/m" — already formatted for display, "/m" suffix included. */
+  formatted: string
+  listing: RetailerListing
+  /** e.g. "Based on a 200m reel at ProShop" — always set, since bestPricePerMetre() only ever returns listings with a known package length. */
+  sourceDescription: string
+}
+
+/** The display-ready version of bestPricePerMetre() — the single function every "From €X/m" label (StringCard, catalog sort, future surfaces) should call, so formatting never drifts between call sites. Returns null exactly when bestPricePerMetre() does. */
+export function describeBestPricePerMetre(listings: readonly RetailerListing[]): PricePerMetreSummary | null {
+  const best = bestPricePerMetre(listings)
+  if (!best) return null
+  const formattedPrice = formatRetailerPrice(best.pricePerMetre, best.listing.currency)
+  if (formattedPrice == null) return null
+
+  const lengthM = best.listing.packageLengthM as number // guaranteed non-null by pricePerMetre()'s own check
+  const packageLabel = PACKAGE_TYPE_LABELS[best.listing.packageType].toLowerCase()
+  return {
+    pricePerMetre: best.pricePerMetre,
+    formatted: `${formattedPrice}/m`,
+    listing: best.listing,
+    sourceDescription: `Based on a ${lengthM}m ${packageLabel} at ${best.listing.retailerName}`,
+  }
+}
+
 /** Formats a listing's price for display (EUR only for now — see RetailerCurrency). Returns null (never a placeholder string) when the price is unknown, so callers can decide their own "price on request"-style copy. */
 export function formatRetailerPrice(price: number | null, currency: RetailerCurrency): string | null {
   if (price == null) return null

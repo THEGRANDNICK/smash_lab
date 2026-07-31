@@ -119,6 +119,8 @@ export interface RetailerHealthMetrics {
   availableListings: number
   missingPrice: number
   missingProductUrl: number
+  /** Phase 12 — listings with a known price but no package length, so they can never produce a price-per-metre comparison (see retailerPriceService.ts's pricePerMetre()). Distinct from missingPrice: a listing can be missing one, the other, or both. */
+  missingPackageLength: number
   neverChecked: number
   stale: number
   inactiveRetailersWithListings: { retailerId: number; retailerName: string; listingCount: number }[]
@@ -313,6 +315,7 @@ export function buildRetailerHealth(retailers: readonly AdminRetailerRow[], list
     availableListings: listings.filter((l) => l.availabilityStatus === 'in_stock').length,
     missingPrice: listings.filter((l) => l.price == null).length,
     missingProductUrl: listings.filter((l) => l.productUrl == null).length,
+    missingPackageLength: listings.filter((l) => l.price != null && l.packageLengthM == null).length,
     neverChecked: diagnostics.missingLastCheckedCount,
     stale: listings.filter((l) => {
       const days = daysSince(l.lastCheckedAt, now)
@@ -358,6 +361,15 @@ export function buildDataQuality(
   if (retailerHealth.missingPrice > 0) issues.push({ id: 'listing-missing-price', label: 'Retailer listings missing a price', count: retailerHealth.missingPrice, severity: 'warning', section: 'retailerListings' })
   if (retailerHealth.missingProductUrl > 0) {
     issues.push({ id: 'listing-missing-url', label: 'Retailer listings missing a product URL', count: retailerHealth.missingProductUrl, severity: 'warning', section: 'retailerListings' })
+  }
+  if (retailerHealth.missingPackageLength > 0) {
+    issues.push({
+      id: 'listing-missing-package-length',
+      label: 'Priced listings missing a package length (no price-per-metre comparison)',
+      count: retailerHealth.missingPackageLength,
+      severity: 'info',
+      section: 'retailerListings',
+    })
   }
   if (retailerHealth.stale > 0) {
     issues.push({ id: 'listing-stale', label: `Retailer listings not checked in over ${STALE_LISTING_DAYS} days`, count: retailerHealth.stale, severity: 'warning', section: 'retailerListings' })

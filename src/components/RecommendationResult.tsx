@@ -15,6 +15,7 @@ import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
 import SpecialistPanel from './SpecialistPanel'
 import PurchaseOptions from './PurchaseOptions'
+import { PricePerMetreSummary } from './StringCard'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -194,6 +195,9 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
               {bestListings && bestListings.length > 0 ? (
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Where to Buy</h3>
+                  <div className="mb-2">
+                    <PricePerMetreSummary listings={bestListings} />
+                  </div>
                   <PurchaseOptions listings={bestListings} />
                 </div>
               ) : (

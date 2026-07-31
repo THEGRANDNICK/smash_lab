@@ -144,14 +144,19 @@ export default function RetailerListingForm({ initial, context, editingId, catal
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <NumberField
-          label="Package length (m)"
-          value={input.packageLengthM}
-          onChange={(v) => set('packageLengthM', v)}
-          error={errors.packageLengthM}
-          disabled={saving}
-          placeholder="e.g. 200 for a reel — leave blank if unknown"
-        />
+        <div>
+          <NumberField
+            label="Package length (m)"
+            value={input.packageLengthM}
+            onChange={(v) => set('packageLengthM', v)}
+            error={errors.packageLengthM}
+            disabled={saving}
+            placeholder="e.g. 200 for a reel — leave blank if unknown"
+          />
+          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+            Package length is required for price-per-metre comparison. Leaving it blank is allowed, but this listing won't be sortable or comparable by price per metre.
+          </p>
+        </div>
         <label className="block text-sm">
           <span className="block font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Last checked</span>
           <input

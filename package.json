@@ -24,7 +24,11 @@
     "test:color-resolver-v2": "tsx scripts/testColorResolverV2.ts",
     "test:color-removal-overlay": "tsx scripts/testColorRemovalAndOverlay.ts",
     "test:comparison-experience": "tsx scripts/testComparisonExperience.ts",
-    "test:admin-dashboard": "tsx scripts/testAdminDashboard.ts"
+    "test:admin-dashboard": "tsx scripts/testAdminDashboard.ts",
+    "test:calibration": "tsx scripts/testCalibration.ts",
+    "test:price-per-metre": "tsx scripts/testPricePerMetre.ts",
+    "test:faq": "tsx scripts/testFaq.ts",
+    "calibration-report": "tsx scripts/calibrationReport.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

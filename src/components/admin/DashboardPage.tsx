@@ -438,6 +438,7 @@ function RetailerHealthSection({ health, unavailable, onNavigate }: { health: Da
           <ul className="divide-y divide-court-900/10 dark:divide-white/10">
             <CountRow label="Listings missing a price" count={health.missingPrice} onNavigate={() => onNavigate('retailerListings')} />
             <CountRow label="Listings missing a product URL" count={health.missingProductUrl} onNavigate={() => onNavigate('retailerListings')} />
+            <CountRow label="Priced listings missing a package length (no price-per-metre)" count={health.missingPackageLength} onNavigate={() => onNavigate('retailerListings')} />
             <CountRow label="Listings never checked" count={health.neverChecked} onNavigate={() => onNavigate('retailerListings')} />
             <CountRow label={`Listings not checked in over ${STALE_LISTING_DAYS} days`} count={health.stale} onNavigate={() => onNavigate('retailerListings')} />
             <CountRow label="Strings with more than one preferred listing" count={health.preferredConflictStringIds.length} onNavigate={() => onNavigate('retailerListings')} />

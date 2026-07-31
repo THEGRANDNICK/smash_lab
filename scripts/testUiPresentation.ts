@@ -8,11 +8,13 @@
 // What this suite is proving, end to end:
 //   1. recommendStrings()'s own output (best/bestAvailable/crossBrand/
 //      specialistChoice ids, matchPercent, ranking, explanation text) is
-//      byte-identical to its pre-Phase-8 behavior — recommendationEngine.ts,
-//      tensionRecommendation.ts, and every file under src/config/ and
-//      src/data/ were NOT touched by this phase. The fixture values below
-//      were captured directly from recommendStrings() before any Phase 8
-//      UI code existed.
+//      deterministic and stable for this exact fixture set. Phase 12
+//      deliberately recalibrated recommendationEngine.ts's scoring (see
+//      README's Phase 12 section) — the fixture values below were
+//      re-captured from recommendStrings() after that recalibration, so
+//      this suite now pins the POST-Phase-12 baseline rather than the
+//      original pre-Phase-8 one. tensionRecommendation.ts and every file
+//      under src/data/ remain untouched.
 //   2. Every new presentation function (buildStructuredExplanation,
 //      buildAlternativeReasons, buildComparisonRows, and their small
 //      helpers) is a pure, deterministic function of its inputs — called
@@ -73,10 +75,10 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
   {},
 ]
 
-const FIXTURES: { best: string; pct: number; cross: string; spec: string }[] = [
-  { best: 'yonex-exbolt-63', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-bg80' },
-  { best: 'yonex-skyarc', pct: 93, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
-  { best: 'yonex-aerobite', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
+const FIXTURES: { best: string; pct: number; cross?: string; spec: string }[] = [
+  { best: 'yonex-exbolt-63', pct: 92, cross: 'lining-no1', spec: 'yonex-bg80' },
+  { best: 'yonex-skyarc', pct: 93, cross: undefined, spec: 'yonex-exbolt-65' },
+  { best: 'yonex-aerobite', pct: 92, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 

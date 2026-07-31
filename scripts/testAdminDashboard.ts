@@ -174,9 +174,9 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
   {},
 ]
 const REC_FIXTURES = [
-  { best: 'yonex-exbolt-63', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-bg80' },
-  { best: 'yonex-skyarc', pct: 93, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
-  { best: 'yonex-aerobite', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
+  { best: 'yonex-exbolt-63', pct: 92, cross: 'lining-no1', spec: 'yonex-bg80' },
+  { best: 'yonex-skyarc', pct: 93, cross: undefined, spec: 'yonex-exbolt-65' },
+  { best: 'yonex-aerobite', pct: 92, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 const TENSION_FIXTURES = [
@@ -438,6 +438,19 @@ await test('an inactive retailer with zero listings is not flagged', () => {
 await test('stale uses the same centralized STALE_LISTING_DAYS threshold as the summary counts', () => {
   const health = buildRetailerHealth([], [listingRow({ id: 1, lastCheckedAt: new Date(NOW.getTime() - (STALE_LISTING_DAYS + 1) * 86_400_000).toISOString() })], NOW)
   assert.equal(health.stale, 1)
+})
+await test('Phase 12: a priced listing with no package length is flagged missingPackageLength', () => {
+  const health = buildRetailerHealth([], [listingRow({ id: 1, price: 12.5, packageLengthM: null })], NOW)
+  assert.equal(health.missingPackageLength, 1)
+})
+await test('Phase 12: a listing with both price and package length is not flagged missingPackageLength', () => {
+  const health = buildRetailerHealth([], [listingRow({ id: 1, price: 12.5, packageLengthM: 200 })], NOW)
+  assert.equal(health.missingPackageLength, 0)
+})
+await test('Phase 12: an unpriced listing with no package length is NOT double-counted as missingPackageLength (it is already missingPrice)', () => {
+  const health = buildRetailerHealth([], [listingRow({ id: 1, price: null, packageLengthM: null })], NOW)
+  assert.equal(health.missingPrice, 1)
+  assert.equal(health.missingPackageLength, 0)
 })
 
 // ---------------------------------------------------------------------------

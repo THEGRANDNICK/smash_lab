@@ -26,6 +26,7 @@ import {
 } from '../data/stringSpecialistProfiles.js'
 import { DIMENSIONS, ZERO_WEIGHTS, BASELINE_WEIGHT, WEIGHT_CONTRIBUTIONS, type Dimension, type DimensionWeights } from '../config/recommendationWeights.js'
 import { SPECIALIST_WEIGHT_CONTRIBUTIONS, CONFIDENCE_TRUST, SPECIALIST_MAX_INFLUENCE, type SpecialistWeights } from '../config/specialistWeights.js'
+import { ARCHETYPES, detectDominantArchetype, type ArchetypeId } from '../config/archetypes.js'
 import { quizQuestions } from '../data/quizQuestions.js'
 import type { QuizAnswers } from './types.js'
 
@@ -50,6 +51,8 @@ export interface StringRecommendation {
   /** An optional, genuinely differentiated third option — never forced if nothing fits. Chosen on fit alone, ignoring stock. */
   specialistChoice?: ScoredString
   profile: DimensionWeights
+  /** The player-intent archetype (config/archetypes.ts) that best matches their own computed weight vector — display/explanation label only, never a second scoring path. */
+  dominantArchetype: ArchetypeId
   explanations: {
     best: string
     bestAvailable?: string
@@ -124,19 +127,116 @@ export function buildPreferenceProfile(answers: QuizAnswers): DimensionWeights {
   return normalized
 }
 
-function scoreManufacturer(item: StringItem, profile: DimensionWeights): { percent: number; topDimensions: Dimension[] } {
+// ---------------------------------------------------------------------------
+// Phase 12 calibration — pool-relative statistics feeding both the
+// specialization mechanism and the cross-brand shrinkage below. Computed
+// once per recommendStrings() call from whichever pool was actually passed
+// in (the static catalog, or a live Supabase-merged one), never from a fixed
+// snapshot — so behavior always reflects the real candidate set.
+// ---------------------------------------------------------------------------
+
+interface DimensionPoolStats {
+  mean: number
+  /** max - min across the pool, floored at 1 so a dimension with zero spread never divides by zero. */
+  range: number
+}
+
+type PoolStats = Record<Dimension, DimensionPoolStats>
+
+function computePoolStats(pool: readonly StringItem[]): PoolStats {
+  const stats = {} as PoolStats
+  for (const dim of DIMENSIONS) {
+    const values = pool.map((s) => s[dim]).filter((v): v is number => v != null)
+    if (values.length === 0) {
+      stats[dim] = { mean: 0, range: 1 }
+      continue
+    }
+    const mean = values.reduce((a, b) => a + b, 0) / values.length
+    stats[dim] = { mean, range: Math.max(Math.max(...values) - Math.min(...values), 1) }
+  }
+  return stats
+}
+
+const DEFAULT_POOL_STATS = computePoolStats(allStrings)
+
+/**
+ * Part 5 — cross-brand rating calibration. Different brands rate their own
+ * strings on their own scale; nothing in this codebase (or realistically
+ * available) proves a "7/11" from one brand means the same thing as a
+ * "7/11" from another (see README's cross-brand caveat). Rather than invent
+ * a false precision correction, a string with NO independent specialist
+ * profile (i.e. no hands-on corroboration of its manufacturer numbers) has
+ * its raw ratings shrunk a small, fixed, documented amount toward the pool
+ * mean before scoring — conservative, testable, and reversible by deleting
+ * this one constant. A string WITH a specialist profile keeps its raw
+ * manufacturer numbers at full trust, since that profile is an independent
+ * check on how the string actually plays.
+ */
+const CROSS_BRAND_SHRINKAGE = 0.15
+
+/**
+ * Part 3 — specialization over high average. `emphasis` is how much MORE
+ * (or less) weight a dimension received than a neutral, unprioritized
+ * share of the player's profile — i.e. how strongly the player's own
+ * answers actually singled that dimension out. Multiplying emphasis by how
+ * this string performs on that same dimension RELATIVE TO THE POOL (not
+ * against a fixed number, and never against a specific string) rewards
+ * genuine specialization on the dimensions the player emphasized, and
+ * mildly penalizes a string that's unusually strong on a dimension the
+ * player did NOT emphasize (e.g. very soft when the player wants a hard,
+ * direct feel) — the same mechanism produces both the reward and the
+ * contradiction penalty, so there is no separate hard-coded penalty table.
+ */
+const CONCENTRATION_STRENGTH = 1.8
+
+function scoreManufacturer(
+  item: StringItem,
+  profile: DimensionWeights,
+  poolStats: PoolStats,
+  hasSpecialistProfile: boolean,
+): { percent: number; topDimensions: Dimension[] } {
   const available = DIMENSIONS.filter((dim) => item[dim] != null)
   const weightSum = available.reduce((sum, dim) => sum + profile[dim], 0) || 1
+  const neutralShare = 1 / available.length
 
   let weightedRating = 0
+  let concentration = 0
   for (const dim of available) {
-    weightedRating += (profile[dim] / weightSum) * (item[dim] as number)
+    const w = profile[dim] / weightSum
+    const rawValue = item[dim] as number
+    const value = hasSpecialistProfile ? rawValue : rawValue + (poolStats[dim].mean - rawValue) * CROSS_BRAND_SHRINKAGE
+
+    weightedRating += w * value
+
+    const emphasis = w - neutralShare
+    const relativePosition = (value - poolStats[dim].mean) / poolStats[dim].range
+    concentration += emphasis * relativePosition
   }
 
-  const percent = Math.round((weightedRating / 11) * 100)
+  const combined = Math.min(11, Math.max(0, weightedRating + concentration * CONCENTRATION_STRENGTH))
+  const percent = Math.round((combined / 11) * 100)
   const topDimensions = [...available].sort((a, b) => profile[b] * (item[b] as number) - profile[a] * (item[a] as number)).slice(0, 2)
 
   return { percent, topDimensions }
+}
+
+/**
+ * Part 7 — match-percentage calibration. A flat/near-uniform weight vector
+ * (no answers, or answers that pull in opposite directions and largely
+ * cancel out) signals low confidence in what the player actually wants; a
+ * peaked vector (clear, consistent priorities) signals high confidence.
+ * This scales the ceiling every candidate's matchPercent is clamped to, so
+ * an ambiguous quiz can no longer produce an overconfident-looking top
+ * result, without changing anything about a clear, peaked quiz.
+ */
+const CONFIDENCE_CEILING_RANGE = 12
+const TYPICAL_WEIGHT_SPREAD = 0.35
+
+function profileConfidence(profile: DimensionWeights): number {
+  const values = DIMENSIONS.map((d) => profile[d])
+  const mean = values.reduce((a, b) => a + b, 0) / values.length
+  const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length
+  return Math.min(1, Math.sqrt(variance) / TYPICAL_WEIGHT_SPREAD)
 }
 
 // ---------------------------------------------------------------------------
@@ -216,8 +316,10 @@ export function scoreString(
   specialistWeights: SpecialistWeightVector,
   specialistBudget: number,
   specialistProfiles: Record<string, StringSpecialistProfile> = STRING_SPECIALIST_PROFILES,
+  poolStats: PoolStats = DEFAULT_POOL_STATS,
 ): ScoredString {
-  const manufacturer = scoreManufacturer(item, profile)
+  const hasSpecialistProfile = specialistProfiles[item.id] != null
+  const manufacturer = scoreManufacturer(item, profile, poolStats, hasSpecialistProfile)
   const specialist = scoreSpecialist(item, specialistWeights, specialistBudget, specialistProfiles)
 
   let finalPercent = manufacturer.percent
@@ -230,9 +332,11 @@ export function scoreString(
     topSpecialistDims = specialist.topDims
   }
 
+  const ceiling = Math.round(99 - (1 - profileConfidence(profile)) * CONFIDENCE_CEILING_RANGE)
+
   return {
     string: item,
-    matchPercent: Math.min(99, Math.max(1, Math.round(finalPercent))),
+    matchPercent: Math.min(ceiling, Math.max(1, Math.round(finalPercent))),
     topDimensions: manufacturer.topDimensions,
     topSpecialistDims,
     specialistInfluence: influence,
@@ -279,9 +383,29 @@ function availabilityNote(item: StringItem): string {
 
 type ExplanationRole = 'best' | 'bestAvailable' | 'crossBrand' | 'specialist'
 
-function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: ExplanationRole, specialistProfiles: Record<string, StringSpecialistProfile>): string {
+/**
+ * Part 8 — connects the player's priorities to the dominant archetype
+ * detected from their own weight vector. Only prepended for the `best`
+ * role: repeating the same priority sentence on every alternative card
+ * would be exactly the "generic repeated paragraph" the phase spec warns
+ * against, and the alternatives already get their own differentiated
+ * reasons (see buildAlternativeReasons in recommendationExplanation.ts).
+ */
+function archetypePriorityPrefix(role: ExplanationRole, archetypeId: ArchetypeId | undefined): string {
+  if (role !== 'best' || !archetypeId) return ''
+  return `${ARCHETYPES[archetypeId].priorityStatement} `
+}
+
+function buildExplanation(
+  scored: ScoredString,
+  answers: QuizAnswers,
+  role: ExplanationRole,
+  specialistProfiles: Record<string, StringSpecialistProfile>,
+  archetypeId?: ArchetypeId,
+): string {
   const { string: s } = scored
   const profile = specialistProfiles[s.id]
+  const priorityPrefix = archetypePriorityPrefix(role, archetypeId)
 
   const leadIn =
     role === 'best'
@@ -314,7 +438,7 @@ function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: Expl
       text += ` Trade-off: ${lowerFirst(profile.weaknesses[0])}.`
     }
     text += availabilityNote(s)
-    return text
+    return priorityPrefix + text
   }
 
   // No specialist profile (or nothing usable in it) — fall back to manufacturer-dimension phrasing.
@@ -335,7 +459,7 @@ function buildExplanation(scored: ScoredString, answers: QuizAnswers, role: Expl
     text += ` The trade-off is ${DIMENSION_LABELS[weakestDim]} — still perfectly usable, just not this string's strongest suit.`
   }
   text += availabilityNote(s)
-  return text
+  return priorityPrefix + text
 }
 
 // ---------------------------------------------------------------------------
@@ -364,8 +488,10 @@ export function recommendStrings(
   const profile = buildPreferenceProfile(answers)
   const specialistWeights = buildSpecialistWeights(answers)
   const specialistBudget = ALL_SPECIALIST_KEYS.reduce((sum, k) => sum + specialistWeights[k], 0)
+  const poolStats = computePoolStats(pool)
+  const dominantArchetype = detectDominantArchetype(profile, specialistWeights, answers)
 
-  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles))
+  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles, poolStats))
 
   // Ranked purely on how well each string fits this player — stock never
   // enters scoring or eligibility. We can order in strings we don't
@@ -419,8 +545,9 @@ export function recommendStrings(
     crossBrandAlternative,
     specialistChoice,
     profile,
+    dominantArchetype,
     explanations: {
-      best: buildExplanation(best, answers, 'best', specialistProfiles),
+      best: buildExplanation(best, answers, 'best', specialistProfiles, dominantArchetype),
       bestAvailable: bestAvailable ? buildExplanation(bestAvailable, answers, 'bestAvailable', specialistProfiles) : undefined,
       crossBrandAlternative: crossBrandAlternative ? buildExplanation(crossBrandAlternative, answers, 'crossBrand', specialistProfiles) : undefined,
       specialistChoice: specialistChoice ? buildExplanation(specialistChoice, answers, 'specialist', specialistProfiles) : undefined,
