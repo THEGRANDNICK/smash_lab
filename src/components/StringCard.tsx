@@ -4,7 +4,7 @@ import { buildRequestMailto } from '../logic/contactMessage'
 import { formatGauge } from '../logic/formatGauge'
 import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { needsClamp } from '../logic/textClamp'
-import type { RetailerListing } from '../services/retailerPriceService'
+import { describeBestPricePerMetre, type RetailerListing } from '../services/retailerPriceService'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
@@ -117,6 +117,10 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
 
       {specialistProfile && <SpecialistPanel profile={specialistProfile} />}
 
+      {retailerListings && retailerListings.length > 0 && (
+        <PricePerMetreSummary listings={retailerListings} />
+      )}
+
       {retailerListings && <PurchaseOptions listings={retailerListings} />}
 
       {item.productUrl && (
@@ -160,5 +164,25 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Phase 12 — Part 14: a transparent, one-line "From €X/m" summary shown
+ * above the collapsed purchase-options list, so a price-per-metre figure
+ * is never hidden behind a click. Sourced entirely from
+ * describeBestPricePerMetre() (services/retailerPriceService.ts) — never
+ * a second price calculation. Renders nothing if no listing has a known
+ * price AND package length, per the phase brief's "don't show
+ * price-per-metre when length unknown".
+ */
+export function PricePerMetreSummary({ listings }: { listings: RetailerListing[] }) {
+  const summary = describeBestPricePerMetre(listings)
+  if (!summary) return null
+  return (
+    <p className="text-sm">
+      <span className="font-semibold text-ink-900 dark:text-shuttle-50">From {summary.formatted}</span>{' '}
+      <span className="text-ink-700/50 dark:text-shuttle-100/50">— {summary.sourceDescription}</span>
+    </p>
   )
 }

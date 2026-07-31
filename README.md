@@ -1003,6 +1003,107 @@ Root-caused this round: `Contact.tsx`'s `ContactRow` put the email/location text
 
 The full Admin Dashboard build-out this phase deliberately deferred: richer per-metric drill-downs, a real "create new X" quick-action flow (once/if the underlying admin pages grow a deep-linkable create-mode), and possibly the color-normalization work still sitting in the Phase 9 section's backlog. Also worth a look: adapting `logic/colorDiagnostics.ts` to the dashboard's already-loaded admin row shapes (the omission noted above), and a genuine local Postgres+PostgREST+auth-stub environment for this sandbox specifically, so future phases touching the admin area can get real browser verification instead of relying on unit tests alone.
 
+## Recommendation calibration, retailer price-per-metre & FAQ rewrite (Phase 12)
+
+Phase 12 addresses a specific trust problem: `scoreManufacturer()` (the manufacturer-data half of the recommendation engine) was a pure weighted average with no specialization, interaction, or contradiction logic at all — so a string with a strong average across every dimension could out-rank a genuine specialist even when the player's answers clearly asked for that specialty (e.g. a pure-durability quiz didn't reliably put BG65 in the top two). This phase adds a conservative, pool-relative specialization mechanism to close that gap, formalizes the player-intent archetypes the phase brief asked for, adds retailer price-per-metre sorting/display, and rewrites the public FAQ — without changing the recommendation pipeline's shape, the quiz structure, the database schema, or any admin CRUD flow.
+
+### Existing engine findings (the audit)
+
+- **`scoreManufacturer()` was confirmed to be a simple weighted average** — no specialization, no interaction terms, no contradiction penalties. This is the root cause of the "highest-average-wins" problem the phase brief describes.
+- **The Smash Lab specialist-profile layer (`data/stringSpecialistProfiles.ts`) already encodes the target calibration knowledge** in its hand-written notes — e.g. BG65's own profile says "this isn't 'bad' — its whole strength is maximum durability and value... this should realistically be able to beat Exbolt 68," Exbolt 63's says "best raw repulsion I've personally experienced," SkyArc's says it "shouldn't win broadly on the strength of its manufacturer shock-absorption number alone." The specialist layer was never the problem; the manufacturer layer's lack of specialization was.
+- **"Ashaway" does not exist anywhere in this codebase's local data, scripts, or migrations** (verified by an exhaustive repo-wide search) — it can only exist in a real, live Supabase catalog. This means Part 11's numeric investigation ("which Ashaway ratings are unusually high") could not be performed directly in this sandbox; only the general architectural mechanism that would let ANY brand with generically high, unverified manufacturer numbers dominate could be diagnosed and mitigated (see the cross-brand shrinkage below). No catalog data was changed — there was none to change.
+- **Manufacturer ratings are not proven comparable across brands.** Nothing in this codebase (or realistically obtainable) establishes that a "7/11" from one brand means the same thing as a "7/11" from another.
+
+### Archetypes (`config/archetypes.ts`)
+
+Eleven named player-intent archetypes (maximum durability, maximum repulsion, hard/direct attacking control, easy power, fast doubles & drives, comfort & arm-friendliness, net precision & control, balanced all-round, hitting sound & feedback, tension retention, beginner-friendly), each declaring its primary/secondary manufacturer dimensions, primary specialist dimensions, and one deterministic priority-statement sentence. **Archetypes never hard-code a winning string id and add no scoring term of their own** — `detectDominantArchetype()` only reads the player's own already-computed `DimensionWeights`/specialist-weight vector (the same numbers that drive scoring) and picks whichever archetype's declared dimensions best match, purely for explanation language and calibration-test organization. A near-uniform weight vector (weight standard deviation below a small threshold) is treated as genuinely balanced rather than forced into whichever archetype happens to score marginally highest.
+
+### Specialization mechanism (Part 3) — `scoreManufacturer()`
+
+For each manufacturer dimension, `emphasis` = how much MORE (or less) weight that dimension received than a neutral, unprioritized share of the player's own profile. Multiplying `emphasis` by how the string performs on that dimension **relative to the pool mean** (never against a fixed number, and never against a specific string) is added on top of the existing weighted average:
+
+- A string strongly emphasized-and-above-pool-average on a dimension the player prioritized is rewarded beyond the plain average (specialization reward).
+- A string unusually strong on a dimension the player explicitly did NOT prioritize (e.g. very soft when a hard/direct feel was requested) is mildly penalized — the SAME formula produces both the reward and the contradiction penalty; there is no separate hard-coded penalty table.
+- A flat/uninformative profile (no answers, or a genuinely balanced one) has zero emphasis everywhere, so this mechanism cleanly reduces back to the original plain weighted average — balanced answers still get a balanced result, and specialists get no artificial advantage there.
+
+Pool statistics (mean, range) are computed fresh from whichever pool `recommendStrings()` was actually called with (static catalog or live Supabase-merged), never from a fixed snapshot.
+
+### Cross-brand calibration (Part 5) — conservative, disclosed, minimal
+
+Because manufacturer rating scales aren't proven comparable across brands, a string with **no independent specialist profile** (no hands-on corroboration of its own manufacturer numbers) has its raw ratings shrunk a small, fixed 15% toward the pool mean before scoring (`CROSS_BRAND_SHRINKAGE` in `recommendationEngine.ts`). A string WITH a specialist profile keeps its raw numbers at full trust, since that profile is an independent check on how it actually plays. This is a flat, disclosed, reversible constant — not an attempt at invented scientific precision — and it directly limits how far an unverified brand's generically high numbers alone can push a string up the ranking, which is the general mechanism that would explain (and mitigate) an "Ashaway-style" dominance if one existed in a real catalog.
+
+### Specialist-profile influence (Part 6) — reviewed, unchanged
+
+The existing blend (`influence = SPECIALIST_MAX_INFLUENCE(0.65) × confidenceMultiplier × relevance`, capped so manufacturer data always keeps at least some floor influence) was reviewed against the brief's constraints and found to already satisfy them: it adds real expert context, never fully overrides the quiz (max 65% weight), and strings with no specialist profile are simply scored on manufacturer data alone — never penalized for lacking one, so a profile can never be an automatic win condition. No change was made here.
+
+### Match-percentage calibration (Part 7)
+
+Added a confidence ceiling based on the spread (standard deviation) of the player's own weight vector: a flat or contradictory profile (answers that partially cancel out) is capped lower than a clear, peaked one, so an ambiguous quiz can no longer produce an overconfident-looking top result. A genuinely clear, single-priority quiz is unaffected — the ceiling only tightens for low-confidence cases. The public concept and 1–99% display scale are unchanged.
+
+### Explanations (Part 8) and alternatives (Part 9)
+
+The Best Match explanation now opens with one archetype-derived priority sentence (e.g. *"You prioritised durability above everything else, so thicker, longer-lasting strings were weighted more heavily than strings that are merely well-rounded on average."*) built from `config/archetypes.ts`'s `priorityStatement` — prepended **only** for the Best Match, never repeated across alternatives, to avoid the "generic repeated paragraph" the brief warns against. `recommendationExplanation.ts`'s alternative-reason logic (durability/repulsion/control/comfort/feel/specialist-trait/price/stock comparisons) was reviewed and found to already cover the required reasons; it was left unchanged.
+
+### Calibration test suite (`scripts/testCalibration.ts`, Part 10) and diagnostic report (`scripts/calibrationReport.ts`, Part 24)
+
+32 tests across the 12 required scenarios (max durability, max repulsion, hard/direct attack, comfort, net precision, balanced, fast doubles/drives, beginner-friendly, tension retention, sound/feedback, contradictory answers, missing specialist data), asserting behavioral properties ("top 2," "does not rank first," "archetype detected," "explanation mentions X") rather than brittle full-ranking snapshots, plus determinism checks. `npm run calibration-report` prints top-5 rankings, archetype, and explanation text per scenario for future tuning — development-only, never imported by production code, never exposing raw internal weights.
+
+**Existing snapshot-style fixtures** (the identical 4-answer/4-fixture block repeated across `testUiPresentation.ts`, `testCatalogPolish.ts`, `testComparisonExperience.ts`, `testUiPolish.ts`, `testColorInventoryFix.ts`, `testColorRemovalAndOverlay.ts`, `testColorResolverV2.ts`, `testAdminDashboard.ts`) were **deliberately updated** to the new, recalibrated output — this was expected: those fixtures were pinned specifically to detect any change to `recommendationEngine.ts`, and Phase 12's whole purpose is a documented, tested calibration change to that file.
+
+### Retailer price-per-metre (Parts 12–15)
+
+`services/retailerPriceService.ts` gains the shared helper set every price-per-metre concern goes through — no duplicated calculation anywhere:
+
+- `bestPricePerMetre(listings)` — the string-level "which listing represents this string's price" rule: only listings with a valid price-per-metre are candidates (known non-negative price, known package length > 0, supported currency); available listings (in stock / low stock / preorder) are preferred over unavailable ones even if cheaper per metre; ties break on lowest price-per-metre, then retailer name, then listing id, for full determinism. Different package types/lengths of the SAME string (a 10m set vs. a 200m reel) are legitimately compared this way, since price-per-metre is exactly the normalization that makes that fair — unlike `areListingsComparable()`'s stricter same-type-and-length rule used elsewhere for direct sticker-price comparison.
+- `describeBestPricePerMetre(listings)` — the display-ready version: `{ formatted: "€0.60/m", sourceDescription: "Based on a 200m reel at ProShop" }`, so "From €X/m" always names which real listing produced it.
+- `sortStrings()` (`logic/sortStrings.ts`) now sorts `priceAsc`/`priceDesc` by real retailer price-per-metre via `bestPricePerMetre()`, **not** by the local catalog's `stringCost` field — that field is this stringer's own personal service-string price (`logic/pricing.ts`'s `STRINGING_SERVICE_FEE` total), not a market retail price, so using it for retailer-price sorting would have misrepresented it as one. A string with no valid retailer price-per-metre sorts after every string that has one, regardless of direction, exactly like the pre-existing "unknown price" behavior.
+- `StringCard.tsx` and `RecommendationResult.tsx`'s "Where to Buy" panel both show a `PricePerMetreSummary` line above the existing collapsed purchase-options list — never shown when package length is unknown, never implying stock or including shipping, and never combining hybrid main/cross listings into one figure.
+
+### Retailer admin (Part 16)
+
+Reviewed `RetailerListingForm.tsx`/`retailerListingAdminService.ts`: decimal comma and point both already work (`normalizeDecimalInput`), zero/negative package length was already rejected, price precision was already correct. Added one line of helper text under the package-length field: *"Package length is required for price-per-metre comparison. Leaving it blank is allowed, but this listing won't be sortable or comparable by price per metre."* No other admin changes.
+
+### Admin dashboard (Part 20)
+
+Added one metric, `missingPackageLength` (a priced listing with no package length — distinct from `missingPrice`, since a listing can be missing one, the other, or both), to the existing Retailer & Listing Health panel and a matching low-severity data-quality issue — a natural, minimal extension of Phase 11's existing pattern, not new dashboard architecture. No recommendation analytics were added, per the brief.
+
+### FAQ rewrite (Parts 17–19)
+
+The public FAQ was entirely personal-stringing-service content (turnaround time, machine used, etc.) with zero coverage of how recommendations, tension, or retailer pricing actually work. It's now split into two headed groups — **"Strings, tension & recommendations"** (the 15 required questions: which string to choose, tension guidance, whether higher tension is always better, repulsion/control/durability definitions, why the highest-rated string isn't always the recommendation, how recommendations are calculated, what match percentage means, the cross-brand rating caveat, restring frequency, gauge, hybrid setups, why an unavailable string can still be recommended, how retailer prices are compared, whether price-per-metre includes shipping, and whether Smash Lab sells strings/rackets) and **"The stringing service"** (the original, still-accurate personal-service questions, kept verbatim — nothing was invented or removed). Content lives in a plain data file, `data/faqContent.ts`, imported by both `components/FAQ.tsx` and `scripts/testFaq.ts` (the same reason `AdminSection` lives outside a `.tsx` file — `scripts/` can't resolve JSX). The existing accessible single-open-item accordion behavior is unchanged.
+
+### Testing
+
+New suites: `test:calibration` (32 tests), `test:price-per-metre` (31 tests), `test:faq` (26 tests) — 89 new tests. All 15 suites (12 pre-existing + 3 new) pass: 686 tests, 0 failures. `npx tsc -b`, `oxlint`, and `npm run build` all pass clean.
+
+### Browser verification
+
+Performed with a real headless Chromium (Playwright) against the local dev server: full quiz flow for a durability-priority profile (result: Exbolt 68 at 89%, with BG65 among the close alternatives, archetype priority sentence rendering correctly in the explanation, cross-brand and specialist alternatives rendering with correct reasons, tension recommendation unaffected, "No retailer listings available for this string yet." shown gracefully with no Supabase configured) and a comfort-priority profile (result: SkyArc at 90%, explanation text closely matching the brief's own example tone). Verified no horizontal overflow at 320/375/390/768/1024/1440/1920px, FAQ group headings and keyboard-operable disclosure toggling, and the updated sort-dropdown labels ("Price per metre: Low to High/High to Low").
+
+**Not performed:** real Supabase / live-catalog verification (Part 26) — no Supabase project credentials and no local Docker daemon are available in this sandbox (same limitation documented in Phase 11), so real retailer package-length/price-per-metre data, real admin saves, and the live recommendation pool could not be exercised against an actual database.
+
+### Version
+
+Kept at `0.9.0-beta.0`. This phase changes internal scoring calibration and adds new UI text/behavior, but nothing about the public feature set or API surface has reached a stability point that warrants a version bump before this branch is reviewed and merged — the same reasoning Phase 11 used. A `0.9.1-beta.0` bump can be made at merge time if the maintainer prefers to mark the calibration change explicitly; `package.json`/`package-lock.json` remain in sync, and the admin footer continues to read from the single existing `logic/version.ts` source of truth.
+
+### Manual verification checklist (Phase 12)
+
+1. Run the quiz prioritizing only durability; confirm BG65 and/or BG65 Titanium/Exbolt 68 appear in the top tier, and the explanation mentions durability.
+2. Run the quiz prioritizing power, control, and a hard/direct feel; confirm BG80 (or another genuinely hard attacking string) ranks strongly, and no soft comfort string appears near the top.
+3. Run the quiz prioritizing comfort; confirm a hard/direct string is not the winner, and the explanation mentions the comfort trade-off.
+4. Confirm each explanation paragraph references your actual selected priorities, not generic boilerplate.
+5. On the "Browse every string" catalog, switch Sort to "Price per metre" and confirm it reflects real retailer listings (requires Supabase retailer data) rather than a local price.
+6. Confirm a "From €X/m" line names which specific listing (retailer + package length) it came from.
+7. Confirm a string with a priced-but-length-unknown listing never shows a price-per-metre figure.
+8. Read the FAQ; confirm all 15 new questions are present, accurate, and concise.
+9. Confirm the tension recommendation tool's output is unchanged from Phase 8–11 behavior.
+10. Confirm the admin Dashboard, Retailer Listings form (including the new helper text), and every other admin CRUD page still work.
+11. Confirm no database migration was required or performed.
+12. Confirm the site remains usable and overflow-free on mobile widths.
+
+### Likely Phase 13 scope
+
+Further empirical tuning of `CONCENTRATION_STRENGTH`/`CROSS_BRAND_SHRINKAGE`/`CONFIDENCE_CEILING_RANGE` once real Supabase catalog data (including any brand like Ashaway) is available to validate against; a genuine cross-brand percentile-normalization scheme if enough independently-verified specialist data accumulates to support one; live currency conversion if a non-EUR retailer is ever added; and a real local Postgres+PostgREST+auth-stub environment for this sandbox so future phases can get true end-to-end Supabase verification instead of unit tests alone (same gap noted in Phase 11).
+
 ## Copyright
 
 © 2026 Nicolas Vogt. All rights reserved.

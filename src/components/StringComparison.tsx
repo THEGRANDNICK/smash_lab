@@ -48,7 +48,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
     return true
   })
 
-  const sorted = sortStrings(filtered, sortBy)
+  const sorted = sortStrings(filtered, sortBy, retailerListingsByStringId)
   const compareItems = compareIds.map((id) => strings.find((s) => s.id === id)).filter((s): s is StringItem => s != null)
 
   function toggleCompare(id: string) {

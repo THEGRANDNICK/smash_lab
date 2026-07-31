@@ -96,9 +96,9 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
   {},
 ]
 const REC_FIXTURES = [
-  { best: 'yonex-exbolt-63', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-bg80' },
-  { best: 'yonex-skyarc', pct: 93, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
-  { best: 'yonex-aerobite', pct: 91, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
+  { best: 'yonex-exbolt-63', pct: 92, cross: 'lining-no1', spec: 'yonex-bg80' },
+  { best: 'yonex-skyarc', pct: 93, cross: undefined, spec: 'yonex-exbolt-65' },
+  { best: 'yonex-aerobite', pct: 92, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 const TENSION_FIXTURES = [
