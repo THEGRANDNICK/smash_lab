@@ -25,6 +25,7 @@ function viewFromHash(): View {
   // this route being hard to find.
   if (
     hash === 'admin' ||
+    hash === 'admin/dashboard' ||
     hash === 'admin/inventory' ||
     hash === 'admin/catalog' ||
     hash === 'admin/specialists' ||

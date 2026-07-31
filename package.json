@@ -2,7 +2,7 @@
   "name": "app",
   "private": true,
   "license": "UNLICENSED",
-  "version": "0.8.0-beta.0",
+  "version": "0.9.0-beta.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,8 @@
     "test:color-inventory-fix": "tsx scripts/testColorInventoryFix.ts",
     "test:color-resolver-v2": "tsx scripts/testColorResolverV2.ts",
     "test:color-removal-overlay": "tsx scripts/testColorRemovalAndOverlay.ts",
-    "test:comparison-experience": "tsx scripts/testComparisonExperience.ts"
+    "test:comparison-experience": "tsx scripts/testComparisonExperience.ts",
+    "test:admin-dashboard": "tsx scripts/testAdminDashboard.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { getRuntimeVersionInfo } from '../../logic/version'
+import type { AdminSection } from '../../services/adminDashboardService'
 import AdminLogin from './AdminLogin'
+import DashboardPage from './DashboardPage'
 import InventoryAdminPage from './InventoryAdminPage'
 import CatalogAdminPage from './CatalogAdminPage'
 import SpecialistAdminPage from './SpecialistAdminPage'
@@ -12,10 +14,11 @@ interface AdminAppProps {
   onExit: () => void
 }
 
-type AdminSection = 'inventory' | 'catalog' | 'specialists' | 'retailers' | 'retailerListings'
+export type { AdminSection }
 
 /** Section <-> hash mapping — kept explicit (not derived from the section id) since the retailerListings section uses a kebab-case hash (#admin/retailer-listings) for readability, unlike its camelCase TS identifier. */
 const SECTION_HASH: Record<AdminSection, string> = {
+  dashboard: 'admin/dashboard',
   inventory: 'admin/inventory',
   catalog: 'admin/catalog',
   specialists: 'admin/specialists',
@@ -23,13 +26,15 @@ const SECTION_HASH: Record<AdminSection, string> = {
   retailerListings: 'admin/retailer-listings',
 }
 
+/** Phase 11: bare `#admin` (and any hash this map doesn't recognize) now lands on the Dashboard by default — previously it fell through to Inventory. Every existing explicit hash (#admin/inventory, #admin/catalog, etc.) is unaffected and still opens exactly that section, so this is additive, not a breaking change to any bookmarked/shared link. */
 function sectionFromHash(): AdminSection {
   const hash = window.location.hash.replace('#', '')
   const match = (Object.entries(SECTION_HASH) as [AdminSection, string][]).find(([, h]) => h === hash)
-  return match ? match[0] : 'inventory'
+  return match ? match[0] : 'dashboard'
 }
 
 const SECTION_LABEL: Record<AdminSection, string> = {
+  dashboard: 'Dashboard',
   inventory: 'Inventory',
   catalog: 'Catalog',
   specialists: 'Specialists',
@@ -115,7 +120,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       </div>
 
       <nav className="flex items-center gap-2 mb-8 flex-wrap" aria-label="Admin sections">
-        {(['inventory', 'catalog', 'specialists', 'retailers', 'retailerListings'] as const).map((s) => (
+        {(['dashboard', 'inventory', 'catalog', 'specialists', 'retailers', 'retailerListings'] as const).map((s) => (
           <button
             key={s}
             type="button"
@@ -128,15 +133,9 @@ export default function AdminApp({ onExit }: AdminAppProps) {
             {SECTION_LABEL[s]}
           </button>
         ))}
-        <span
-          aria-disabled="true"
-          title="Dashboard analytics coming in Phase 11"
-          className="rounded-full px-4 py-1.5 text-sm font-semibold border-2 border-court-900/10 dark:border-white/10 text-ink-700/30 dark:text-shuttle-100/30 cursor-not-allowed select-none"
-        >
-          Dashboard
-        </span>
       </nav>
 
+      {section === 'dashboard' && <DashboardPage onNavigate={goToSection} />}
       {section === 'inventory' && <InventoryAdminPage />}
       {section === 'catalog' && <CatalogAdminPage />}
       {section === 'specialists' && <SpecialistAdminPage />}
