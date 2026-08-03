@@ -28,7 +28,9 @@
     "test:calibration": "tsx scripts/testCalibration.ts",
     "test:price-per-metre": "tsx scripts/testPricePerMetre.ts",
     "test:faq": "tsx scripts/testFaq.ts",
-    "calibration-report": "tsx scripts/calibrationReport.ts"
+    "test:retail-sync-foundation": "tsx scripts/testRetailSyncFoundation.ts",
+    "calibration-report": "tsx scripts/calibrationReport.ts",
+    "report:retail-sync-foundation": "tsx scripts/reportRetailSyncFoundation.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
