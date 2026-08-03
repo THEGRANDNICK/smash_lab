@@ -1104,6 +1104,167 @@ Kept at `0.9.0-beta.0`. This phase changes internal scoring calibration and adds
 
 Further empirical tuning of `CONCENTRATION_STRENGTH`/`CROSS_BRAND_SHRINKAGE`/`CONFIDENCE_CEILING_RANGE` once real Supabase catalog data (including any brand like Ashaway) is available to validate against; a genuine cross-brand percentile-normalization scheme if enough independently-verified specialist data accumulates to support one; live currency conversion if a non-EUR retailer is ever added; and a real local Postgres+PostgREST+auth-stub environment for this sandbox so future phases can get true end-to-end Supabase verification instead of unit tests alone (same gap noted in Phase 11).
 
+## Retail Sync foundation (Phase 13A)
+
+Phase 13A builds the **pure, in-memory foundation** for a future automatic
+retailer-price-sync system — and nothing else. It is architecture only: no
+database migration, no admin UI, no scraping, no scheduled automation, no
+AI extraction. The existing "+ New listing" Retailer Listings admin form
+remains the only production way to create a retailer listing; this phase
+does not introduce a workflow more complicated than that. Full detail
+lives in `docs/retail-sync-architecture.md` — summarized here.
+
+### Why a pure foundation, and why now
+
+The biggest manual bottleneck in Smash Lab's retailer data is that every
+listing is typed in by hand. A full automatic-sync system needs several
+genuinely hard pieces — real per-retailer scraping, a way to decide "is
+this scraped product actually the string I think it is," a confidence
+score a human can trust, and a review workflow — built in the right
+order. Phase 13A builds the pieces that don't need a real scanner to be
+useful or testable: normalization, package detection, a generic matcher,
+explainable confidence scoring, and an in-memory candidate-draft shape.
+Building persistence or a review UI before a real adapter exists to
+populate them would mean shipping schema and screens for a workflow
+nobody could use yet — so both are deliberately deferred (see the roadmap
+below).
+
+### Existing architecture audit (Part 1)
+
+Confirmed what a future importer must reuse rather than duplicate:
+`retailers`/`retailer_prices` tables and their admin services
+(`retailerService.ts`, `retailerAdminService.ts`,
+`retailerListingAdminService.ts`), the natural-key duplicate rule ("same
+string + retailer + package type + package length"), the fixed
+`RetailerPackageType`/`RetailerAvailabilityStatus` unions, and Phase 12's
+price-per-metre helpers (`pricePerMetre`, `bestPricePerMetre`,
+`describeBestPricePerMetre`). No brand/product-name normalization existed
+anywhere in the codebase before this phase.
+
+### The pure pipeline (Parts 2–7)
+
+```
+RetailerAdapter.search(query) -> RawRetailSearchResult[]
+  -> .parse(raw) -> DetectedRetailProduct | null
+  -> matchAgainstCatalog(detected, catalog) -> CatalogMatchCandidate[]
+  -> computeConfidence(matches) -> ConfidenceResult
+  -> buildImportCandidateDraft(...) -> ImportCandidateDraft (in-memory only)
+```
+
+All new code lives under `src/logic/retailImport/` — category-agnostic
+domain types (`types.ts`), normalization (`normalization.ts`: unicode/case
+folding, model-code preservation so "BG 80"/"BG-80"/"BG80" all normalize
+identically, generic-retail-word removal, currency/URL normalization
+reusing the EXISTING supported-currency list and safe-URL rule), package
+detection (`packageDetection.ts`: set/reel/hybrid/other/unknown plus a
+length in metres, never invented when absent), a generic matcher
+(`matcher.ts`: structured evidence — exact model code, exact normalized
+name, brand agreement/conflict — checked first and weighted highest,
+fuzzy token-overlap only as a fallback, verified by test to score
+identically regardless of which adapter produced a title), explainable
+confidence scoring (`confidence.ts`: `exact`/`likely`/`uncertain`/
+`no_match`, with an ambiguity penalty when the top two matches are nearly
+tied), and the candidate-draft builder (`candidateDraft.ts`).
+`CatalogItemRef`/`RetailerAdapter` are deliberately category-agnostic — a
+future racket/shoe/grip/bag catalog satisfies the exact same interfaces
+with zero matcher changes; the one string-specific piece
+(`fixtures/fixtureCatalog.ts`, a thin mapping of real catalog ids) lives
+in `fixtures/`, kept separate from the core architecture on purpose.
+
+### Listing-conversion boundary (Part 10) and price-per-metre reuse (Part 11)
+
+`listingConversion.ts`'s `convertCandidateDraftToListingFormInput(...)` is
+an explicitly-marked **future integration boundary** — it builds the
+EXISTING `RetailerListingFormInput` shape from a candidate draft, but
+never calls `validateRetailerListingInput()` or `createRetailerListing()`
+itself, and there is no approval flow in this phase. It fails clearly
+(never throws) when a required field (string id, retailer id, detected
+price) is missing.`pricePerMetrePreview.ts` reuses (never duplicates)
+Phase 12's `describeBestPricePerMetre()` by building one throwaway
+synthetic listing from a candidate draft.
+
+### Adapter contract and fixture (Parts 8–9)
+
+`RetailerAdapter` (`search`/`parse`/optional `normalize`) is the contract
+a real Phase 13B adapter will implement. This phase ships exactly one —
+`fixtureAdapter` — which performs **no network access at all**; it exists
+only for the dev diagnostic script and the test suite, and is never
+imported by production code. `npm run report:retail-sync-foundation`
+prints the full pipeline (detected product, package detection, top
+catalog matches with evidence, confidence, candidate draft, price-per-metre
+preview) for four fixture products spanning the confidence range from
+"exact" down to "no match" — no network request, no database write, no
+production UI.
+
+### No database changes, no admin UI (Parts 12–13)
+
+This phase adds **zero** database migrations, **zero** new tables,
+**zero** RLS policies. `ImportCandidateDraft` is a plain in-memory object
+that does not survive a page reload and is not surfaced anywhere. No
+"Retailer Imports" navigation, dashboard metric, candidate card, or
+approve/ignore/manual-entry form was added — the existing Retailer and
+Retailer Listings admin pages are byte-for-byte unchanged.
+
+### Testing
+
+New suite: `test:retail-sync-foundation` (68 tests — normalization,
+package detection, matching, confidence, candidate draft, the fixture
+adapter + full pipeline, the listing-conversion boundary, price-per-metre
+reuse, and a regression check against existing retailer-listing
+validation and `recommendStrings`). All 16 suites pass: **754 tests, 0
+failures**. `npx tsc -b`, `oxlint`, and `npm run build` all pass clean.
+
+### Browser verification
+
+Performed with a real headless Chromium (Playwright) against the local
+dev server at 1440×1000: confirmed the homepage, finder, and compare
+routes render identically to the Phase 12 baseline, and — critically —
+that `#admin/retailer-imports` (a hash this phase deliberately never
+wires up) falls through to the public homepage exactly like any other
+unrecognized hash, the same as every hash Phase 12 didn't recognize
+either. `#admin`, `#admin/retailer-listings`, and `#admin/dashboard` all
+still show the existing "Admin area unavailable" message (no Supabase
+configured in this sandbox), unchanged from Phase 12. Confirmed via
+`grep` on the production `dist/` bundle that no `retailImport` or fixture
+code is present in it at all.
+
+**Not performed:** real Supabase / live-catalog verification, and a real
+Phase 13B adapter against an actual retailer — neither Supabase project
+credentials nor a local Docker daemon are available in this sandbox (the
+same limitation documented in Phases 11–12), and this phase deliberately
+does not build real scraping to verify in the first place.
+
+### Version
+
+Kept at `0.9.0-beta.0` — an internal, invisible foundation does not
+warrant a version bump. `package.json`/`package-lock.json` remain in
+sync.
+
+### Manual verification checklist (Phase 13A)
+
+1. Run `npm run report:retail-sync-foundation` and confirm it prints a
+   realistic confidence spread (exact/likely/no-match) with no network
+   request and no database write.
+2. Run `npm run test:retail-sync-foundation` and confirm all 68 tests
+   pass.
+3. Confirm the Retailer Listings admin form and its validation still
+   behave exactly as in Phase 12 (no changes were made to either).
+4. Confirm no new admin navigation item, route, or page appears anywhere.
+5. Confirm `supabase/migrations/` has no new file from this phase.
+6. Confirm the production build (`npm run build`) contains no
+   `retailImport`/fixture code (`grep` the `dist/` output).
+
+### Roadmap: Phase 13B/13C/13D
+
+See `docs/retail-sync-architecture.md`'s roadmap section for full detail:
+**13B** adds ONE real retailer adapter (still manually triggered, no
+persistence); **13C** adds the persistent review queue and "Retailer
+Imports" admin UI (Approve/Edit/Ignore) this phase deliberately deferred,
+finally wiring `convertCandidateDraftToListingFormInput()` into the
+EXISTING `validateRetailerListingInput()`/`createRetailerListing()`;
+**13D** adds scheduled price/availability refresh on top of 13B/13C, with
+a human review step still gating any real listing change.
+
 ## Copyright
 
 © 2026 Nicolas Vogt. All rights reserved.
