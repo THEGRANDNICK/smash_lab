@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { buildEnquiryMailto, buildEnquiryWhatsAppUrl, buildResultSummaryText } from '../logic/contactMessage'
 import { formatKg } from '../logic/units'
 import { writeSavedSetup, type SavedSetup } from '../logic/savedSetup'
+import { encodeResultShareState } from '../logic/resultShareState'
+import type { DataSource } from '../logic/dataSourcePreference'
+import type { QuizAnswers } from '../logic/types'
 
 interface StringingEnquiryProps {
   stringBrand: string
@@ -9,6 +12,9 @@ interface StringingEnquiryProps {
   tensionKg: number
   matchPercent: number
   dataSourceLabel: string
+  /** The exact quiz answers + data-source choice that produced this result — encoded into the "Share result" link so opening it recomputes the identical recommendation client-side. Never written anywhere but the URL itself. */
+  answers: QuizAnswers
+  dataSource: DataSource
 }
 
 /**
@@ -20,10 +26,11 @@ interface StringingEnquiryProps {
  * message body at the moment the player taps Send/Copy, never stored or
  * transmitted anywhere before that.
  */
-export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel }: StringingEnquiryProps) {
+export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource }: StringingEnquiryProps) {
   const [racketModel, setRacketModel] = useState('')
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const fullName = `${stringBrand} ${stringName}`
@@ -41,6 +48,19 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
       // Clipboard access can be denied by the browser/embedded context — the
       // summary is still visible in the message preview below, so this is a
       // soft failure, not a broken page.
+    }
+  }
+
+  async function handleShare() {
+    if (typeof window === 'undefined') return
+    const encoded = encodeResultShareState(answers, dataSource)
+    const url = `${window.location.origin}${window.location.pathname}#result/${encoded}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareCopied(true)
+      window.setTimeout(() => setShareCopied(false), 2000)
+    } catch {
+      // Same soft-failure reasoning as handleCopy() above.
     }
   }
 
@@ -115,6 +135,13 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
           className="focus-ring text-center rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 hover:bg-court-900/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
         >
           {copied ? '✓ Copied' : 'Copy result summary'}
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="focus-ring text-center rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 hover:bg-court-900/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+        >
+          {shareCopied ? '✓ Link copied' : '🔗 Share result'}
         </button>
       </div>
 
