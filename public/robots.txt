@@ -1,3 +1,21 @@
+#                 ___________
+#                '._==_==_=_.'
+#                .-\:      /-.
+#               | (|:.     |) |
+#                '-|:.     |-'
+#                  \::.    /
+#                   '::. .'
+#                     ) (
+#                   _.' '._
+#                  `"""""""`
+#
+#              SMASH LAB
+#     The Independent Badminton String Finder
+#         Built with ❤️ in Heidelberg.
+#     https://github.com/THEGRANDNICK/smash_lab
+#
+# ---------------------------------------------------------------------
+#
 # Smash Lab is a hash-routed single-page app: every route (#finder,
 # #compare, #impressum, #datenschutz, #admin, ...) resolves to the exact
 # same server-side document, because the URL fragment after "#" is never
