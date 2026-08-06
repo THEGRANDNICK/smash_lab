@@ -91,6 +91,10 @@ function RetailerLogo({ listing }: { listing: RetailerListing }) {
     <img
       src={safeLogoUrl}
       alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      width={24}
+      height={24}
       onError={() => setFailed(true)}
       className="w-6 h-6 rounded object-contain bg-white/50 dark:bg-white/10 shrink-0"
     />

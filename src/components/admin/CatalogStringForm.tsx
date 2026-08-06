@@ -359,6 +359,15 @@ function ImagePreview({ url }: { url: string }) {
   }
 
   return (
-    <img src={url} alt="" onError={() => setBroken(true)} className="mt-2 h-24 w-24 object-cover rounded-lg border-2 border-court-900/10 dark:border-white/10" />
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      width={96}
+      height={96}
+      onError={() => setBroken(true)}
+      className="mt-2 h-24 w-24 object-cover rounded-lg border-2 border-court-900/10 dark:border-white/10"
+    />
   )
 }
