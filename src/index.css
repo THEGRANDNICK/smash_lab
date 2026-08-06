@@ -1,8 +1,32 @@
 @import 'tailwindcss';
 
+/*
+ * Self-hosted Space Grotesk (SIL OFL-1.1 — see licenses/space-grotesk/LICENSE)
+ * via @fontsource/space-grotesk, which packages the actual Google Fonts
+ * release as static WOFF2/WOFF files with no runtime dependency on
+ * fonts.googleapis.com/fonts.gstatic.com. Vite bundles these into
+ * dist/assets/ at build time and serves them from the site's own origin.
+ * Only the 4 weights the app actually uses (font-normal/medium/semibold/bold)
+ * are imported; each file's own @font-face rules already set
+ * font-display: swap and list woff2 before woff.
+ */
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+
 @theme {
-  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
-  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  /*
+   * One self-hosted family for the whole app (previously Space Grotesk for
+   * headings + a second family, Inter, for body text) — no strong
+   * accessibility or technical-data reason to justify a second family here,
+   * so --font-display and --font-sans intentionally resolve to the same
+   * stack. The --font-display token/.font-display utility class are kept
+   * (rather than removed) so the ~35 existing call sites across the app
+   * don't need touching for this change.
+   */
+  --font-display: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --color-court-900: #0b3d2e;
   --color-court-800: #0f4d3a;

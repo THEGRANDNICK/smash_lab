@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Smash Lab is a hash-routed single-page app: #finder, #compare, #impressum,
+  #datenschutz, #admin, etc. all resolve to this exact same document — the
+  fragment after "#" is never sent to the server, so search engines cannot
+  index them as distinct URLs. Listing them here anyway would misrepresent
+  what's actually indexable, so this sitemap intentionally contains a single
+  entry for the real, crawlable document.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://thegrandnick.github.io/smash_lab/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

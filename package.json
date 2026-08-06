@@ -29,10 +29,12 @@
     "test:price-per-metre": "tsx scripts/testPricePerMetre.ts",
     "test:faq": "tsx scripts/testFaq.ts",
     "test:retail-sync-foundation": "tsx scripts/testRetailSyncFoundation.ts",
+    "test:conversion": "tsx scripts/testConversionFeatures.ts",
     "calibration-report": "tsx scripts/calibrationReport.ts",
     "report:retail-sync-foundation": "tsx scripts/reportRetailSyncFoundation.ts"
   },
   "dependencies": {
+    "@fontsource/space-grotesk": "^5.3.0",
     "@supabase/supabase-js": "^2.110.8",
     "@tailwindcss/vite": "^4.3.3",
     "framer-motion": "^12.42.2",

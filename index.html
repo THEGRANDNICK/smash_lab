@@ -6,10 +6,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Local badminton racket stringing service. Find your perfect string in under a minute with an interactive quiz, then browse the full string lineup with transparent pricing." />
     <meta name="theme-color" content="#0b3d2e" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Smash Lab Stringing — Find Your Perfect String</title>
+
+    <!--
+      These absolute URLs mirror src/data/siteConfig.ts (SITE_URL/SITE_NAME/
+      SITE_DESCRIPTION) — kept in sync by hand because this file is static
+      HTML, not processed by Vite's module graph, so it can't import that
+      constant directly. If the deployed URL ever changes, update both.
+
+      This is a hash-routed single-page app: #finder/#compare/#impressum/
+      #datenschutz are all the same served document (the fragment never
+      reaches the server), so canonical/og:url intentionally always point at
+      the site root rather than a per-view URL.
+    -->
+    <link rel="canonical" href="https://thegrandnick.github.io/smash_lab/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Smash Lab Stringing" />
+    <meta property="og:title" content="Smash Lab Stringing — Find Your Perfect String" />
+    <meta property="og:description" content="Local badminton racket stringing service. Find your perfect string in under a minute with an interactive quiz, then browse the full string lineup with transparent pricing." />
+    <meta property="og:url" content="https://thegrandnick.github.io/smash_lab/" />
+    <meta property="og:image" content="https://thegrandnick.github.io/smash_lab/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Smash Lab Stringing — find your perfect string in under a minute." />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Smash Lab Stringing — Find Your Perfect String" />
+    <meta name="twitter:description" content="Local badminton racket stringing service. Find your perfect string in under a minute with an interactive quiz, then browse the full string lineup with transparent pricing." />
+    <meta name="twitter:image" content="https://thegrandnick.github.io/smash_lab/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Smash Lab Stringing",
+        "url": "https://thegrandnick.github.io/smash_lab/",
+        "description": "Local badminton racket stringing service. Find your perfect string in under a minute with an interactive quiz, then browse the full string lineup with transparent pricing."
+      }
+    </script>
+    <!--
+      No Organization/LocalBusiness structured data yet: that schema expects
+      a real street address and/or phone number, and src/data/legalConfig.ts
+      still has addressLine1/addressLine2/phone unset (owner hasn't supplied
+      them — see docs/legal-setup.md). Add it once those are filled in
+      rather than inventing placeholder business details here.
+    -->
   </head>
   <body>
     <div id="root"></div>
