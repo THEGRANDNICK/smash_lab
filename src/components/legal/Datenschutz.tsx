@@ -51,8 +51,13 @@ export default function Datenschutz({ onHome }: DatenschutzProps) {
       </section>
 
       <section>
-        <h2>4. Analyse- und Tracking-Tools</h2>
-        <p>Diese Website verwendet keine Analyse-, Tracking- oder Werbe-Dienste (kein Google Analytics, kein Facebook-Pixel, keine vergleichbaren Tools).</p>
+        <h2>4. Cookies, Analyse, Werbung und Profiling</h2>
+        <p>
+          Diese Website setzt keine Cookies zu Analyse-, Marketing- oder Werbezwecken. Es werden keine Analyse- oder Tracking-Dienste verwendet
+          (kein Google Analytics, kein Facebook-Pixel, keine vergleichbaren Tools), keine Werbung eingeblendet und kein Profiling betrieben — deine
+          Antworten und dein Verhalten auf dieser Website werden zu keinem Zeitpunkt zu einem Nutzerprofil zusammengeführt oder an Dritte zu
+          Werbezwecken weitergegeben.
+        </p>
       </section>
 
       <section>
@@ -69,12 +74,18 @@ export default function Datenschutz({ onHome }: DatenschutzProps) {
         <p>Diese Website speichert einige Einstellungen ausschließlich lokal auf deinem Gerät, niemals auf einem Server:</p>
         <ul>
           <li>
-            <strong>sessionStorage</strong> — deine zuletzt gewählte Vergleichsansicht (Radar/Tabelle), nur für die aktuelle Browser-Sitzung.
+            <strong>sessionStorage</strong> — deine zuletzt gewählte Vergleichsansicht (Radar/Tabelle/Feel-Map), nur für die aktuelle
+            Browser-Sitzung.
           </li>
           <li>
-            <strong>localStorage</strong> — dein optional gespeichertes "Mein Setup" (empfohlene Saite, Spannung, Racket-Modell), damit du es beim
-            nächsten Besuch wiederverwenden kannst. Wird nur gespeichert, wenn du das aktiv auswählst, und kann jederzeit über die
-            Browser-Einstellungen gelöscht werden.
+            <strong>localStorage</strong> — dein optional gespeichertes "Mein Setup" (empfohlene Saite, Spannung, Match-Prozentsatz,
+            Racket-Modell, Datum), damit du es beim nächsten Besuch wiederverwenden kannst. Wird nur gespeichert, wenn du das aktiv auswählst,
+            und kann jederzeit über die Browser-Einstellungen gelöscht werden.
+          </li>
+          <li>
+            <strong>localStorage (nur Admin-Bereich)</strong> — falls du dich im Admin-Bereich (<code>#admin</code>) anmeldest, speichert Supabase
+            Authentication deine Anmeldesitzung lokal in deinem Browser, damit du nicht bei jedem Seitenaufruf erneut ein Passwort eingeben musst.
+            Das betrifft ausschließlich das Gerät des Betreibers, nicht normale Website-Besucher:innen.
           </li>
         </ul>
       </section>

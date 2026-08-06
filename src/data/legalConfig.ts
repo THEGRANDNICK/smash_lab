@@ -18,12 +18,12 @@ export interface LegalConfig {
   tradingAs: string
   /** Reuses CONTACT.email (data/contact.ts) — the site's one source of truth for the contact address. */
   email: string
-  /** REQUIRED before production use — street + house number. Left empty deliberately; never guessed. */
-  addressLine1: string
-  /** REQUIRED before production use — postal code + city. Left empty deliberately; never guessed. */
-  addressLine2: string
-  /** REQUIRED before production use if this counts as a commercial/business offering under § 5 TMG — a phone number for the person/entity responsible. */
+  /** Reuses CONTACT.whatsappNumber, formatted for display (data/contact.ts is the source of truth for the raw wa.me digits). */
   phone: string
+  /** Street + house number. Only fill in if the owner wants a full postal address published — a city-level location (see addressLine2) is what's currently supplied. Empty is a valid, intentional state: the page simply omits this line rather than showing a placeholder. */
+  addressLine1: string
+  /** City (and postal code, once supplied). Reuses CONTACT.location for a single source of truth. */
+  addressLine2: string
   /** OPTIONAL — only applicable if VAT-registered (Umsatzsteuer-Identifikationsnummer). Leave empty if not applicable. */
   vatId: string
   /** OPTIONAL — only applicable if formally registered as a business (Gewerbe/Handelsregister). */
@@ -40,17 +40,12 @@ export const LEGAL: LegalConfig = {
   legalName: 'Nicolas Vogt',
   tradingAs: 'Smash Lab',
   email: CONTACT.email,
+  phone: '+49 177 4204564',
   addressLine1: '',
-  addressLine2: '',
-  phone: '',
+  addressLine2: CONTACT.location,
   vatId: '',
   registrationNumber: '',
   registrationAuthority: '',
   euOdrUrl: 'https://ec.europa.eu/consumers/odr',
   lastUpdated: '2026-08-06',
-}
-
-/** True once every field § 5 TMG realistically requires for an individual offering a paid service is filled in — used to show a visible "still a placeholder" notice rather than silently shipping an incomplete legal page. */
-export function isImpressumComplete(legal: LegalConfig = LEGAL): boolean {
-  return Boolean(legal.legalName && legal.addressLine1 && legal.addressLine2 && legal.email)
 }

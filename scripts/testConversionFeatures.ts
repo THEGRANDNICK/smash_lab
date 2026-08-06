@@ -193,8 +193,9 @@ test('mailto URL is correctly percent-encoded and targets CONTACT.email', () => 
   assert.match(url, /^mailto:inquiries\.smashlab@gmail\.com\?subject=/)
   assert.doesNotMatch(url, /\n/, 'raw newlines must never appear unencoded in a mailto URL')
 })
-test('WhatsApp URL is null while CONTACT.whatsappNumber is unset (never links to a placeholder number)', () => {
-  assert.equal(buildEnquiryWhatsAppUrl(ENQUIRY_DETAILS), null)
+test('WhatsApp URL targets CONTACT.whatsappNumber and percent-encodes the same message body', () => {
+  const url = buildEnquiryWhatsAppUrl(ENQUIRY_DETAILS)
+  assert.equal(url, `https://wa.me/491774204564?text=${encodeURIComponent(buildResultSummaryText(ENQUIRY_DETAILS))}`)
 })
 
 console.log('\n=== Shareable result state (resultShareState.ts, Part 5) ===')

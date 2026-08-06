@@ -6,9 +6,9 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-ink-700/60 dark:text-shuttle-100/60">
         <div className="flex items-center gap-2 font-display font-semibold text-ink-900 dark:text-shuttle-50">
           <Shuttlecock className="w-5 h-5 text-shuttle-500" />
-          Smash Lab Stringing
+          Smash Lab
         </div>
-        <p>Strung locally, one racket at a time.</p>
+        <p>The independent badminton string finder.</p>
       </div>
       <div className="max-w-6xl mx-auto mt-4 pt-4 border-t border-court-900/10 dark:border-white/10 flex flex-col items-center gap-2 text-center text-xs text-ink-700/50 dark:text-shuttle-100/50">
         <p>
@@ -24,10 +24,10 @@ export default function Footer() {
         </p>
         <p className="flex items-center gap-3">
           <a href="#impressum" className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
-            Impressum
+            Impressum (DE)
           </a>
           <a href="#datenschutz" className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
-            Datenschutz
+            Privacy Policy (DE)
           </a>
         </p>
       </div>
