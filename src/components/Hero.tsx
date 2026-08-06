@@ -31,7 +31,7 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
           transition={{ duration: 0.5 }}
           className="text-shuttle-400 font-semibold tracking-widest uppercase text-sm"
         >
-          Local badminton stringing
+          The independent badminton string finder
         </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
@@ -49,7 +49,7 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-6 text-lg text-white/70 max-w-xl mx-auto"
         >
-          Take a 60-second quiz and get a matched string + tension setup, strung by hand — built around how you actually play.
+          Take a 60-second quiz to get a personalized string + tension recommendation, built around how you actually play — with professional stringing available locally in Heidelberg.
         </motion.p>
 
         <motion.div

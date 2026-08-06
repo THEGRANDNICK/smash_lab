@@ -1,8 +1,8 @@
 const STEPS = [
   { emoji: '🏸', title: 'Take the quiz', text: 'Answer a handful of quick questions about how and how often you play — about 30–60 seconds.' },
-  { emoji: '🧮', title: 'Get matched', text: 'A weighted scoring engine compares your answers against the whole string lineup and current tension.' },
-  { emoji: '🧵', title: 'Bring your racket', text: "Drop off your racket (or arrange pickup) and I'll string it to your matched setup." },
-  { emoji: '🎯', title: 'Play better', text: 'Pick it up ready to go — with notes on why this string and tension fit your game.' },
+  { emoji: '🧮', title: 'Get matched', text: 'A weighted scoring engine compares your answers against the whole string lineup, with the reasoning shown.' },
+  { emoji: '⚖️', title: 'Compare & decide', text: 'See your top matches side by side, or browse the full lineup, before settling on a setup.' },
+  { emoji: '🧵', title: 'String it (optional)', text: 'Want it professionally strung? Drop off locally in Heidelberg — or take your recommendation anywhere.' },
 ]
 
 export default function HowItWorks() {
@@ -10,7 +10,7 @@ export default function HowItWorks() {
     <section id="how-it-works" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
       <div className="text-center max-w-2xl mx-auto mb-12">
         <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">How it works</p>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">From quiz to strung racket</h2>
+        <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">From quiz to your ideal setup</h2>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {STEPS.map((step, i) => (
