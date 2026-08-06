@@ -5,7 +5,7 @@
 // GitHub Pages serves project sites at the lowercased owner login.
 export const SITE_URL = 'https://thegrandnick.github.io/smash_lab/'
 
-export const SITE_NAME = 'Smash Lab Stringing'
+export const SITE_NAME = 'Smash Lab'
 
 export const SITE_DESCRIPTION =
-  'Local badminton racket stringing service. Find your perfect string in under a minute with an interactive quiz, then browse the full string lineup with transparent pricing.'
+  'The independent badminton string finder. Compare strings, get a personalized recommendation, and find your ideal setup — with professional stringing available locally in Heidelberg.'

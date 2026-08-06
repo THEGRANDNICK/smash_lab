@@ -81,10 +81,11 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
   return (
     <section className="mt-8 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/50 dark:bg-shuttle-500/10 p-6 sm:p-7" aria-labelledby="enquiry-heading">
       <h2 id="enquiry-heading" className="font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50">
-        Want this setup in your racket?
+        Ready to try this setup?
       </h2>
       <p className="mt-1 text-sm text-ink-700/70 dark:text-shuttle-100/70">
-        Send {fullName} at {formatKg(tensionKg)} as a stringing enquiry — no account needed, nothing is sent until you tap Send.
+        Need {fullName} at {formatKg(tensionKg)} professionally strung? Contact Nick in Heidelberg via WhatsApp or email — no account needed, nothing
+        is sent until you tap Send.
       </p>
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">

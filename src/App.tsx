@@ -29,6 +29,27 @@ function getSharedResultEncoded(): string {
   return hash.startsWith('result/') ? hash.slice('result/'.length) : ''
 }
 
+const BASE_TITLE = 'Smash Lab — The Independent Badminton String Finder'
+
+/**
+ * Per-view <title>. Keyed off the raw hash rather than the `View` union,
+ * since #faq/#contact are plain in-page anchors (Nav.tsx) that never
+ * change `view` itself — they still deserve their own title, so this is
+ * checked independently of the view-routing logic above.
+ */
+function getPageTitle(hash: string): string {
+  const clean = hash.replace('#', '')
+  if (clean === 'finder') return 'Find Your String — Smash Lab'
+  if (clean === 'compare') return 'Compare Strings — Smash Lab'
+  if (clean === 'faq') return 'FAQ — Smash Lab'
+  if (clean === 'contact') return 'Contact — Smash Lab'
+  if (clean === 'impressum') return 'Impressum — Smash Lab'
+  if (clean === 'datenschutz') return 'Datenschutzerklärung — Smash Lab'
+  if (clean.startsWith('admin')) return 'Admin — Smash Lab'
+  if (clean.startsWith('result/')) return 'Your Recommendation — Smash Lab'
+  return BASE_TITLE
+}
+
 function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
   if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
@@ -70,7 +91,9 @@ function App() {
     const onHashChange = () => {
       setView(viewFromHash())
       setSharedResultEncoded(getSharedResultEncoded())
+      document.title = getPageTitle(window.location.hash)
     }
+    document.title = getPageTitle(window.location.hash)
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])

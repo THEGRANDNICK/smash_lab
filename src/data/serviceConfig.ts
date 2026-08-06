@@ -6,5 +6,5 @@
 // surfaced somewhere more visible. Edit this one string (and the FAQ
 // answer, to keep them consistent) if the real turnaround changes.
 export const SERVICE_CONFIG = {
-  turnaroundNote: 'Usually ready within 1–2 days.',
+  turnaroundNote: 'Usually ready within 24–48 hours.',
 }
