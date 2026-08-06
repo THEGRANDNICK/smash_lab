@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # npm dependencies (package.json)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      # Minor/patch bumps across the board land as one grouped PR instead of
+      # flooding the repo with a separate PR per package — a low-noise
+      # schedule was explicitly requested. Any major version bump is
+      # deliberately left OUT of this group (majors can be breaking and
+      # deserve their own reviewable PR, not silently bundled in).
+      routine-updates:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions used in .github/workflows/*.yml
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      routine-updates:
+        update-types:
+          - "minor"
+          - "patch"
