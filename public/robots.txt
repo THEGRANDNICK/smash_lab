@@ -1,0 +1,14 @@
+# Smash Lab is a hash-routed single-page app: every route (#finder,
+# #compare, #impressum, #datenschutz, #admin, ...) resolves to the exact
+# same server-side document, because the URL fragment after "#" is never
+# sent to the server. That means a path-based Disallow rule cannot target
+# the admin/debug views specifically — there is only one crawlable path.
+#
+# The admin area isn't excluded here because it doesn't need to be: it is
+# not linked from any public page, and it is protected by Supabase Auth +
+# RLS, not by robots.txt (see src/App.tsx's viewFromHash()).
+
+User-agent: *
+Allow: /
+
+Sitemap: https://thegrandnick.github.io/smash_lab/sitemap.xml

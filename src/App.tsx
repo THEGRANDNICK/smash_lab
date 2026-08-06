@@ -5,21 +5,25 @@ import Hero from './components/Hero'
 import HowItWorks from './components/HowItWorks'
 import StringComparison from './components/StringComparison'
 import WhyUs from './components/WhyUs'
+import RestringAndCraft from './components/RestringAndCraft'
 import FAQ from './components/FAQ'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 import StringFinder from './components/StringFinder'
+import SavedSetupBanner from './components/SavedSetupBanner'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 import AdminApp from './components/admin/AdminApp'
+import Impressum from './components/legal/Impressum'
+import Datenschutz from './components/legal/Datenschutz'
 import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 import { useRetailerPrices } from './hooks/useRetailerPrices'
 
-type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin'
+type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz'
 
 function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
-  if (hash === 'finder' || hash === 'compare') return hash
+  if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
   // Not linked from the public nav — a direct URL is the entry point.
   // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
   // this route being hard to find.
@@ -66,6 +70,16 @@ function App() {
     return <AdminApp onExit={() => goTo('home')} />
   }
 
+  // Legal pages are deliberately isolated from the main app shell — a
+  // simple, always-reachable page even if something else on the site
+  // errors, matching how the admin route is isolated above.
+  if (view === 'impressum') {
+    return <Impressum onHome={() => goTo('home')} />
+  }
+  if (view === 'datenschutz') {
+    return <Datenschutz onHome={() => goTo('home')} />
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <OfflineBanner />
@@ -74,10 +88,12 @@ function App() {
       <main className="flex-1">
         {view === 'home' && (
           <>
+            <SavedSetupBanner />
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
             <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
             <WhyUs />
+            <RestringAndCraft />
             <FAQ />
             <Contact />
           </>
