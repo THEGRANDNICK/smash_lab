@@ -1,4 +1,4 @@
-import { LEGAL, isImpressumComplete } from '../../data/legalConfig'
+import { LEGAL } from '../../data/legalConfig'
 import LegalPageShell from './LegalPageShell'
 
 interface ImpressumProps {
@@ -7,33 +7,24 @@ interface ImpressumProps {
 
 /**
  * § 5 TMG-style "Impressum" (provider identification). Every field is
- * read from data/legalConfig.ts — nothing here is invented. Fields the
- * owner hasn't filled in yet render a visible "not yet provided" note
- * instead of a fabricated value or a blank line, and the page shows one
- * overall notice at the top while any required field is still empty —
- * see docs/legal-setup.md for the pre-launch checklist.
+ * read from data/legalConfig.ts — nothing here is invented. A field left
+ * empty in that config (e.g. a full street address hasn't been supplied)
+ * simply doesn't render its line — no "[placeholder]" text and no
+ * incomplete-page banner on the rendered page. See docs/legal-setup.md
+ * for what's currently configured and what a future full-address update
+ * would add.
  */
 export default function Impressum({ onHome }: ImpressumProps) {
-  const complete = isImpressumComplete()
-
   return (
     <LegalPageShell title="Impressum" lastUpdated={LEGAL.lastUpdated} onHome={onHome}>
-      {!complete && (
-        <div className="rounded-2xl border-2 border-shuttle-500/50 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-4 text-sm text-ink-900 dark:text-shuttle-50">
-          <strong>This page is not yet complete.</strong> One or more legally-required fields (see <code>src/data/legalConfig.ts</code>) still need
-          to be filled in by the site owner before this page can be relied on for compliance. See <code>docs/legal-setup.md</code> for the full
-          checklist.
-        </div>
-      )}
-
       <section>
         <h2>Angaben gemäß § 5 TMG</h2>
         <p>
           {LEGAL.legalName}
           {LEGAL.tradingAs && LEGAL.tradingAs !== LEGAL.legalName ? ` (${LEGAL.tradingAs})` : ''}
         </p>
-        <p>{LEGAL.addressLine1 || <Placeholder text="Street and house number — not yet provided" />}</p>
-        <p>{LEGAL.addressLine2 || <Placeholder text="Postal code and city — not yet provided" />}</p>
+        {LEGAL.addressLine1 && <p>{LEGAL.addressLine1}</p>}
+        {LEGAL.addressLine2 && <p>{LEGAL.addressLine2}</p>}
       </section>
 
       <section>
@@ -44,7 +35,7 @@ export default function Impressum({ onHome }: ImpressumProps) {
             {LEGAL.email}
           </a>
         </p>
-        <p>Telefon: {LEGAL.phone || <Placeholder text="Not yet provided" />}</p>
+        {LEGAL.phone && <p>Telefon / WhatsApp: {LEGAL.phone}</p>}
       </section>
 
       {(LEGAL.vatId || LEGAL.registrationNumber) && (
@@ -87,8 +78,4 @@ export default function Impressum({ onHome }: ImpressumProps) {
       </section>
     </LegalPageShell>
   )
-}
-
-function Placeholder({ text }: { text: string }) {
-  return <span className="italic text-shuttle-600 dark:text-shuttle-400">[{text}]</span>
 }

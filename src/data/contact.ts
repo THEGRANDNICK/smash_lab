@@ -1,17 +1,15 @@
-// Contact details are placeholders — edit freely, this is the only place
-// they live. Reused by the Contact section and by the "Request this" /
-// "Choose This Setup" prefilled-email links.
+// Contact details — this is the only place they live. Reused by the
+// Contact section and by the enquiry/"Choose This Setup" prefilled
+// WhatsApp/email links.
 export const CONTACT = {
   name: 'Nick',
   email: 'inquiries.smashlab@gmail.com',
-  location: 'TSG Rohrbach Badminton Club',
+  location: 'Heidelberg, Germany',
   /**
    * WhatsApp number in international format with no leading "+", spaces,
-   * or dashes (e.g. "491701234567") — the exact format wa.me links
-   * require. Left blank on purpose: no real number exists yet, and
-   * nothing here invents one. While empty, the "Send via WhatsApp"
-   * enquiry option is hidden and only the email option is offered — see
-   * logic/contactMessage.ts's buildEnquiryWhatsAppUrl().
+   * or dashes — the exact format wa.me links require. Used both for the
+   * Contact section's WhatsApp button and the result page's enquiry flow
+   * (see logic/contactMessage.ts's buildEnquiryWhatsAppUrl()).
    */
-  whatsappNumber: '',
+  whatsappNumber: '491774204564',
 }
