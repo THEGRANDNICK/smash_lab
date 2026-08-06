@@ -38,7 +38,7 @@ export default function RecommendationPodium({ topThree, specialistProfiles, ret
   const best = topThree[0]
 
   return (
-    <ol className="mt-6 grid gap-4 sm:grid-cols-2" aria-label="Top 3 recommended strings">
+    <ol className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2" aria-label="Top 3 recommended strings">
       <PodiumCard
         rank={1}
         scored={topThree[0]}
@@ -165,7 +165,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
           )}
 
           {(structured.strengths.length > 0 || structured.tradeoffs.length > 0) && (
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {structured.strengths.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">✅ Strengths</p>

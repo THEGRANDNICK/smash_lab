@@ -87,7 +87,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
         Send {fullName} at {formatKg(tensionKg)} as a stringing enquiry — no account needed, nothing is sent until you tap Send.
       </p>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Racket model (optional)</span>
           <input
