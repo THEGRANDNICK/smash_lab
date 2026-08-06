@@ -5,15 +5,15 @@
 // specific Storage implementation, so they're trivially testable without a
 // real browser.
 
-export type ComparisonView = 'radar' | 'table'
+export type ComparisonView = 'radar' | 'table' | 'map'
 
 export const COMPARISON_VIEW_STORAGE_KEY = 'smashlab:comparisonView'
 
-/** The product default as of this polish pass — Radar is preferred over the table. */
+/** The product default as of this polish pass — Radar is preferred over the table (and, later, the String Map). */
 export const DEFAULT_COMPARISON_VIEW: ComparisonView = 'radar'
 
 export function isComparisonView(value: unknown): value is ComparisonView {
-  return value === 'radar' || value === 'table'
+  return value === 'radar' || value === 'table' || value === 'map'
 }
 
 type ReadableStorage = Pick<Storage, 'getItem'>

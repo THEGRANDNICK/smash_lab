@@ -290,3 +290,32 @@ export function buildAlternativeReasons(
   const deduped = reasons.filter((r) => (seen.has(r) ? false : (seen.add(r), true)))
   return deduped.slice(0, 3)
 }
+
+// ---------------------------------------------------------------------------
+// Podium (Phase 14 refinement) — a single one-sentence reason per podium
+// entry, never a paragraph. Rank 1 gets a "why this one" sentence built
+// from the same topDimensions the engine already picked; ranks 2/3 reuse
+// buildAlternativeReasons() against rank 1 and simply take its strongest
+// single reason. No new scoring or comparison logic — this only decides
+// which one existing sentence to surface by default.
+// ---------------------------------------------------------------------------
+
+/** One concise sentence for the top podium result, built from its own top manufacturer dimensions (the same ones the headline/badges already use). */
+export function buildPodiumBestReason(scored: ScoredString): string {
+  const [first, second] = scored.topDimensions
+  if (!first) return 'Best overall fit for your answers.'
+  const firstLabel = DIMENSION_DISPLAY[first].label.toLowerCase()
+  const secondLabel = second ? DIMENSION_DISPLAY[second].label.toLowerCase() : undefined
+  return secondLabel ? `Best fit for your preference for ${firstLabel} and ${secondLabel}.` : `Best fit for your preference for ${firstLabel}.`
+}
+
+/** One concise sentence for a 2nd/3rd-place podium entry — the single strongest reason it differs from the top result, reusing buildAlternativeReasons() rather than a new comparison. */
+export function buildPodiumAlternativeReason(
+  scored: ScoredString,
+  best: ScoredString,
+  scoredProfile: StringSpecialistProfile | undefined,
+  bestProfile: StringSpecialistProfile | undefined,
+): string {
+  const [reason] = buildAlternativeReasons(scored, best, scoredProfile, bestProfile)
+  return reason ?? `A strong alternative at ${scored.matchPercent}% match.`
+}

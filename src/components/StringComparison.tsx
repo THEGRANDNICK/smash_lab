@@ -5,10 +5,13 @@ import type { RetailerListing } from '../services/retailerPriceService'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import { readStoredComparisonView, writeStoredComparisonView, type ComparisonView } from '../logic/comparisonViewPreference'
+import { consumePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import StringCard, { type PerformanceView } from './StringCard'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
 import ComparisonOverlayBars from './ComparisonOverlayBars'
+import StringMap from './StringMap'
+import DisclaimerBox from './DisclaimerBox'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -30,7 +33,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   const [availableOnly, setAvailableOnly] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('recommended')
   const [view, setView] = useState<PerformanceView>('bars')
-  const [compareIds, setCompareIds] = useState<string[]>([])
+  const [compareIds, setCompareIds] = useState<string[]>(() => consumePendingComparisonSelection(typeof window === 'undefined' ? null : window.sessionStorage))
   const [compareView, setCompareView] = useState<ComparisonView>(() => readStoredComparisonView(typeof window === 'undefined' ? null : window.sessionStorage))
   const [radarShowMore, setRadarShowMore] = useState(false)
 
@@ -146,9 +149,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             ))}
           </div>
         </div>
-        <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 text-center max-w-md">
-          Performance ratings are based on manufacturer data. Playing-feel descriptions below add practical, real-world nuance.
-        </p>
+        <DisclaimerBox className="max-w-md" />
       </div>
 
       {compareItems.length > 0 && (
@@ -192,7 +193,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             <div>
               <div className="flex items-center justify-center mb-5">
                 <div className="flex rounded-full border-2 border-court-900/10 dark:border-white/15 overflow-hidden" role="group" aria-label="Comparison view">
-                  {(['radar', 'table'] as ComparisonView[]).map((v) => (
+                  {(['radar', 'map', 'table'] as ComparisonView[]).map((v) => (
                     <button
                       key={v}
                       type="button"
@@ -204,13 +205,13 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                           : 'bg-white/80 dark:bg-white/5 text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
                       }`}
                     >
-                      {v === 'radar' ? 'Radar' : 'Table'}
+                      {v === 'radar' ? 'Radar' : v === 'map' ? 'Feel map' : 'Table'}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {compareView === 'radar' ? (
+              {compareView === 'radar' && (
                 <div className="space-y-6">
                   <div className="flex justify-center -mx-4 sm:-mx-5">
                     <RadarChart
@@ -243,9 +244,15 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                     )}
                   </div>
                 </div>
-              ) : (
-                <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
               )}
+
+              {compareView === 'map' && (
+                <div className="max-w-md mx-auto">
+                  <StringMap items={compareItems} specialistProfiles={specialistProfiles} selectedIds={compareIds} selectionFull={compareIds.length >= MAX_COMPARE} onToggleSelect={toggleCompare} />
+                </div>
+              )}
+
+              {compareView === 'table' && <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />}
             </div>
           )}
         </div>

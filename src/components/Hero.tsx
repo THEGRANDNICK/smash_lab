@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import Shuttlecock from './Shuttlecock'
+import { SERVICE_CONFIG } from '../data/serviceConfig'
 
 interface HeroProps {
   onOpenFinder: () => void
@@ -72,6 +73,15 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
             Browse Strings
           </button>
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-6 text-sm font-semibold text-shuttle-400/90 uppercase tracking-wide"
+        >
+          ⏱️ {SERVICE_CONFIG.turnaroundNote}
+        </motion.p>
       </div>
     </section>
   )
