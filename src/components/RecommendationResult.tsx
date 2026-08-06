@@ -1,26 +1,28 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { recommendStrings, type ScoredString } from '../logic/recommendationEngine'
+import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
-import { buildRequestMailto } from '../logic/contactMessage'
-import { getSpecialistProfile, type StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { formatGauge } from '../logic/formatGauge'
-import { buildStructuredExplanation, buildAlternativeReasons } from '../logic/recommendationExplanation'
+import { buildPodiumBestReason } from '../logic/recommendationExplanation'
+import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
+import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
+import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { RetailerListing } from '../services/retailerPriceService'
-import StatBars from './StatBars'
 import StockBadge from './StockBadge'
 import Shuttlecock from './Shuttlecock'
-import SpecialistPanel from './SpecialistPanel'
-import PurchaseOptions from './PurchaseOptions'
-import { PricePerMetreSummary } from './StringCard'
+import DisclaimerBox from './DisclaimerBox'
+import StringMap from './StringMap'
+import RecommendationPodium, { PODIUM_COMPARE_LIMIT } from './RecommendationPodium'
+import StringingEnquiry from './StringingEnquiry'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
   onRetake: () => void
   onCompare: () => void
+  dataSource: DataSource
   /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
   pool?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup (recommendStrings' own default) when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). Never affects the scoring math itself, only where the specialist-layer data comes from. */
@@ -29,7 +31,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -39,11 +41,38 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
   const rec = useMemo(() => recommendStrings(answers, pool, specialistProfiles), [answers, pool, specialistProfiles])
   const tension = useMemo(() => recommendTension(answers, rec.best.string), [answers, rec.best.string])
 
-  const bestSpecialist = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
   const bestGauge = formatGauge(rec.best.string)
-  const bestListings = retailerListingsByStringId?.[rec.best.string.id]
+  const bestReason = useMemo(() => buildPodiumBestReason(rec.best), [rec.best])
 
-  const bestExplanation = useMemo(() => buildStructuredExplanation(rec.best, rec.explanations.best, bestSpecialist), [rec.best, rec.explanations.best, bestSpecialist])
+  const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
+
+  function toggleCompare(id: string) {
+    setSelectedForCompare((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else if (next.size < PODIUM_COMPARE_LIMIT) next.add(id)
+      return next
+    })
+  }
+
+  function handleCompareClick() {
+    if (selectedForCompare.size > 0) {
+      writePendingComparisonSelection(typeof window === 'undefined' ? null : window.sessionStorage, [...selectedForCompare])
+    }
+    onCompare()
+  }
+
+  // Availability is presentation only — never a filter on the podium
+  // itself. Only surfaced as a small secondary note when the best
+  // available string isn't already one of the top 3 shown (each podium
+  // card already carries its own stock badge otherwise).
+  const bestAvailableOutsidePodium = rec.bestAvailable && !rec.topThree.some((s) => s.string.id === rec.bestAvailable?.string.id) ? rec.bestAvailable : undefined
+
+  // Context for the "where it sits" map: the full candidate pool (so the
+  // top 3 are shown against real neighbors, never an isolated point), with
+  // the podium's own ranks 1-3 highlighted distinctly from everything else.
+  const mapPool = pool ?? rec.topThree.map((s) => s.string)
+  const topThreeIds = useMemo(() => rec.topThree.map((s) => s.string.id), [rec.topThree])
 
   if (rec.best.string == null) {
     // Defensive only — recommendStrings() always returns a `best` when given
@@ -71,7 +100,6 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
         {/* Hero result card, styled like a match result / player card */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-court-900 via-court-800 to-court-700 text-white px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 shadow-2xl">
           <div className="absolute inset-0 court-lines opacity-30" aria-hidden="true" />
-          {/* Very subtle string-bed weave — decorative only, no image asset, static (nothing to reduce for prefers-reduced-motion). */}
           <div className="absolute inset-0 string-grid opacity-[0.07]" aria-hidden="true" />
           <motion.div
             className="absolute top-6 right-6 text-shuttle-400/40"
@@ -85,23 +113,12 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           <div className="relative max-w-2xl">
             <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
 
-            <div className="mt-5 flex items-center gap-4">
-              <div className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold text-shuttle-400 leading-none" aria-label={`${rec.best.matchPercent} percent match`}>
-                {rec.best.matchPercent}%
-              </div>
-              <div className="text-lg font-semibold text-white/80">match</div>
-            </div>
-
             <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
             <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
               {rec.best.string.name}
               {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
             </h1>
-            {bestExplanation.playerLevelFit && (
-              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
-                ⭐ {bestExplanation.playerLevelFit}
-              </p>
-            )}
+            <p className="mt-3 text-white/80 max-w-lg">{bestReason}</p>
             {rec.bestAvailable && (
               <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
             )}
@@ -125,7 +142,7 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
                   ⚠️ Capped to stay within your racket's maximum recommended tension ({tension.racketMaxKg} kg).
                 </p>
               )}
-              <p className="mt-3 text-xs text-white/50">Always stay within the tension range specified by your racket manufacturer.</p>
+              <p className="mt-3 text-xs text-white/50">Always stay within the tension range specified by your racket manufacturer — never exceed its maximum, whichever string you choose.</p>
             </div>
           </div>
         </div>
@@ -143,109 +160,57 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           </div>
         )}
 
-        {/* Best Match detail — the "premium product page" panel: headline,
-            manufacturer stats, specialist take, strengths, trade-offs,
-            purchase options, all in one place. */}
-        <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6 sm:p-7" aria-labelledby="best-match-heading">
-          <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400">Why this is your best match</p>
-              <h2 id="best-match-heading" className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">
-                {bestExplanation.headline}
-                {bestExplanation.headlineSecondary && <span className="text-ink-700/50 dark:text-shuttle-100/50 font-normal"> · {bestExplanation.headlineSecondary}</span>}
-              </h2>
-            </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <StockBadge stock={rec.best.string.stock} />
-            </div>
-          </div>
-
-          {bestExplanation.badges.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {bestExplanation.badges.map((badge) => (
-                <span
-                  key={badge.key}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-700 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
-                >
-                  {badge.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="max-w-2xl">
-            <p className="mt-4 text-ink-700/80 dark:text-shuttle-100/80">{bestExplanation.paragraph}</p>
-            <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">{tension.explanation}</p>
-          </div>
-
-          <div className="mt-6 grid gap-6 sm:grid-cols-2">
-            <ExplanationList title="Strengths" icon="✅" items={bestExplanation.strengths} />
-            <ExplanationList title="Trade-offs" icon="⚖️" items={bestExplanation.tradeoffs} />
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-2 lg:items-start">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-3">Manufacturer Ratings</h3>
-              <StatBars item={rec.best.string} />
-            </div>
-
-            <div className="space-y-5">
-              {bestSpecialist && <SpecialistPanel profile={bestSpecialist} />}
-
-              {bestListings && bestListings.length > 0 ? (
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Where to Buy</h3>
-                  <div className="mb-2">
-                    <PricePerMetreSummary listings={bestListings} />
-                  </div>
-                  <PurchaseOptions listings={bestListings} />
-                </div>
-              ) : (
-                <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No retailer listings available for this string yet.</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Cross-brand alternative — subtle cool (blue/cyan) accent */}
-        {rec.crossBrandAlternative && (
-          <AlternativeCard
-            title="🌐 Cross-Brand Alternative"
-            scored={rec.crossBrandAlternative}
-            explanation={rec.explanations.crossBrandAlternative}
-            baseline={rec.best}
+        {/* Podium — top-3 ranked results, replacing the old text-heavy Cross-Brand Alternative / Specialist Choice cards. */}
+        <div className="mt-8">
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
+          <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">Your top 3 matches</h2>
+          <RecommendationPodium
+            topThree={rec.topThree}
             specialistProfiles={specialistProfiles}
-            variant="cross-brand"
+            retailerListingsByStringId={retailerListingsByStringId}
+            selectedForCompare={selectedForCompare}
+            compareFull={selectedForCompare.size >= PODIUM_COMPARE_LIMIT}
+            onToggleCompare={toggleCompare}
           />
+        </div>
+
+        {bestAvailableOutsidePodium && (
+          <p className="mt-4 text-center text-sm text-ink-700/70 dark:text-shuttle-100/70">
+            Best available right now: <span className="font-semibold text-ink-900 dark:text-shuttle-50">{bestAvailableOutsidePodium.string.name}</span> ({bestAvailableOutsidePodium.matchPercent}
+            % match) — {rec.explanations.bestAvailable}
+          </p>
         )}
 
-        {/* Specialist choice — subtle gold accent */}
-        {rec.specialistChoice && (
-          <AlternativeCard
-            title="⭐ Specialist Choice"
-            scored={rec.specialistChoice}
-            explanation={rec.explanations.specialistChoice}
-            baseline={rec.best}
-            specialistProfiles={specialistProfiles}
-            variant="specialist"
-            compact
-          />
+        <DisclaimerBox className="mt-6" />
+
+        {/* String map — a sibling visualization to the podium, not a replacement; shows where the top 3 sit relative to the rest of the pool. */}
+        {mapPool.length > 1 && (
+          <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6 sm:p-7">
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400 mb-1">Where they sit</p>
+            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70 text-center mb-4 max-w-md mx-auto">Your top 3 matches, placed on the feel map against the rest of the lineup.</p>
+            <div className="max-w-md mx-auto">
+              <StringMap items={mapPool} specialistProfiles={specialistProfiles} useSpecialistData={dataSource === 'manufacturer-specialist'} rankedIds={topThreeIds} />
+            </div>
+          </section>
         )}
 
-        {/* Actions */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <a
-            href={buildRequestMailto(rec.best.string.name, tension.recommendedKg)}
-            className="focus-ring text-center rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
-          >
-            Choose This Setup
-          </a>
+        {/* Conversion — the primary action, framed as the natural next step after seeing a recommendation. */}
+        <StringingEnquiry
+          stringBrand={rec.best.string.brand}
+          stringName={rec.best.string.name}
+          tensionKg={tension.recommendedKg}
+          matchPercent={rec.best.matchPercent}
+          dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
+        />
+
+        {/* Secondary actions */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <button
             type="button"
-            onClick={onCompare}
+            onClick={handleCompareClick}
             className="focus-ring text-center rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 hover:bg-court-900/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
           >
-            Compare Strings
+            {selectedForCompare.size > 0 ? `Compare ${selectedForCompare.size} selected` : 'Compare Strings'}
           </button>
           <button
             type="button"
@@ -256,85 +221,6 @@ export default function RecommendationResult({ answers, onRetake, onCompare, poo
           </button>
         </div>
       </motion.div>
-    </div>
-  )
-}
-
-function ExplanationList({ title, icon, items }: { title: string; icon: string; items: string[] }) {
-  if (items.length === 0) return null
-  return (
-    <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">
-        {icon} {title}
-      </h3>
-      <ul className="space-y-1.5 text-sm text-ink-700/80 dark:text-shuttle-100/80">
-        {items.map((item) => (
-          <li key={item} className="flex gap-2">
-            <span aria-hidden="true">•</span>
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-type AlternativeVariant = 'cross-brand' | 'specialist'
-
-/** Subtle accent per alternative type — a left border stripe + matching title color, not a fully-colored card, so both stay clearly subordinate to the Best Match panel and part of the same design system. */
-const VARIANT_ACCENT: Record<AlternativeVariant, { border: string; title: string }> = {
-  'cross-brand': { border: 'border-l-4 border-l-sky-500/60 dark:border-l-sky-400/50', title: 'text-sky-700 dark:text-sky-400' },
-  specialist: { border: 'border-l-4 border-l-shuttle-500/70 dark:border-l-shuttle-400/60', title: 'text-shuttle-700 dark:text-shuttle-400' },
-}
-
-function AlternativeCard({
-  title,
-  scored,
-  explanation,
-  baseline,
-  specialistProfiles,
-  variant,
-  compact,
-}: {
-  title: string
-  scored: ScoredString
-  explanation?: string
-  baseline: ScoredString
-  specialistProfiles?: Record<string, StringSpecialistProfile>
-  variant: AlternativeVariant
-  compact?: boolean
-}) {
-  const profile = specialistProfiles ? specialistProfiles[scored.string.id] : getSpecialistProfile(scored.string.id)
-  const baselineProfile = specialistProfiles ? specialistProfiles[baseline.string.id] : getSpecialistProfile(baseline.string.id)
-  const reasons = useMemo(() => buildAlternativeReasons(scored, baseline, profile, baselineProfile), [scored, baseline, profile, baselineProfile])
-  const accent = VARIANT_ACCENT[variant]
-
-  return (
-    <div
-      className={`mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 ${accent.border} p-6 ${compact ? 'bg-white/40 dark:bg-white/5' : 'bg-white/60 dark:bg-white/5'}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className={`text-sm font-semibold ${accent.title}`}>{title}</p>
-          <div className="flex flex-wrap items-baseline gap-2 mt-1.5">
-            <h4 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">
-              {scored.string.brand} {scored.string.name}
-            </h4>
-            <span className="text-shuttle-600 font-bold">{scored.matchPercent}% Match</span>
-          </div>
-        </div>
-      </div>
-      {explanation && <p className="mt-2 text-ink-700/80 dark:text-shuttle-100/80 text-sm max-w-2xl">{explanation}</p>}
-      {reasons.length > 0 && (
-        <ul className="mt-3 space-y-1 text-sm text-ink-700/70 dark:text-shuttle-100/70">
-          {reasons.map((reason) => (
-            <li key={reason} className="flex gap-2">
-              <span aria-hidden="true">↳</span>
-              <span>{reason}</span>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }

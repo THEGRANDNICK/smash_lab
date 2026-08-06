@@ -50,6 +50,14 @@ export interface StringRecommendation {
   crossBrandAlternative?: ScoredString
   /** An optional, genuinely differentiated third option — never forced if nothing fits. Chosen on fit alone, ignoring stock. */
   specialistChoice?: ScoredString
+  /**
+   * Phase 14 podium refinement — the top 3 candidates by matchPercent
+   * alone, in the exact order already computed for `best`/ranking (never a
+   * second sort, never a different tie-break). `topThree[0]` is always the
+   * same object as `best`. Purely additive: exposes data the engine
+   * already computed internally, changes no scoring or ranking.
+   */
+  topThree: ScoredString[]
   profile: DimensionWeights
   /** The player-intent archetype (config/archetypes.ts) that best matches their own computed weight vector — display/explanation label only, never a second scoring path. */
   dominantArchetype: ArchetypeId
@@ -544,6 +552,7 @@ export function recommendStrings(
     bestAvailable,
     crossBrandAlternative,
     specialistChoice,
+    topThree: byPerformance.slice(0, 3),
     profile,
     dominantArchetype,
     explanations: {
