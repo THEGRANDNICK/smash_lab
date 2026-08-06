@@ -86,7 +86,16 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           {row.logoUrl && !logoFailed && (
-            <img src={row.logoUrl} alt="" onError={() => setLogoFailed(true)} className="w-10 h-10 rounded-lg object-contain bg-white/50 dark:bg-white/10 shrink-0" />
+            <img
+              src={row.logoUrl}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              width={40}
+              height={40}
+              onError={() => setLogoFailed(true)}
+              className="w-10 h-10 rounded-lg object-contain bg-white/50 dark:bg-white/10 shrink-0"
+            />
           )}
           <div>
             <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 flex items-center gap-2">

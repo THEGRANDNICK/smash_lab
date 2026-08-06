@@ -9,6 +9,62 @@
     <title>Smash Lab Stringing — Find Your Perfect String</title>
 
     <!--
+      Content-Security-Policy — delivered via <meta> because GitHub Pages
+      (static hosting, no custom response headers) is the only place this
+      can be set. Known limitations of a meta-delivered CSP, documented
+      here rather than silently assumed:
+        - frame-ancestors, report-uri/report-to, and sandbox are ALL
+          ignored by browsers when set via <meta> (CSP spec requires an
+          HTTP response header for these) — ​this policy cannot prevent
+          the site being framed by another origin. There is no
+          server-side workaround on GitHub Pages; noting the limitation
+          here is the honest alternative to silently omitting it or
+          claiming a protection this deployment can't actually provide.
+        - <meta> CSP only applies to content parsed after the tag, so it
+          must stay the first meaningful thing in <head> (it is).
+
+      Directive choices:
+        - script-src: 'self' plus one 'sha256-...' hash for the exact
+          inline JSON-LD block below — NOT 'unsafe-inline'. If that
+          script's content ever changes (e.g. adding LocalBusiness data
+          once docs/legal-setup.md's address fields are filled in), this
+          hash must be recomputed or the structured data will silently
+          stop loading (blocked by CSP, not a JS error). No other inline
+          or third-party script exists anywhere in this app.
+        - style-src: 'self' 'unsafe-inline' — genuinely required, not a
+          default reached for lazily. Framer Motion (used throughout the
+          UI for animation) and the bar-chart/radar-chart/String Map
+          components (StatBars.tsx, ComparisonOverlayBars.tsx,
+          ComparisonTable.tsx, StringMap.tsx) set inline `style` with
+          values computed at render time (animation transforms, bar
+          widths, chart coordinates) — these can never be pre-computed
+          into a static hash, and CSS-injection-only risk (no script
+          execution) is materially lower than script-src's.
+        - img-src: 'self' plus https: — retailer logos come from
+          retailer-configured URLs (src/services/catalogService.ts's
+          SAFE_URL_PATTERN already restricts these to http(s) at the data
+          layer), and retailers are added/edited by the site owner
+          through the admin panel, so their exact domains aren't known
+          ahead of time and can't be enumerated in a static policy.
+        - font-src: 'self' only — every font is self-hosted (see Part 1);
+          no fonts.googleapis.com/fonts.gstatic.com or any other external
+          font origin is ever requested.
+        - connect-src: 'self' plus https://*.supabase.co for the
+          Supabase REST/Auth API the public catalog and admin area call
+          (src/lib/supabase.ts). No realtime/WebSocket subscriptions
+          exist in this app, so no wss: origin is needed.
+        - object-src 'none', base-uri 'self', form-action 'self',
+          frame-src 'none': no <object>/<embed>/<iframe> exists anywhere
+          in this app, every <base> is implicit, and every <form> submits
+          via a JS onSubmit handler to the same origin (Supabase calls),
+          never a cross-origin action.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'sha256-4AVKGgu64xs9R5ibENixDABB7PLtxijHwG+/FQqmoDk='; style-src 'self' 'unsafe-inline'; img-src 'self' https:; font-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"
+    />
+
+    <!--
       These absolute URLs mirror src/data/siteConfig.ts (SITE_URL/SITE_NAME/
       SITE_DESCRIPTION) — kept in sync by hand because this file is static
       HTML, not processed by Vite's module graph, so it can't import that
