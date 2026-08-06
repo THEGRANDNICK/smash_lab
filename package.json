@@ -9,6 +9,10 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "test": "tsx scripts/runAllTests.ts",
+    "test:all": "tsx scripts/runAllTests.ts",
+    "test:unit": "vitest run",
+    "verify": "npm test && npm run lint && npm run build",
     "verify:supabase": "tsx scripts/verifySupabase.ts",
     "verify:catalog": "tsx scripts/verifyCatalog.ts",
     "migrate:inventory": "tsx scripts/migrateInventory.ts",
@@ -27,7 +31,6 @@
     "test:admin-dashboard": "tsx scripts/testAdminDashboard.ts",
     "test:calibration": "tsx scripts/testCalibration.ts",
     "test:price-per-metre": "tsx scripts/testPricePerMetre.ts",
-    "test:faq": "tsx scripts/testFaq.ts",
     "test:retail-sync-foundation": "tsx scripts/testRetailSyncFoundation.ts",
     "test:conversion": "tsx scripts/testConversionFeatures.ts",
     "calibration-report": "tsx scripts/calibrationReport.ts",
@@ -50,6 +53,7 @@
     "oxlint": "^1.71.0",
     "tsx": "^4.23.1",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   }
 }
