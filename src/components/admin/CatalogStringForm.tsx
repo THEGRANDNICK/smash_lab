@@ -95,19 +95,23 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
 
       <fieldset className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4">
         <legend className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 px-1">Ratings (0–11)</legend>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
-          <NumberField label="Repulsion" value={input.repulsion} onChange={(v) => set('repulsion', v)} error={errors.repulsion} disabled={saving} />
-          <NumberField label="Durability" value={input.durability} onChange={(v) => set('durability', v)} error={errors.durability} disabled={saving} />
-          <NumberField label="Control" value={input.control} onChange={(v) => set('control', v)} error={errors.control} disabled={saving} />
-          <NumberField label="Hitting sound" value={input.hittingSound} onChange={(v) => set('hittingSound', v)} error={errors.hittingSound} disabled={saving} />
-          <NumberField
-            label="Shock absorption"
+        <div className="space-y-4 mt-2">
+          <RatingSlider label="Repulsion" value={input.repulsion} onChange={(v) => set('repulsion', v)} error={errors.repulsion} disabled={saving} />
+          <RatingSlider label="Control" value={input.control} onChange={(v) => set('control', v)} error={errors.control} disabled={saving} />
+          <RatingSlider label="Durability" value={input.durability} onChange={(v) => set('durability', v)} error={errors.durability} disabled={saving} />
+          <RatingSlider
+            label="Feel (Hard ↔ Soft)"
             value={input.shockAbsorption}
             onChange={(v) => set('shockAbsorption', v)}
             error={errors.shockAbsorption}
             disabled={saving}
-            placeholder="unknown"
+            nullable
+            lowLabel="Hard"
+            highLabel="Soft"
           />
+          <RatingSlider label="Hitting sound" value={input.hittingSound} onChange={(v) => set('hittingSound', v)} error={errors.hittingSound} disabled={saving} />
+        </div>
+        <div className="mt-4">
           <NumberField label="Gauge (mm)" value={input.gauge} onChange={(v) => set('gauge', v)} error={errors.gauge} disabled={saving} placeholder="optional" step="0.01" />
         </div>
       </fieldset>
@@ -344,6 +348,68 @@ function NumberField({ label, value, onChange, error, disabled, placeholder, ste
       />
       {error && <FieldError message={error} />}
     </label>
+  )
+}
+
+interface RatingSliderProps {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  error?: string
+  disabled?: boolean
+  /** Allows an empty/"unknown" value (e.g. shock absorption isn't published for every string) via a dedicated toggle, instead of dragging the slider to a value that would falsely claim certainty. */
+  nullable?: boolean
+  lowLabel?: string
+  highLabel?: string
+}
+
+/** Primary rating input: a 0–11 slider for fast, intuitive entry, paired with a small numeric field for exact half-point values (manufacturer numbers are occasionally published as e.g. 9.5) — the slider and number field always stay in sync since they share the same underlying string state. */
+function RatingSlider({ label, value, onChange, error, disabled, nullable, lowLabel, highLabel }: RatingSliderProps) {
+  const isUnknown = nullable && value.trim() === ''
+  const sliderValue = isUnknown ? 5.5 : (Number(value) || 0)
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{label}</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={disabled}
+            placeholder={nullable ? 'unknown' : undefined}
+            aria-label={`${label} (exact value)`}
+            className="focus-ring w-16 rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-2 py-1 text-sm text-center text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          />
+          {nullable && (
+            <label className="flex items-center gap-1 text-xs text-ink-700/60 dark:text-shuttle-100/60 cursor-pointer">
+              <input type="checkbox" checked={isUnknown} onChange={(e) => onChange(e.target.checked ? '' : '5.5')} disabled={disabled} className="focus-ring rounded" />
+              Unknown
+            </label>
+          )}
+        </div>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={11}
+        step={0.5}
+        value={sliderValue}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled || isUnknown}
+        aria-label={label}
+        className="focus-ring w-full accent-shuttle-500 disabled:opacity-40"
+      />
+      {(lowLabel || highLabel) && (
+        <div className="flex justify-between text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
+          <span>{lowLabel}</span>
+          <span>{highLabel}</span>
+        </div>
+      )}
+      {error && <FieldError message={error} />}
+    </div>
   )
 }
 
