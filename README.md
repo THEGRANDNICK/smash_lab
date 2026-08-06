@@ -1,11 +1,13 @@
-# Smash Lab Stringing
+# Smash Lab
 
-## What Smash Lab is
+## Project
 
-A local badminton racket-stringing service site: an interactive "Find
-Your Perfect String" quiz that recommends a string + tension setup from a
-player's own answers, a full browsable string comparison catalog, and a
-conversion path from that recommendation into a real stringing enquiry.
+Smash Lab is an independent badminton string finder and equipment
+platform: an interactive quiz recommends a string + tension setup from a
+player's own answers, a full browsable string comparison catalog lets
+players explore the whole lineup, and — once a player has a setup they
+like — professional stringing is available as a local service in
+Heidelberg, Germany.
 
 Stack: **Vite + React + TypeScript + Tailwind CSS v4 + Framer Motion**,
 deployed as a static site to GitHub Pages, with an optional Supabase
@@ -13,18 +15,43 @@ backend (public read-only catalog/inventory/pricing data, admin-only
 writes via Supabase Auth). The site works correctly with Supabase
 entirely unconfigured — it falls back to local data.
 
-## Main features
+## Getting started
 
-- **String Finder quiz** — a short multi-step quiz (`src/components/StringFinder.tsx`) that scores every catalog string against the player's answers and recommends a top match plus two alternatives, with a top-3 podium and a "feel map" visualization.
-- **Tension recommendation** — a separate, independent calculation (`src/logic/tensionRecommendation.ts`) that never exceeds a stated racket maximum.
-- **Manufacturer vs. specialist data-source toggle** — the quiz lets a player choose manufacturer-only data or manufacturer + Smash Lab specialist calibration; see `docs/recommendation-engine.md`.
-- **String comparison** — filterable, sortable browsing of the full catalog with radar/feel-map/table views (`src/components/StringComparison.tsx`).
-- **Result-to-enquiry conversion** — "Want this setup in your racket?" sends the recommended string/tension/match/data-source straight to WhatsApp or email, or copies a summary — no account required (`src/components/StringingEnquiry.tsx`).
-- **Shareable results** — a `#result/<encoded>` link reproduces a recommendation deterministically client-side, and "Save this setup" remembers it locally for a return visit (`src/logic/resultShareState.ts`, `src/logic/savedSetup.ts`).
-- **Admin area** (`#admin`, Supabase Auth-gated) — CRUD for the catalog, inventory, specialist profiles, retailers, and retailer listings.
-- **Legal pages** — Impressum and Datenschutzerklärung, driven by a single config file so nothing is invented; see "Legal-content setup" below.
+```bash
+npm install
+cp .env.example .env.local   # optional — see "Environment variables" below
+npm run dev                  # start local dev server
+```
 
-## Architecture overview
+The site works with zero configuration: without `.env.local`, it reads
+`src/data/strings.ts` and `src/data/stringSpecialistProfiles.ts` directly
+and the admin area shows a "not configured" state instead of a login
+form.
+
+### Environment variables
+
+| Variable | Required? | Notes |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Optional | Your Supabase project URL. Without it, the site uses local fallback data everywhere. |
+| `VITE_SUPABASE_ANON_KEY` | Optional | The public anon key — safe to expose in frontend code by design; Row Level Security decides what it can do. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional, local-only | **Never** `VITE_`-prefixed, **never** imported from `src/`. Used only by one-off Node scripts (`scripts/migrateInventory.ts`, `scripts/migrateSpecialists.ts`). |
+
+See `.env.example` and `docs/deployment.md` for the full Supabase setup
+walkthrough (creating a project, applying the migration, creating an
+admin user).
+
+### Development commands
+
+```bash
+npm run dev        # local dev server
+npm run build      # type-check + production build to dist/
+npm run preview    # preview the production build
+npm run lint        # oxlint
+npm test            # the complete test suite (see "Testing" below)
+npm run verify      # test + lint + build — the full pre-push check
+```
+
+## Architecture
 
 See `docs/architecture.md` for the full breakdown. In short:
 
@@ -42,47 +69,41 @@ scripts/         Test suites (scripts/testX.ts) and one-off admin/migration scri
 docs/            Topic-specific reference docs (this README links to all of them)
 ```
 
-The recommendation engine (`src/logic/recommendationEngine.ts`) is pure —
-it never calls Supabase directly. Every data source (catalog pool,
-specialist profiles) is passed in as an optional parameter, defaulting to
-the local fallback data; the live UI passes Supabase-backed values via
-`src/hooks/*`.
+## Recommendation Engine
 
-## Local setup
+- **String Finder quiz** — a short multi-step quiz (`src/components/StringFinder.tsx`) that scores every catalog string against the player's answers and recommends a top match plus two alternatives, with a top-3 podium and a "feel map" visualization.
+- **Tension recommendation** — a separate, independent calculation (`src/logic/tensionRecommendation.ts`) that never exceeds a stated racket maximum.
+- **Manufacturer vs. specialist data-source toggle** — the quiz lets a player choose manufacturer-only data or manufacturer + Smash Lab specialist calibration.
+- **Shareable results** — a `#result/<encoded>` link reproduces a recommendation deterministically client-side, and "Save this setup" remembers it locally for a return visit (`src/logic/resultShareState.ts`, `src/logic/savedSetup.ts`).
 
-```bash
-npm install
-cp .env.example .env.local   # optional — see "Environment variables" below
-npm run dev                  # start local dev server
-```
+The engine (`src/logic/recommendationEngine.ts`) is pure — it never calls
+Supabase directly. Every data source (catalog pool, specialist profiles)
+is passed in as an optional parameter, defaulting to the local fallback
+data; the live UI passes Supabase-backed values via `src/hooks/*`. See
+`docs/recommendation-engine.md` for the full scoring/tension/data-source
+breakdown.
 
-The site works with zero configuration: without `.env.local`, it reads
-`src/data/strings.ts` and `src/data/stringSpecialistProfiles.ts` directly
-and the admin area shows a "not configured" state instead of a login
-form.
+## Catalog
 
-## Environment variables
+- **String comparison** — filterable, sortable browsing of the full catalog with radar/feel-map/table views (`src/components/StringComparison.tsx`).
+- **Result-to-enquiry conversion** — the recommendation page's closing step ("Ready to try this setup?") sends the recommended string/tension/match/data-source straight to WhatsApp or email, or copies a summary — no account required (`src/components/StringingEnquiry.tsx`).
+- Retailer pricing (price-per-metre, availability) is layered onto catalog entries where a matching retailer listing exists.
 
-| Variable | Required? | Notes |
-|---|---|---|
-| `VITE_SUPABASE_URL` | Optional | Your Supabase project URL. Without it, the site uses local fallback data everywhere. |
-| `VITE_SUPABASE_ANON_KEY` | Optional | The public anon key — safe to expose in frontend code by design; Row Level Security decides what it can do. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Optional, local-only | **Never** `VITE_`-prefixed, **never** imported from `src/`. Used only by one-off Node scripts (`scripts/migrateInventory.ts`, `scripts/migrateSpecialists.ts`). |
+Optional Supabase backend: public tables (`strings`, `inventory`,
+`specialist_profiles`, `retailer_prices`) are readable by anyone via Row
+Level Security, writable only by accounts listed in `admin_users`. No
+service-role key exists anywhere reachable from the browser. See
+`docs/architecture.md` for the data-flow detail.
 
-See `.env.example` and `docs/deployment.md` for the full Supabase setup
-walkthrough (creating a project, applying the migration, creating an
-admin user).
+## Admin
 
-## Development commands
-
-```bash
-npm run dev        # local dev server
-npm run build      # type-check + production build to dist/
-npm run preview    # preview the production build
-npm run lint        # oxlint
-npm test            # the complete test suite (see "Testing" below)
-npm run verify      # test + lint + build — the full pre-push check
-```
+`#admin`, Supabase Auth-gated — CRUD for the catalog, inventory,
+specialist profiles, retailers, and retailer listings, plus a dashboard
+summarizing catalog completeness and recent activity. Catalog ratings
+(Repulsion, Control, Durability, Feel) use sliders for fast entry; less
+frequently edited fields (commerce/description, media, hybrid
+construction, tension metadata) live behind expandable "Advanced"
+sections.
 
 ## Testing
 
@@ -105,42 +126,33 @@ full walkthrough, including how to set `VITE_SUPABASE_URL`/
 `VITE_SUPABASE_ANON_KEY` as repository variables so the deployed build
 uses live data.
 
-## Supabase overview
-
-Optional backend: public tables (`strings`, `inventory`,
-`specialist_profiles`, `retailer_prices`) are readable by anyone via
-Row Level Security, writable only by accounts listed in `admin_users`.
-No service-role key exists anywhere reachable from the browser. See
-`docs/architecture.md` for the data-flow detail and `docs/security.md`
-for the full security audit (RLS policies, `is_admin()`, key handling).
-
-## Security model
+### Security model
 
 See `docs/security.md` for the full audit: dangerous-pattern scan
 (none found), external-link/image hardening, Content-Security-Policy
 design and its documented `<meta>`-delivery limitations, Supabase key
 handling, and database RLS verification.
 
-## Legal-content setup
+## Legal
 
 Impressum and Datenschutzerklärung pages exist at `#impressum` /
-`#datenschutz`, driven by `src/data/legalConfig.ts`. **No personal, legal,
-tax, or business information is invented anywhere in this codebase** —
-fields the site owner hasn't supplied render a visible placeholder and
-the Impressum page shows a standing "not yet complete" notice. See
-`docs/legal-setup.md` for the exact fields still needed before these
-pages can be relied on, and what the Datenschutzerklärung actually
-covers.
+`#datenschutz` (footer-linked as "Impressum (DE)" / "Privacy Policy
+(DE)" — these two pages are the only place the site uses German; the
+rest of the site is English), driven by `src/data/legalConfig.ts`. **No
+personal, legal, tax, or business information is invented anywhere in
+this codebase** — a field the site owner hasn't supplied is simply left
+empty in the config, and the rendered page skips that line entirely
+rather than showing a placeholder or an incomplete-page warning. See
+`docs/legal-setup.md` for exactly what's currently configured and what
+the Datenschutzerklärung covers.
 
-## Contact configuration
-
-All contact details (name, email, location, optional WhatsApp number for
-the one-tap enquiry link) live in one file: `src/data/contact.ts`. The
-turnaround-time note shown on the homepage lives in
+All contact details (name, email, location, WhatsApp number for the
+one-tap enquiry link) live in one file: `src/data/contact.ts`. The
+turnaround-time note shown on the homepage and contact section lives in
 `src/data/serviceConfig.ts` — keep it consistent with the matching FAQ
 answer if it changes.
 
-## Known limitations
+## Roadmap
 
 - No image upload for catalog/retailer logos — URL only.
 - No bulk edit or CSV import anywhere in the admin area.
@@ -158,7 +170,7 @@ answer if it changes.
 | [`docs/testing.md`](docs/testing.md) | Full test-suite inventory and Vitest migration status |
 | [`docs/security.md`](docs/security.md) | Security audit, CSP design, RLS/key verification |
 | [`docs/deployment.md`](docs/deployment.md) | GitHub Pages deployment, CI, Supabase project setup |
-| [`docs/legal-setup.md`](docs/legal-setup.md) | Impressum/Datenschutz — required fields, what's covered |
+| [`docs/legal-setup.md`](docs/legal-setup.md) | Impressum/Datenschutz — what's configured, what's covered |
 | [`docs/string-pages-architecture.md`](docs/string-pages-architecture.md) | Planned per-string page architecture (not yet built) |
 | [`docs/retail-sync-architecture.md`](docs/retail-sync-architecture.md) | The paused Retail Sync initiative |
 | [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Full phase-by-phase development history |
