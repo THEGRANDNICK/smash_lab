@@ -12,6 +12,7 @@ import { readSavedSetup, writeSavedSetup, clearSavedSetup, type SavedSetup } fro
 import { resolveSpecialistProfiles, DEFAULT_DATA_SOURCE } from '../src/logic/dataSourcePreference.js'
 import { computeStringMapPosition } from '../src/logic/stringMapPosition.js'
 import { buildResultSummaryText, buildEnquiryMailto, buildEnquiryWhatsAppUrl } from '../src/logic/contactMessage.js'
+import { encodeResultShareState, decodeResultShareState } from '../src/logic/resultShareState.js'
 import type { QuizAnswers } from '../src/logic/types.js'
 
 let passed = 0
@@ -194,6 +195,78 @@ test('mailto URL is correctly percent-encoded and targets CONTACT.email', () => 
 })
 test('WhatsApp URL is null while CONTACT.whatsappNumber is unset (never links to a placeholder number)', () => {
   assert.equal(buildEnquiryWhatsAppUrl(ENQUIRY_DETAILS), null)
+})
+
+console.log('\n=== Shareable result state (resultShareState.ts, Part 5) ===')
+
+const FULL_ANSWERS: QuizAnswers = {
+  level: 'intermediate',
+  playStyles: ['aggressive', 'fastDoubles'],
+  powerGeneration: 'balanced',
+  priorities: ['easyPower', 'durability', 'comfort'],
+  hittingFeel: 'mediumBalanced',
+  frequency: 'oneTwoWeek',
+  restringReason: 'wearFraying',
+  racketGoal: 'balancedGoal',
+  currentTensionKnown: 'yes',
+  currentTensionValue: 10.5,
+  currentTensionFeel: 'aboutRight',
+  maxTensionKnown: 'yes',
+  maxTensionValue: 12,
+}
+
+test('encode/decode round-trips a full answer set exactly', () => {
+  const encoded = encodeResultShareState(FULL_ANSWERS, 'manufacturer-specialist')
+  const decoded = decodeResultShareState(encoded)
+  assert.deepEqual(decoded, { answers: FULL_ANSWERS, dataSource: 'manufacturer-specialist' })
+})
+test('encode/decode round-trips a minimal (mostly unanswered) answer set', () => {
+  const minimal: QuizAnswers = { level: 'beginner' }
+  const encoded = encodeResultShareState(minimal, 'manufacturer-only')
+  const decoded = decodeResultShareState(encoded)
+  assert.ok(decoded)
+  assert.equal(decoded!.answers.level, 'beginner')
+  assert.equal(decoded!.dataSource, 'manufacturer-only')
+  assert.equal(decoded!.answers.playStyles, undefined)
+  assert.equal(decoded!.answers.currentTensionValue, undefined)
+})
+test('decoded answers reproduce the exact same recommendation as the original answers', () => {
+  const encoded = encodeResultShareState(SAMPLE_ANSWERS, 'manufacturer-specialist')
+  const decoded = decodeResultShareState(encoded)
+  assert.ok(decoded)
+  const original = recommendStrings(SAMPLE_ANSWERS, strings)
+  const restored = recommendStrings(decoded!.answers, strings)
+  assert.equal(restored.best.string.id, original.best.string.id)
+  assert.equal(restored.best.matchPercent, original.best.matchPercent)
+})
+test('garbage input decodes to null, never throws', () => {
+  assert.doesNotThrow(() => decodeResultShareState('not-a-valid-encoding-at-all'))
+  assert.equal(decodeResultShareState('not-a-valid-encoding-at-all'), null)
+})
+test('wrong format version decodes to null', () => {
+  const encoded = encodeResultShareState(FULL_ANSWERS, 'manufacturer-only')
+  const tampered = encoded.replace(/^v1:/, 'v2:')
+  assert.equal(decodeResultShareState(tampered), null)
+})
+test('tampered/unknown option id decodes to null', () => {
+  const encoded = encodeResultShareState(FULL_ANSWERS, 'manufacturer-only')
+  const tampered = encoded.replace('intermediate', 'not-a-real-level')
+  assert.equal(decodeResultShareState(tampered), null)
+})
+test('an out-of-range tension value decodes to null', () => {
+  const encoded = encodeResultShareState({ ...FULL_ANSWERS, currentTensionValue: 500 }, 'manufacturer-only')
+  assert.equal(decodeResultShareState(encoded), null)
+})
+test('empty string decodes to null', () => {
+  assert.equal(decodeResultShareState(''), null)
+})
+test('encoded payload for a full answer set stays well under a sane URL-length budget', () => {
+  const encoded = encodeResultShareState(FULL_ANSWERS, 'manufacturer-specialist')
+  assert.ok(encoded.length < 500, `encoded length was ${encoded.length}`)
+})
+test('encoded payload never contains a "@" (no email), and only the known safe field values', () => {
+  const encoded = encodeResultShareState(FULL_ANSWERS, 'manufacturer-specialist')
+  assert.doesNotMatch(encoded, /@/)
 })
 
 console.log(`\n${passed} passed, ${failed} failed.`)

@@ -201,6 +201,8 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
           tensionKg={tension.recommendedKg}
           matchPercent={rec.best.matchPercent}
           dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
+          answers={answers}
+          dataSource={dataSource}
         />
 
         {/* Secondary actions */}
