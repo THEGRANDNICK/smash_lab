@@ -12,7 +12,7 @@ import Shuttlecock from './Shuttlecock'
 export default function RestringAndCraft() {
   return (
     <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
-      <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
         <div>
           <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">Good to know</p>
           <h2 className="font-display text-2xl sm:text-3xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">When should I restring?</h2>
