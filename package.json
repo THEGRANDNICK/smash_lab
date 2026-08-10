@@ -33,6 +33,7 @@
     "test:price-per-metre": "tsx scripts/testPricePerMetre.ts",
     "test:retail-sync-foundation": "tsx scripts/testRetailSyncFoundation.ts",
     "test:conversion": "tsx scripts/testConversionFeatures.ts",
+    "test:runner": "tsx scripts/testRunAllTestsRunner.ts",
     "calibration-report": "tsx scripts/calibrationReport.ts",
     "report:retail-sync-foundation": "tsx scripts/reportRetailSyncFoundation.ts"
   },
