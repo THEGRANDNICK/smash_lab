@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { StringCategory } from '../../data/strings'
-import type { SpecialistDimensionKey } from '../../data/stringSpecialistProfiles'
+import type { SpecialistDimensionKey, SpecialistFeel, StringSpecialistProfile } from '../../data/stringSpecialistProfiles'
 import { useStringPool } from '../../hooks/useStringPool'
 import { useSpecialistProfiles } from '../../hooks/useSpecialistProfiles'
 import { computeStringMapPosition } from '../../logic/stringMapPosition'
@@ -14,6 +14,8 @@ interface SpecialistMapPlacerProps {
   onChange: (next: MapPlacement | null) => void
   /** Dimensions the stringer typed by hand — shown as "overrides map" in the preview. */
   manualDimensions: Partial<Record<SpecialistDimensionKey, string>>
+  /** The feel currently chosen in the form ('' = not set) — used for the "without placement" hint ring. */
+  feel?: string
   disabled?: boolean
 }
 
@@ -51,7 +53,7 @@ const toSvg = (holdRepulsion: number, softHard: number) => ({
   y: CENTER - (softHard - 0.5) * 2 * PLOT_HALF,
 })
 
-export default function SpecialistMapPlacer({ stringId, value, onChange, manualDimensions, disabled = false }: SpecialistMapPlacerProps) {
+export default function SpecialistMapPlacer({ stringId, value, onChange, manualDimensions, feel = '', disabled = false }: SpecialistMapPlacerProps) {
   const pool = useStringPool()
   const profiles = useSpecialistProfiles()
   const svgRef = useRef<SVGSVGElement>(null)
@@ -74,12 +76,24 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
 
   const labelOffsets = useMemo(() => computeLabelOffsets(others.map((o) => ({ id: o.item.id, x: o.x, y: o.y }))), [others])
 
-  // Where the string currently lands on the public map — a starting hint before the first placement.
+  // Where the string would land WITHOUT any placement — built only from what is
+  // typed in this form right now (hand-typed dimensions + feel) plus the
+  // manufacturer data, never from the saved placement or values derived from it.
   const autoPosition = useMemo(() => {
     if (!self) return null
-    const pos = computeStringMapPosition(self, profiles[stringId], true)
+    const dimensions: StringSpecialistProfile['dimensions'] = {}
+    for (const [key, raw] of Object.entries(manualDimensions) as [SpecialistDimensionKey, string | undefined][]) {
+      const num = Number((raw ?? '').trim().replace(',', '.'))
+      if ((raw ?? '').trim() !== '' && Number.isFinite(num)) dimensions[key] = num
+    }
+    const hasFeel = feel === 'hard' || feel === 'medium' || feel === 'soft'
+    const manualProfile: StringSpecialistProfile | undefined =
+      Object.keys(dimensions).length > 0 || hasFeel
+        ? { experienceSource: 'personal', confidence: 'unknown', dimensions, ...(hasFeel ? { feel: feel as SpecialistFeel } : {}) }
+        : undefined
+    const pos = computeStringMapPosition(self, manualProfile, true)
     return toSvg(pos.holdRepulsion, pos.softHard)
-  }, [self, profiles, stringId])
+  }, [self, manualDimensions, feel])
 
   const pin = value ? toSvg(value.holdRepulsion, value.softHard) : null
   const derived = value ? deriveDimensions(value) : null
@@ -183,7 +197,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
               <g className="pointer-events-none">
                 <circle cx={autoPosition.x} cy={autoPosition.y} r={9} className="fill-none stroke-shuttle-500" strokeWidth={2} strokeDasharray="3 3" />
                 <text x={autoPosition.x} y={autoPosition.y + 20} textAnchor="middle" className="fill-shuttle-600 dark:fill-shuttle-400 text-[7px] font-semibold uppercase tracking-wide">
-                  now (auto)
+                  without pin
                 </text>
               </g>
             )}
@@ -250,7 +264,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
               <p className="text-[10px] text-ink-700/50 dark:text-shuttle-100/50 mt-1.5">✎ = typed by hand, overrides the map. Tension retention and value are never guessed from the map.</p>
             </div>
           ) : (
-            <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No placement yet — the dashed ring shows where the string currently lands automatically.</p>
+            <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No placement — the dashed ring shows where the string lands from manufacturer data and any values typed by hand.</p>
           )}
         </div>
       </div>

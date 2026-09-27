@@ -198,7 +198,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
         />
       </label>
 
-      <SpecialistMapPlacer stringId={stringId} value={input.mapPlacement} onChange={setPlacement} manualDimensions={input.dimensions} disabled={saving} />
+      <SpecialistMapPlacer stringId={stringId} value={input.mapPlacement} onChange={setPlacement} manualDimensions={input.dimensions} feel={input.feel} disabled={saving} />
       {errors.mapPlacement && <FieldError message={errors.mapPlacement} />}
 
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
