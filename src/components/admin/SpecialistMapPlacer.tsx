@@ -29,7 +29,7 @@ const KEY_STEP = 0.02
 
 const DOT_FILL: Record<StringCategory, string> = {
   repulsion: 'fill-shuttle-500',
-  control: 'fill-court-700 dark:fill-shuttle-400',
+  control: 'fill-court-700 dark:fill-emerald-400',
   durability: 'fill-sky-600 dark:fill-sky-400',
 }
 
@@ -44,6 +44,7 @@ const DURABILITY_STEPS: { value: number; label: string }[] = [
 const MISHIT_STEPS: { value: MishitBehaviour; label: string }[] = [
   { value: 'sensitive', label: 'Snaps easily' },
   { value: 'normal', label: 'Normal' },
+  { value: 'good', label: 'Holds up well' },
   { value: 'robust', label: 'Survives mishits' },
 ]
 

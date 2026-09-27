@@ -226,6 +226,21 @@ export function buildStructuredExplanation(
 // ---------------------------------------------------------------------------
 
 const RATING_DIFFERENCE_THRESHOLD = 0.5
+/** A price difference below this is not worth mentioning (BG80 vs Exbolt 63 was 25 cents). */
+const MIN_PRICE_DIFFERENCE_EUR = 1
+/** Hands-on (1–5) difference needed before a specialist comparison is stated. */
+const SPECIALIST_DIFFERENCE_THRESHOLD = 1
+
+/** Hands-on comparisons, checked before the manufacturer ones: where both exist, they are the more trustworthy signal. */
+const SPECIALIST_COMPARISONS: [SpecialistDimensionKey, string][] = [
+  ['controlPrecision', 'More precise control than the Best Match (hands-on).'],
+  ['shuttleGripHold', 'More shuttle grip for slices and drops than the Best Match (hands-on).'],
+  ['normalWearDurability', 'Lasts longer than the Best Match (hands-on).'],
+  ['mishitTolerance', 'Survives mishits better than the Best Match (hands-on).'],
+  ['tensionRetention', 'Holds its tension longer than the Best Match (hands-on).'],
+  ['easyPower', 'Easier power than the Best Match (hands-on).'],
+  ['comfort', 'Easier on the arm than the Best Match (hands-on).'],
+]
 
 function specialistTopLabel(dim: SpecialistDimensionKey | undefined): string | undefined {
   if (!dim) return undefined
@@ -241,8 +256,8 @@ function specialistTopLabel(dim: SpecialistDimensionKey | undefined): string | u
 /**
  * Deterministic, capped-at-3 list of concrete reasons `alternative` might be
  * chosen over `baseline` (typically the Best Match) — built only from
- * fields both ScoredStrings already carry (manufacturer ratings, specialist
- * feel/top-dimensions, stringCost, stock). Never changes which string is
+ * fields both ScoredStrings already carry (hands-on specialist dimensions
+ * first, then manufacturer ratings, feel/top-dimensions, stringCost, stock). Never changes which string is
  * `alternative` or `baseline`, and never affects matchPercent or ranking.
  */
 export function buildAlternativeReasons(
@@ -254,6 +269,14 @@ export function buildAlternativeReasons(
   const reasons: string[] = []
   const a = alternative.string
   const b = baseline.string
+
+  if (alternativeProfile && baselineProfile) {
+    for (const [key, sentence] of SPECIALIST_COMPARISONS) {
+      const av = alternativeProfile.dimensions[key]
+      const bv = baselineProfile.dimensions[key]
+      if (av != null && bv != null && av - bv >= SPECIALIST_DIFFERENCE_THRESHOLD) reasons.push(sentence)
+    }
+  }
 
   if (a.durability != null && b.durability != null && a.durability - b.durability >= RATING_DIFFERENCE_THRESHOLD) {
     reasons.push('Higher durability than the Best Match.')
@@ -277,7 +300,7 @@ export function buildAlternativeReasons(
   const specialistReason = specialistTopLabel(alternative.topSpecialistDims[0])
   if (specialistReason) reasons.push(specialistReason)
 
-  if (a.stringCost != null && b.stringCost != null && a.stringCost < b.stringCost) {
+  if (a.stringCost != null && b.stringCost != null && b.stringCost - a.stringCost >= MIN_PRICE_DIFFERENCE_EUR) {
     reasons.push('Lower price than the Best Match.')
   }
 
@@ -300,13 +323,65 @@ export function buildAlternativeReasons(
 // which one existing sentence to surface by default.
 // ---------------------------------------------------------------------------
 
-/** One concise sentence for the top podium result, built from its own top manufacturer dimensions (the same ones the headline/badges already use). */
-export function buildPodiumBestReason(scored: ScoredString): string {
-  const [first, second] = scored.topDimensions
+/** Player-facing phrases for the hands-on dimensions a Best-Match sentence may name. */
+const SPECIALIST_REASON_LABEL: Partial<Record<SpecialistDimensionKey, string>> = {
+  controlPrecision: 'precise control',
+  shuttleGripHold: 'shuttle grip',
+  netTechnical: 'net play',
+  attackSmash: 'attacking power',
+  hardHitterFit: 'hard hitting',
+  easyPower: 'easy power',
+  fastDoubles: 'fast doubles',
+  flatDriveGame: 'drives',
+  directness: 'a direct, crisp feel',
+  comfort: 'comfort',
+  softness: 'a soft feel',
+  normalWearDurability: 'durability',
+  mishitTolerance: 'mishit tolerance',
+  tensionRetention: 'tension retention',
+  beginnerFriendliness: 'forgiveness',
+  value: 'value',
+  allRoundSuitability: 'all-round play',
+}
+
+/** Manufacturer dimension -> the hands-on dimension that confirms or contradicts it. */
+const MANUFACTURER_TO_SPECIALIST: Partial<Record<Dimension, SpecialistDimensionKey>> = {
+  control: 'controlPrecision',
+  durability: 'normalWearDurability',
+  shockAbsorption: 'comfort',
+  repulsion: 'easyPower',
+}
+
+/** A hands-on score at or below this means the Best-Match sentence must not praise that quality. */
+const CONTRADICTED_BELOW = 3
+const STRONG_SPECIALIST_SCORE = 3.5
+
+/**
+ * One concise sentence for the top podium result. With a specialist profile it
+ * names the hands-on strengths that actually drove the match; manufacturer
+ * dimensions are only named when the hands-on data doesn't contradict them
+ * (Exbolt 63 used to be praised for "control" — Yonex rates it 10, hands-on 2.75).
+ */
+export function buildPodiumBestReason(scored: ScoredString, profile?: StringSpecialistProfile): string {
+  const labels: string[] = []
+  if (profile) {
+    for (const dim of scored.topSpecialistDims) {
+      const value = profile.dimensions[dim]
+      const label = SPECIALIST_REASON_LABEL[dim]
+      if (label && value != null && value >= STRONG_SPECIALIST_SCORE && !labels.includes(label)) labels.push(label)
+    }
+  }
+  for (const dim of scored.topDimensions) {
+    if (labels.length >= 2) break
+    const confirming = MANUFACTURER_TO_SPECIALIST[dim]
+    const handsOn = confirming ? profile?.dimensions[confirming] : undefined
+    if (handsOn != null && handsOn <= CONTRADICTED_BELOW) continue
+    const label = DIMENSION_DISPLAY[dim].label.toLowerCase()
+    if (!labels.includes(label)) labels.push(label)
+  }
+  const [first, second] = labels
   if (!first) return 'Best overall fit for your answers.'
-  const firstLabel = DIMENSION_DISPLAY[first].label.toLowerCase()
-  const secondLabel = second ? DIMENSION_DISPLAY[second].label.toLowerCase() : undefined
-  return secondLabel ? `Best fit for your preference for ${firstLabel} and ${secondLabel}.` : `Best fit for your preference for ${firstLabel}.`
+  return second ? `Best fit for your preference for ${first} and ${second}.` : `Best fit for your preference for ${first}.`
 }
 
 /** One concise sentence for a 2nd/3rd-place podium entry — the single strongest reason it differs from the top result, reusing buildAlternativeReasons() rather than a new comparison. */

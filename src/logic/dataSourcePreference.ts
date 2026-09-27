@@ -12,6 +12,16 @@ import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles.j
 
 export type DataSource = 'manufacturer-only' | 'manufacturer-specialist'
 
+/** Labels for the data-source switch (shown on the results page, not as a quiz step). */
+export const DATA_SOURCE_OPTIONS: { id: DataSource; label: string; blurb: string }[] = [
+  { id: 'manufacturer-only', label: 'Manufacturer data only', blurb: 'Uses only official manufacturer specifications, for an unbiased comparison.' },
+  {
+    id: 'manufacturer-specialist',
+    label: 'Manufacturer + Specialist calibration (Recommended)',
+    blurb: 'Uses official data plus Smash Lab specialist adjustments intended to compensate for marketing bias and better match real-world feedback.',
+  },
+]
+
 /** "Manufacturer + Specialist calibration" is the app's recommended, default mode. */
 export const DEFAULT_DATA_SOURCE: DataSource = 'manufacturer-specialist'
 

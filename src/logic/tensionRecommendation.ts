@@ -21,7 +21,8 @@ import type { QuizAnswers } from './types.js'
 export interface TensionRecommendation {
   recommendedKg: number
   lowerKg: number
-  higherKg: number
+  /** null when one step firmer would exceed the racket's stated maximum — the UI then shows that option as unavailable. */
+  higherKg: number | null
   wasCappedByRacketMax: boolean
   racketMaxKg?: number
   explanation: string
@@ -29,6 +30,11 @@ export interface TensionRecommendation {
 
 function round(kg: number): number {
   return Math.round(kg / TENSION_ROUNDING_INCREMENT) * TENSION_ROUNDING_INCREMENT
+}
+
+/** Rounds DOWN to the tension increment — used whenever a value must never end up above a racket maximum. */
+function roundDown(kg: number): number {
+  return Math.floor(kg / TENSION_ROUNDING_INCREMENT + 1e-9) * TENSION_ROUNDING_INCREMENT
 }
 
 function clamp(kg: number, min: number, max: number): number {
@@ -108,7 +114,20 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
     }
   }
 
-  const recommendedKg = round(target)
+  let recommendedKg = round(target)
+  // Rounding must never push the recommendation above the racket's maximum (e.g. 12.25 kg max would round up to 12.5).
+  if (typeof racketMaxKg === 'number' && recommendedKg > racketMaxKg) {
+    recommendedKg = roundDown(racketMaxKg)
+    wasCappedByRacketMax = true
+  }
+
+  // The "firmer" comparison option obeys the racket maximum too — it used to be recommended + 0.5 kg unconditionally,
+  // which could show e.g. 12.5 kg for a racket rated to 12.25 kg (Arcsaber 11 Pro 4U, 27 lbs).
+  let higherKg: number | null = round(recommendedKg + COMPARISON_STEP)
+  if (typeof racketMaxKg === 'number' && higherKg > racketMaxKg) {
+    const firmestAllowed = roundDown(racketMaxKg)
+    higherKg = firmestAllowed > recommendedKg ? firmestAllowed : null
+  }
 
   if (wasCappedByRacketMax) {
     reasoning += ` We've kept this within your racket's maximum recommended tension of ${racketMaxKg} kg, with a safety margin.`
@@ -117,7 +136,7 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
   return {
     recommendedKg,
     lowerKg: round(recommendedKg - COMPARISON_STEP),
-    higherKg: round(recommendedKg + COMPARISON_STEP),
+    higherKg,
     wasCappedByRacketMax,
     racketMaxKg,
     explanation: reasoning,

@@ -19,7 +19,7 @@
 
 import type { Confidence, SpecialistDimensionKey, SpecialistDimensions, StringSpecialistProfile } from '../data/stringSpecialistProfiles.js'
 
-export type MishitBehaviour = 'robust' | 'normal' | 'sensitive'
+export type MishitBehaviour = 'robust' | 'good' | 'normal' | 'sensitive'
 
 export interface MapPlacement {
   /** 0 = Maximum Hold, 1 = Quick Repulsion — same scale as the public String Map. */
@@ -46,7 +46,8 @@ const stretch = (t: number) => clamp01(0.5 + (t - 0.5) * CONTRAST)
 /** 0–1 -> 1–5, rounded to a quarter point so the admin sees tidy numbers. */
 const toScore = (t: number) => Math.round((1 + 4 * stretch(t)) * 4) / 4
 
-const MISHIT_SCORE: Record<MishitBehaviour, number> = { robust: 5, normal: 3, sensitive: 1.5 }
+/** 'good' = clearly above average but not at the level of dedicated durability strings (e.g. BG80). */
+const MISHIT_SCORE: Record<MishitBehaviour, number> = { robust: 5, good: 4, normal: 3, sensitive: 1.5 }
 
 export function isValidPlacement(p: unknown): p is MapPlacement {
   if (p == null || typeof p !== 'object') return false
@@ -54,7 +55,7 @@ export function isValidPlacement(p: unknown): p is MapPlacement {
   const inUnit = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1
   if (!inUnit(m.holdRepulsion) || !inUnit(m.softHard)) return false
   if (m.durability != null && (typeof m.durability !== 'number' || m.durability < 1 || m.durability > 5)) return false
-  if (m.mishit != null && !['robust', 'normal', 'sensitive'].includes(m.mishit as string)) return false
+  if (m.mishit != null && !['robust', 'good', 'normal', 'sensitive'].includes(m.mishit as string)) return false
   return true
 }
 

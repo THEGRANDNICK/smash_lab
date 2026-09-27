@@ -114,7 +114,7 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
     experienceSource: 'mixed', // personal (main string pre-injury) + club observation
     confidence: 'very-high',
     // Harder than Exbolt 63, a bit slower / more hold than BG66 Ultimax; clearly tougher than Exbolt 65.
-    mapPlacement: { holdRepulsion: 0.55, softHard: 1, durability: 4, mishit: 'robust' },
+    mapPlacement: { holdRepulsion: 0.55, softHard: 1, durability: 4, mishit: 'good' }, // durable right after the dedicated durability strings, but not at their level
     // Refreshed 2026-09: map placement + what the map can't know. My go-to recommendation from
     // intermediate club level up for players who want more power, decent durability and lots of control.
     dimensions: {
@@ -153,7 +153,7 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
       normalWearDurability: 3,
       mishitTolerance: 4,
       tensionRetention: 2.5,
-      beginnerFriendliness: 4.5,
+      beginnerFriendliness: 3, // 2026-09: beginners should get BG65 first
     },
     strengths: [
       'Excellent mix of repulsion, control and sound when freshly strung — possibly the best all-rounder by a small margin at that point',
@@ -171,13 +171,14 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
     personalTensionKg: { min: 11.5, max: 11.5 },
     experienceSource: 'personal',
     confidence: 'medium',
+    // 2026-09: medium-hard (softer than BG80), about as lively as BG66 Ultimax.
+    mapPlacement: { holdRepulsion: 0.95, softHard: 0.7 },
     dimensions: {
       fastDoubles: 5,
       attackSmash: 4,
       controlPrecision: 2.75,
       netTechnical: 3,
       normalWearDurability: 2.5,
-      directness: 5,
     },
     strengths: ['Best raw repulsion I\'ve personally experienced', 'Excellent, crisp sound', 'Great for drives and fast doubles'],
     weaknesses: ['Control is harder to find because of how lively/fast it is', 'Durability clearly below BG80, BG65 and Exbolt 65'],
