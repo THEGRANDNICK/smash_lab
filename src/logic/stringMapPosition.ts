@@ -49,8 +49,8 @@ export const SPECIALIST_DIMENSION_MAX = 5
 /** Capped influence a specialist's shuttleGripHold assessment can have on the horizontal position — a nudge, never a replacement for the manufacturer repulsion number. */
 const SHUTTLE_GRIP_HOLD_INFLUENCE = 0.3
 
-export type SoftHardSource = 'specialist-softness-directness' | 'specialist-comfort' | 'specialist-feel' | 'manufacturer-shock-absorption' | 'unknown'
-export type HoldRepulsionSource = 'manufacturer-repulsion' | 'manufacturer-repulsion-specialist-hold-blend'
+export type SoftHardSource = 'specialist-map-placement' | 'specialist-softness-directness' | 'specialist-comfort' | 'specialist-feel' | 'manufacturer-shock-absorption' | 'unknown'
+export type HoldRepulsionSource = 'specialist-map-placement' | 'manufacturer-repulsion' | 'manufacturer-repulsion-specialist-hold-blend'
 
 export interface StringMapPosition {
   /** 0 = Maximum Hold, 1 = Quick Repulsion. */
@@ -144,6 +144,16 @@ function computeHoldRepulsion(specialistProfile: StringSpecialistProfile | undef
  * recommendStrings() with an empty specialist-profile map.
  */
 export function computeStringMapPosition(item: StringItem, specialistProfile: StringSpecialistProfile | undefined, useSpecialistData: boolean): StringMapPosition {
+  // Tier 0: the stringer placed this string on the map by hand — show it exactly there.
+  const placement = useSpecialistData ? specialistProfile?.mapPlacement : undefined
+  if (placement) {
+    return {
+      holdRepulsion: clamp01(placement.holdRepulsion),
+      softHard: clamp01(placement.softHard),
+      softHardSource: 'specialist-map-placement',
+      holdRepulsionSource: 'specialist-map-placement',
+    }
+  }
   const { softHard, source: softHardSource } = computeSoftHard(specialistProfile, item, useSpecialistData)
   const { holdRepulsion, source: holdRepulsionSource } = computeHoldRepulsion(specialistProfile, item, useSpecialistData)
   return { holdRepulsion, softHard, softHardSource, holdRepulsionSource }

@@ -9,8 +9,11 @@ import {
   type SpecialistFormErrors,
   type SpecialistUpsertFields,
 } from '../../services/specialistAdminService'
+import SpecialistMapPlacer from './SpecialistMapPlacer'
+import { deriveDimensions, type MapPlacement } from '../../logic/mapPlacement'
 
 interface SpecialistProfileFormProps {
+  stringId: string
   initial: SpecialistFormInput
   saving: boolean
   saveError: string | null
@@ -18,11 +21,17 @@ interface SpecialistProfileFormProps {
   onCancel: () => void
 }
 
-export default function SpecialistProfileForm({ initial, saving, saveError, onSubmit, onCancel }: SpecialistProfileFormProps) {
+export default function SpecialistProfileForm({ stringId, initial, saving, saveError, onSubmit, onCancel }: SpecialistProfileFormProps) {
   const [input, setInput] = useState<SpecialistFormInput>(initial)
   const [errors, setErrors] = useState<SpecialistFormErrors>({})
 
-  function set<K extends keyof Omit<SpecialistFormInput, 'dimensions'>>(key: K, value: SpecialistFormInput[K]) {
+  const derived = input.mapPlacement ? deriveDimensions(input.mapPlacement) : {}
+
+  function setPlacement(next: MapPlacement | null) {
+    setInput((prev) => ({ ...prev, mapPlacement: next }))
+  }
+
+  function set<K extends keyof Omit<SpecialistFormInput, 'dimensions' | 'mapPlacement'>>(key: K, value: SpecialistFormInput[K]) {
     setInput((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -189,9 +198,12 @@ export default function SpecialistProfileForm({ initial, saving, saveError, onSu
         />
       </label>
 
+      <SpecialistMapPlacer stringId={stringId} value={input.mapPlacement} onChange={setPlacement} manualDimensions={input.dimensions} disabled={saving} />
+      {errors.mapPlacement && <FieldError message={errors.mapPlacement} />}
+
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
         <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Dimensions (1–5, advanced)</summary>
-        <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-2 mb-3">Sparse by design — leave blank rather than guess a value with no real evidence behind it.</p>
+        <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-2 mb-3">Only needed to override the map. Blank fields use the value shown in grey, derived from the placement above.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {DIMENSION_OPTIONS.map(({ key, label }) => (
             <label key={key} className="block text-sm">
@@ -202,7 +214,7 @@ export default function SpecialistProfileForm({ initial, saving, saveError, onSu
                 value={input.dimensions[key] ?? ''}
                 onChange={(e) => setDimension(key, e.target.value)}
                 disabled={saving}
-                placeholder="—"
+                placeholder={derived[key] != null ? `${derived[key]} (map)` : '—'}
                 className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               />
               {errors.dimensions?.[key] && <FieldError message={errors.dimensions[key] as string} />}

@@ -67,6 +67,14 @@ export interface SpecialistDimensionsJson {
 /** Per-dimension confidence overrides — same sparse key space as SpecialistDimensionsJson, values are Confidence instead of a number. */
 export type SpecialistDimensionConfidenceJson = Partial<Record<keyof SpecialistDimensionsJson, Confidence>>
 
+/** Feel-map placement of a string (see src/logic/mapPlacement.ts). holdRepulsion/softHard are 0–1, durability 1–5. */
+export interface MapPlacementJson {
+  holdRepulsion: number
+  softHard: number
+  durability?: number
+  mishit?: 'robust' | 'normal' | 'sensitive'
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -200,6 +208,8 @@ export interface Database {
           specialist_tags: string[] | null
           subjective_notes: string | null
           reviewer: string | null
+          /** Optional so the app keeps working before the map_placement migration has been run. */
+          map_placement?: MapPlacementJson | null
           updated_at: string
         }
         Insert: {
@@ -216,6 +226,7 @@ export interface Database {
           specialist_tags?: string[] | null
           subjective_notes?: string | null
           reviewer?: string | null
+          map_placement?: MapPlacementJson | null
           updated_at?: string
         }
         Update: {
@@ -232,6 +243,7 @@ export interface Database {
           specialist_tags?: string[] | null
           subjective_notes?: string | null
           reviewer?: string | null
+          map_placement?: MapPlacementJson | null
           updated_at?: string
         }
         Relationships: [

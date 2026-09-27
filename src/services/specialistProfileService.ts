@@ -18,6 +18,7 @@
 
 import { STRING_SPECIALIST_PROFILES, type StringSpecialistProfile, type SpecialistFeel, type ExperienceSource, type Confidence, type SpecialistDimensionKey } from '../data/stringSpecialistProfiles.js'
 import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase.js'
+import { applyMapPlacement, isValidPlacement } from '../logic/mapPlacement.js'
 import type { Database } from '../types/database.js'
 
 type SpecialistProfileRow = Database['public']['Tables']['specialist_profiles']['Row']
@@ -144,6 +145,11 @@ export function mapSpecialistProfileRow(row: SpecialistProfileRow): SpecialistRo
     return { ok: false, reason: `${stringId}: reviewer must be a string` }
   }
 
+  const mapPlacement = row.map_placement ?? undefined
+  if (mapPlacement != null && !isValidPlacement(mapPlacement)) {
+    return { ok: false, reason: `${stringId}: map_placement is invalid` }
+  }
+
   const profile: StringSpecialistProfile = {
     experienceSource: row.experience_source,
     confidence: row.confidence,
@@ -156,9 +162,11 @@ export function mapSpecialistProfileRow(row: SpecialistProfileRow): SpecialistRo
     ...(row.specialist_tags && row.specialist_tags.length > 0 ? { specialistTags: row.specialist_tags } : {}),
     ...(row.subjective_notes ? { subjectiveNotes: row.subjective_notes } : {}),
     ...(row.reviewer ? { reviewer: row.reviewer } : {}),
+    ...(mapPlacement ? { mapPlacement } : {}),
   }
 
-  return { ok: true, stringId, profile }
+  // Fill any blank dimension from the map placement (hand-typed values always win).
+  return { ok: true, stringId, profile: applyMapPlacement(profile) }
 }
 
 function fallbackResult(reason: string | undefined, rejectedCount = 0, rejectedReasons: string[] = []): SpecialistFetchResult {
