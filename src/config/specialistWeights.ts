@@ -18,6 +18,13 @@ export type SpecialistWeights = Partial<Record<SpecialistDimensionKey, number>>
 
 /** questionId -> optionId -> specialist-dimension deltas. Multi-select answers apply once per selected option. */
 export const SPECIALIST_WEIGHT_CONTRIBUTIONS: Record<string, Record<string, SpecialistWeights>> = {
+  /** Newer players need forgiving, durable, affordable strings; advanced players get no nudge here — their other answers already say what they want. */
+  level: {
+    beginner: { beginnerFriendliness: 3, mishitTolerance: 1.5, value: 1.5 },
+    intermediate: { beginnerFriendliness: 1, allRoundSuitability: 1, value: 1 },
+    advanced: {},
+    tournament: {},
+  },
   playStyles: {
     aggressive: { attackSmash: 3, hardHitterFit: 2 },
     fastDoubles: { fastDoubles: 3, flatDriveGame: 2 },
@@ -74,9 +81,13 @@ export const CONFIDENCE_TRUST: Record<Confidence, number> = {
 
 /**
  * Hard ceiling on how much of the final score the specialist layer can
- * ever contribute, even at full confidence and full relevance. Deliberately
- * substantial (not a token nudge) — manufacturer data still sets the floor
- * and the specialist layer only engages where the player's answers
- * actually touch dimensions the string has known specialist scores for.
+ * ever contribute, even at full confidence and full relevance.
+ *
+ * Raised 0.65 -> 0.8 (2026-09): at 0.65 the paper ratings still decided
+ * too much. BG80 (8/6/7/6/6 on paper) could not win a single variant of
+ * its real target group (intermediate+ players wanting power, control and
+ * decent durability) against Exbolt 65 (10/8/9/8/10), no matter what the
+ * specialist profile said. At 0.8 BG80 leads that group, and across all
+ * answer combinations no string dominates (top share ~23%).
  */
-export const SPECIALIST_MAX_INFLUENCE = 0.65
+export const SPECIALIST_MAX_INFLUENCE = 0.8

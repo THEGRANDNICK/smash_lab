@@ -113,6 +113,10 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
     personalTensionKg: { min: 11, max: 12.5 },
     experienceSource: 'mixed', // personal (main string pre-injury) + club observation
     confidence: 'very-high',
+    // Harder than Exbolt 63, a bit slower / more hold than BG66 Ultimax; clearly tougher than Exbolt 65.
+    mapPlacement: { holdRepulsion: 0.55, softHard: 1, durability: 4, mishit: 'robust' },
+    // Refreshed 2026-09: map placement + what the map can't know. My go-to recommendation from
+    // intermediate club level up for players who want more power, decent durability and lots of control.
     dimensions: {
       hardHitterFit: 5,
       attackSmash: 5,
@@ -120,10 +124,8 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
       shuttleGripHold: 5,
       netTechnical: 5,
       easyPower: 4,
-      directness: 5,
-      normalWearDurability: 4,
-      mishitTolerance: 4,
-      tensionRetention: 4.5,
+      beginnerFriendliness: 2,
+      tensionRetention: 4,
     },
     strengths: [
       'Excellent attacking control and placement',
@@ -131,7 +133,7 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
       'Good durability for a performance string; some hard hitters get 2–3 months out of it',
       'Better tension retention than Exbolt 63/65 in my experience',
     ],
-    weaknesses: ['Harder, more direct feel — less forgiving than softer strings', 'Not as durable as BG65 or Nanogy 99'],
+    weaknesses: ['Harder, more direct feel — even harder than Exbolt 63; not for beginners', 'Not as durable as BG65 or Nanogy 99, though clearly tougher than Exbolt 65'],
     specialistTags: ['hard-hitter', 'attacking-control', 'direct-feedback', 'precision', 'technical-control', 'own-power-player', 'good-durability', 'good-tension-retention'],
     subjectiveNotes:
       'Was my main string before a shoulder injury, at 11–12.5 kg — still my personal benchmark for hard, direct attacking control. A good, cheaper alternative with a similar character but less grip/control is Li-Ning No.1.',
@@ -242,12 +244,22 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
   'yonex-bg65': {
     experienceSource: 'mixed', // playing/stringing/club knowledge
     confidence: 'high',
+    mapPlacement: { holdRepulsion: 0.36, softHard: 0.5, durability: 5, mishit: 'robust' },
+    // Refreshed 2026-09 (entered via the admin map).
     dimensions: {
+      hardHitterFit: 2,
+      easyPower: 2,
+      attackSmash: 2,
+      flatDriveGame: 1,
+      controlPrecision: 2.5,
+      shuttleGripHold: 1,
+      comfort: 3,
+      softness: 3.25,
       normalWearDurability: 5,
       mishitTolerance: 5,
+      beginnerFriendliness: 5,
       value: 5,
-      beginnerFriendliness: 4,
-      controlPrecision: 2.5,
+      allRoundSuitability: 3.5,
     },
     strengths: ['My pure durability benchmark', 'Cheap and long-lasting', 'Great value'],
     weaknesses: ['Can feel plastic-like/dull compared with better performance strings', 'Mediocre repulsion', 'Control nothing special'],
@@ -341,12 +353,14 @@ const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
     feel: 'medium',
     experienceSource: 'mixed', // personal + observations from others
     confidence: 'high',
+    // About as lively as Exbolt 63 with a bit more control; medium feel like Exbolt 65.
+    mapPlacement: { holdRepulsion: 0.9, softHard: 0.5, durability: 2, mishit: 'normal' },
+    // Refreshed 2026-09: map placement + control (fast BUT controlled — the map alone would read it as uncontrolled).
     dimensions: {
-      fastDoubles: 5,
-      flatDriveGame: 5,
       controlPrecision: 4.5,
       attackSmash: 4.5,
-      normalWearDurability: 2.75,
+      beginnerFriendliness: 3.5,
+      allRoundSuitability: 3.5,
     },
     strengths: [
       'Excellent repulsion for drives, flat/low game and fast doubles',

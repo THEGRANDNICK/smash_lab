@@ -148,7 +148,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
       <div>
         <h4 className="font-semibold text-ink-900 dark:text-shuttle-50">Place it on the map</h4>
         <p className="text-xs text-ink-700/60 dark:text-shuttle-100/60 mt-1">
-          Click or drag where this string sits compared to the others. That plus the two durability answers fills in every dimension below — anything you type by hand still wins.
+          Click or drag where this string sits compared to the others. That plus the two durability answers fills in feel, liveliness and durability — anything you type by hand still wins.
         </p>
       </div>
 
@@ -261,7 +261,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
                   )
                 })}
               </ul>
-              <p className="text-[10px] text-ink-700/50 dark:text-shuttle-100/50 mt-1.5">✎ = typed by hand, overrides the map. Tension retention and value are never guessed from the map.</p>
+              <p className="text-[10px] text-ink-700/50 dark:text-shuttle-100/50 mt-1.5">✎ = typed by hand, overrides the map. The map only knows feel, liveliness and durability — set grip, net play, control, attack and beginner-friendliness by hand in Dimensions below.</p>
             </div>
           ) : (
             <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No placement — the dashed ring shows where the string lands from manufacturer data and any values typed by hand.</p>
