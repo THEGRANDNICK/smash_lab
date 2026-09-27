@@ -21,10 +21,10 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           <button type="button" onClick={onOpenCompare} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50 cursor-pointer">
             Strings
           </button>
-          <a href="#faq" className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
+          <a href={`${import.meta.env.BASE_URL}#faq`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
             FAQ
           </a>
-          <a href="#contact" className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
+          <a href={`${import.meta.env.BASE_URL}#contact`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
             Contact
           </a>
         </nav>
@@ -62,10 +62,10 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           >
             Strings
           </button>
-          <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
+          <a href={`${import.meta.env.BASE_URL}#faq`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             FAQ
           </a>
-          <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
+          <a href={`${import.meta.env.BASE_URL}#contact`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             Contact
           </a>
         </nav>

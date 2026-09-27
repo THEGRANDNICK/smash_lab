@@ -24,13 +24,19 @@ import { useRetailerPrices } from './hooks/useRetailerPrices'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
 import { strings } from './data/strings'
+import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
+import { buildStringPageMeta, buildStringsIndexMeta, stringPagePath } from './logic/stringPages'
+import { STRING_SPECIALIST_PROFILES } from './data/stringSpecialistProfiles'
 
-type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string'
+const BASE = import.meta.env.BASE_URL
 
-/** Reads the string id from a "#string/<id>" URL. */
-function getStringIdFromHash(): string {
-  const hash = window.location.hash.replace('#', '')
-  return hash.startsWith('string/') ? decodeURIComponent(hash.slice('string/'.length)) : ''
+type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
+
+/** The string shown on a real string page (…/strings/<id>/), or from an old "#string/<id>" link. */
+function getStringIdFromLocation(): string {
+  const route = routeFromPath(window.location.pathname, BASE)
+  if (route.kind === 'string') return route.id
+  return legacyStringIdFromHash(window.location.hash) ?? ''
 }
 
 /** Reads the encoded payload from a "#result/<encoded>" URL. */
@@ -49,6 +55,14 @@ const BASE_TITLE = 'Smash Lab — The Independent Badminton String Finder'
  */
 function getPageTitle(hash: string): string {
   const clean = hash.replace('#', '')
+  const route = routeFromPath(window.location.pathname, BASE)
+  if (route.kind === 'notFound') return 'Page not found — Smash Lab'
+  // String pages keep exactly the title of their static HTML, so crawlers that run JavaScript see the same one.
+  if (route.kind === 'stringsIndex' && !clean) return buildStringsIndexMeta().title
+  if (route.kind === 'string' && !clean) {
+    const item = strings.find((s) => s.id === route.id)
+    return item ? buildStringPageMeta(item, STRING_SPECIALIST_PROFILES[item.id]).title : 'String not found — Smash Lab'
+  }
   if (clean === 'finder') return 'Find Your String — Smash Lab'
   if (clean === 'compare') return 'Compare Strings — Smash Lab'
   if (clean === 'faq') return 'FAQ — Smash Lab'
@@ -64,8 +78,25 @@ function getPageTitle(hash: string): string {
   return BASE_TITLE
 }
 
+/**
+ * Old "#string/<id>" links (from before real string pages existed) move to the real page
+ * address, so shared links and Google agree on one URL. Returns the id when it redirected.
+ */
+function redirectLegacyStringLink(): string | undefined {
+  const legacyId = legacyStringIdFromHash(window.location.hash)
+  if (!legacyId || routeFromPath(window.location.pathname, BASE).kind !== 'root') return undefined
+  window.history.replaceState(null, '', `${BASE}${stringPagePath(legacyId)}`)
+  document.querySelector('link[rel="canonical"]')?.setAttribute('href', `https://thegrandnick.github.io${BASE}${stringPagePath(legacyId)}`)
+  return legacyId
+}
+
 function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
+  // Real paths (static string pages) decide the view unless a hash view is explicitly requested.
+  const route = routeFromPath(window.location.pathname, BASE)
+  if (route.kind === 'notFound') return 'notFound'
+  if (route.kind === 'string' && !hash) return 'string'
+  if (route.kind === 'stringsIndex' && !hash) return 'compare'
   if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
   if (hash.startsWith('result/')) return 'result'
   if (hash.startsWith('string/')) return 'string'
@@ -98,16 +129,18 @@ function App() {
   // the previous shared result. This always changes when the hash does,
   // and is used as a React `key` below to force a fresh render.
   const [sharedResultEncoded, setSharedResultEncoded] = useState<string>(getSharedResultEncoded)
-  const [stringId, setStringId] = useState<string>(getStringIdFromHash)
+  const [stringId, setStringId] = useState<string>(getStringIdFromLocation)
   const liveStrings = useStringPool()
   const specialistProfiles = useSpecialistProfiles()
   const retailerListingsByStringId = useRetailerPrices()
 
   useEffect(() => {
+    if (redirectLegacyStringLink()) document.title = getPageTitle('')
     const onHashChange = () => {
+      redirectLegacyStringLink()
       setView(viewFromHash())
       setSharedResultEncoded(getSharedResultEncoded())
-      const nextStringId = getStringIdFromHash()
+      const nextStringId = getStringIdFromLocation()
       setStringId(nextStringId)
       if (nextStringId) window.scrollTo({ top: 0, behavior: 'auto' })
       document.title = getPageTitle(window.location.hash)
@@ -117,7 +150,21 @@ function App() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
+  // In-page anchors (#faq, #contact, #strings) opened from another page load the home page
+  // first; scroll to them once it has rendered, since the browser's own jump happened too early.
+  useEffect(() => {
+    const anchor = window.location.hash.replace('#', '')
+    if (anchor && view === 'home') document.getElementById(anchor)?.scrollIntoView()
+    // Only on first load — later clicks on these anchors are handled by the browser as usual.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function goTo(next: View) {
+    // On a static string page, other views live on the root page: navigate there.
+    if (routeFromPath(window.location.pathname, BASE).kind !== 'root') {
+      window.location.assign(next === 'home' ? BASE : `${BASE}#${next}`)
+      return
+    }
     window.location.hash = next === 'home' ? '' : next
     setView(next)
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -210,6 +257,21 @@ function App() {
           </div>
         )}
 
+        {view === 'notFound' && (
+          <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+            <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">This page doesn't exist</h1>
+            <p className="mt-2 text-ink-700/70 dark:text-shuttle-100/70">The link may be mistyped or outdated. Find your string with the quiz, or browse the full lineup.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={() => goTo('finder')} className="focus-ring rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-6 py-3 cursor-pointer">
+                Take the quiz
+              </button>
+              <button type="button" onClick={() => goTo('compare')} className="focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 text-ink-900 dark:text-shuttle-50 cursor-pointer">
+                Browse strings
+              </button>
+            </div>
+          </div>
+        )}
+
         {view === 'string' && (
           <StringDetail
             key={stringId}
@@ -225,6 +287,7 @@ function App() {
 
         {view === 'compare' && (
           <div className="pt-6">
+            <h1 className="sr-only">Compare badminton strings</h1>
             <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
             <div className="text-center pb-16">
               <button

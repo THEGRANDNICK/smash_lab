@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { stringPagePath } from '../logic/stringPages'
 import type { StringItem } from '../data/strings'
 import { buildRequestMailto } from '../logic/contactMessage'
 import { formatGauge } from '../logic/formatGauge'
@@ -63,7 +64,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
             return (
               <Heading className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">
                 {headingLevel === 'h3' ? (
-                  <a href={`#string/${item.id}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
+                  <a href={`${import.meta.env.BASE_URL}${stringPagePath(item.id)}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
                     {item.name}
                   </a>
                 ) : (

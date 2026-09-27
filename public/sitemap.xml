@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Smash Lab is a hash-routed single-page app: #finder, #compare, #impressum,
-  #datenschutz, #admin, etc. all resolve to this exact same document — the
-  fragment after "#" is never sent to the server, so search engines cannot
-  index them as distinct URLs. Listing them here anyway would misrepresent
-  what's actually indexable, so this sitemap intentionally contains a single
-  entry for the real, crawlable document.
+  Development placeholder only. Every production build replaces this file
+  with a generated sitemap listing the home page, the strings overview and
+  one real page per string (see stringPagesPlugin in vite.config.ts).
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
