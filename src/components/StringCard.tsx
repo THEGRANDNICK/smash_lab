@@ -83,7 +83,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           {item.popularityRank === 1 ? (
             <span
               className="inline-flex items-center gap-1 rounded-full bg-shuttle-500 text-court-900 px-2.5 py-1 text-xs font-semibold"
-              title="Most popular with players I string for at my club"
+              title="Most popular among players at my club"
             >
               ★ #1 Club Favorite
             </span>
@@ -91,7 +91,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
             item.popularityRank != null && (
               <span
                 className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-700 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
-                title="Popular with players I string for at my club"
+                title="Popular among players at my club"
               >
                 ★ Popular
               </span>
@@ -176,18 +176,13 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
             {compareSelected ? '✓ Comparing' : '+ Compare'}
           </button>
         )}
-        {orderable ? (
-          <a
-            href={buildRequestMailto(item.name)}
-            className="focus-ring shrink-0 rounded-full bg-court-800 text-white text-sm font-semibold px-4 py-2 hover:bg-court-700 transition-colors cursor-pointer"
-          >
-            Request this
-          </a>
-        ) : (
-          <span className="shrink-0 rounded-full bg-court-900/5 dark:bg-white/5 text-ink-700/70 dark:text-shuttle-100/60 text-sm font-semibold px-4 py-2 select-none">
-            Unavailable
-          </span>
-        )}
+        {/* A question is always possible, whatever the stock — Smash Lab is a guide, not a shop. */}
+        <a
+          href={buildRequestMailto(item.name)}
+          className="focus-ring shrink-0 rounded-full border-2 border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 text-sm font-semibold px-4 py-2 hover:border-shuttle-500 transition-colors cursor-pointer"
+        >
+          Ask about it
+        </a>
       </div>
     </div>
   )

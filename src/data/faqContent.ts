@@ -2,7 +2,7 @@
 // components/FAQ.tsx (bundler resolution) and by scripts/testFaq.ts
 // (nodenext resolution, no JSX support) without duplicating the text.
 
-export type FaqGroup = 'recommendations' | 'service'
+export type FaqGroup = 'recommendations' | 'about'
 
 export interface FaqItem {
   q: string
@@ -12,17 +12,14 @@ export interface FaqItem {
 
 export const GROUP_LABEL: Record<FaqGroup, string> = {
   recommendations: 'Strings, tension & recommendations',
-  service: 'The stringing service',
+  about: 'About Smash Lab',
 }
 
-// Stability/legal/conversion phase (Part 14) — trimmed from 24 entries down
-// to the 5 most order-relevant questions, chosen to unblock a real
-// enquiry rather than serve as technical documentation. Detail that used
-// to live here (rating-scale caveats, price-per-metre mechanics, hybrid
-// setups, etc.) either folds into the manufacturer-data disclaimer shown
-// once near the recommendation (DisclaimerBox.tsx) or is simply dropped
-// as more detail than a first-time visitor needs to decide whether to
-// get in touch.
+// At most 5 questions (enforced by faqContent.test.ts). Smash Lab is an
+// independent string guide, not a stringing service, so the questions
+// explain the recommendation, tension, what the site is, where the
+// hands-on ratings come from, and how to ask something — no service,
+// turnaround or pricing promises.
 export const FAQS: FaqItem[] = [
   {
     group: 'recommendations',
@@ -35,18 +32,18 @@ export const FAQS: FaqItem[] = [
     a: "It depends on your level, racket goal, and your current tension if you know it. The tension tool gives a sensible starting point to adjust from over time — and never recommends going above your racket's maximum recommended tension.",
   },
   {
-    group: 'service',
-    q: 'How long does stringing take?',
-    a: 'Usually 1–2 days, depending on how busy things are. Let me know if you need it faster for an upcoming match.',
+    group: 'about',
+    q: 'Is Smash Lab a shop or a stringing service?',
+    a: "No. Smash Lab is a free, independent guide to badminton strings. It doesn't sell strings or offer a public stringing service — take your recommendation to your usual stringer or shop.",
   },
   {
-    group: 'service',
-    q: 'Can I bring my own string?',
-    a: "Yes — you're welcome to bring your own string, in which case you only pay for the stringing service, with no separate string cost. Or ask me about a string that isn't in the lineup; I can usually order it, though it may take a little longer.",
+    group: 'about',
+    q: 'Where do the hands-on ratings come from?',
+    a: "From my own playing and from stringing for friends and club mates over about 2.5 years. They're shown separately from the manufacturer ratings, so you can always see which is which.",
   },
   {
-    group: 'service',
-    q: 'How do I request the recommended setup?',
-    a: 'After the quiz, use "Want this setup in your racket?" to send the recommended string and tension straight to WhatsApp or email — or copy the summary yourself. No account needed, and nothing is sent until you tap Send.',
+    group: 'about',
+    q: 'Can I ask you about a string?',
+    a: 'Yes — use "Ask about it" on any string, send your quiz result from the results page, or message me via the contact details below. I usually reply within a day.',
   },
 ]

@@ -5,13 +5,13 @@
 import { describe, it, expect } from 'vitest'
 import { FAQS, GROUP_LABEL } from './faqContent.js'
 
-describe('FAQ content — required questions (Part 14: max 5, unblock a real enquiry)', () => {
+describe('FAQ content — required questions (max 5; Smash Lab is a guide, not a service)', () => {
   const REQUIRED_TOPICS: { name: string; pattern: RegExp }[] = [
     { name: 'how the recommendation works', pattern: /how does the recommendation work/i },
     { name: 'what tension to choose', pattern: /what tension should i choose/i },
-    { name: 'how long stringing takes', pattern: /how long does stringing take/i },
-    { name: 'bringing your own string', pattern: /can i bring my own string/i },
-    { name: 'how to request the recommended setup', pattern: /how do i request the recommended setup/i },
+    { name: 'what Smash Lab is (and is not)', pattern: /is smash lab a shop/i },
+    { name: 'where the hands-on ratings come from', pattern: /where do the hands-on ratings come from/i },
+    { name: 'how to ask a question', pattern: /can i ask you about a string/i },
   ]
 
   for (const topic of REQUIRED_TOPICS) {

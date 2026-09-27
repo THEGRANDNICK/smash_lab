@@ -147,10 +147,9 @@ rather than showing a placeholder or an incomplete-page warning. See
 the Datenschutzerklärung covers.
 
 All contact details (name, email, location, WhatsApp number for the
-one-tap enquiry link) live in one file: `src/data/contact.ts`. The
-turnaround-time note shown on the homepage and contact section lives in
-`src/data/serviceConfig.ts` — keep it consistent with the matching FAQ
-answer if it changes.
+one-tap "Ask about it" links) live in one file: `src/data/contact.ts`.
+Smash Lab is positioned as an independent string guide, not a stringing
+service: the site makes no turnaround, pricing or service promises.
 
 ## Roadmap
 

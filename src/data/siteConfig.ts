@@ -8,4 +8,4 @@ export const SITE_URL = 'https://thegrandnick.github.io/smash_lab/'
 export const SITE_NAME = 'Smash Lab'
 
 export const SITE_DESCRIPTION =
-  'The independent badminton string finder. Compare strings, get a personalized recommendation, and find your ideal setup — with professional stringing available locally in Heidelberg.'
+  'The independent badminton string finder. Compare strings side by side, read hands-on notes, and get a personalized string and tension recommendation in 60 seconds.'

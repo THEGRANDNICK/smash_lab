@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
 import Shuttlecock from './Shuttlecock'
-import { SERVICE_CONFIG } from '../data/serviceConfig'
 
 interface HeroProps {
   onOpenFinder: () => void
@@ -49,7 +48,7 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mt-6 text-lg text-white/70 max-w-xl mx-auto"
         >
-          Take a 60-second quiz to get a personalized string + tension recommendation, built around how you actually play — with professional stringing available locally in Heidelberg.
+          Take a 60-second quiz to get a personalized string + tension recommendation, built around how you actually play.
         </motion.p>
 
         <motion.div
@@ -74,14 +73,6 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
           </button>
         </motion.div>
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-6 text-sm font-semibold text-shuttle-400/90 uppercase tracking-wide"
-        >
-          ⏱️ {SERVICE_CONFIG.turnaroundNote}
-        </motion.p>
       </div>
     </section>
   )
