@@ -42,14 +42,27 @@ function ContactRow({ emoji, label, value, href, external }: { emoji: string; la
           <a
             href={href}
             {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline hover:text-shuttle-600 dark:hover:text-shuttle-400 break-words"
+            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline hover:text-shuttle-600 dark:hover:text-shuttle-400 [overflow-wrap:normal] [word-break:keep-all]"
           >
-            {value}
+            {withEmailBreak(value)}
           </a>
         ) : (
           <p className="font-semibold text-ink-900 dark:text-shuttle-50 break-words">{value}</p>
         )}
       </div>
     </div>
+  )
+}
+
+/** Lets a long e-mail address wrap after the "@" instead of mid-word ("…gmail.co / m"). */
+function withEmailBreak(value: string) {
+  const at = value.indexOf('@')
+  if (at === -1) return value
+  return (
+    <>
+      {value.slice(0, at + 1)}
+      <wbr />
+      {value.slice(at + 1)}
+    </>
   )
 }

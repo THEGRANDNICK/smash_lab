@@ -72,7 +72,7 @@ export interface MapPlacementJson {
   holdRepulsion: number
   softHard: number
   durability?: number
-  mishit?: 'robust' | 'normal' | 'sensitive'
+  mishit?: 'robust' | 'good' | 'normal' | 'sensitive'
 }
 
 export interface Database {

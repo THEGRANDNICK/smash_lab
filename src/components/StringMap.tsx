@@ -29,7 +29,7 @@ interface StringMapProps {
 
 const CATEGORY_COLOR: Record<StringCategory, { fill: string; dot: string; label: string }> = {
   repulsion: { fill: 'fill-shuttle-500', dot: 'bg-shuttle-500', label: 'Quick Repulsion' },
-  control: { fill: 'fill-court-700 dark:fill-shuttle-400', dot: 'bg-court-700 dark:bg-shuttle-400', label: 'Control' },
+  control: { fill: 'fill-court-700 dark:fill-emerald-400', dot: 'bg-court-700 dark:bg-emerald-400', label: 'Control' },
   durability: { fill: 'fill-sky-600 dark:fill-sky-400', dot: 'bg-sky-600 dark:bg-sky-400', label: 'Durability' },
 }
 

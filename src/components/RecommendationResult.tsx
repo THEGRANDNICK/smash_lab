@@ -5,7 +5,9 @@ import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
 import { formatGauge } from '../logic/formatGauge'
 import { buildPodiumBestReason } from '../logic/recommendationExplanation'
+import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
+import DataSourceSwitch from './DataSourceSwitch'
 import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
@@ -23,6 +25,8 @@ interface RecommendationResultProps {
   onRetake: () => void
   onCompare: () => void
   dataSource: DataSource
+  /** When set, the results page shows a small switch between calibrated and manufacturer-only ranking (formerly a separate quiz step). */
+  onChangeDataSource?: (next: DataSource) => void
   /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
   pool?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup (recommendStrings' own default) when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). Never affects the scoring math itself, only where the specialist-layer data comes from. */
@@ -31,7 +35,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, onChangeDataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -42,7 +46,8 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
   const tension = useMemo(() => recommendTension(answers, rec.best.string), [answers, rec.best.string])
 
   const bestGauge = formatGauge(rec.best.string)
-  const bestReason = useMemo(() => buildPodiumBestReason(rec.best), [rec.best])
+  const bestProfile = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
+  const bestReason = useMemo(() => buildPodiumBestReason(rec.best, bestProfile), [rec.best, bestProfile])
 
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
 
@@ -134,7 +139,14 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
               <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
                 <TensionOption kg={tension.lowerKg} label="More forgiving / easier power" />
                 <TensionOption kg={tension.recommendedKg} label="Recommended" highlight />
-                <TensionOption kg={tension.higherKg} label="More direct / control" />
+                {tension.higherKg != null ? (
+                  <TensionOption kg={tension.higherKg} label="More direct / control" />
+                ) : (
+                  <div className="rounded-xl p-3 bg-white/5 text-white/40 border border-dashed border-white/15">
+                    <p className="font-display font-bold">—</p>
+                    <p className="mt-1 leading-tight">Firmer would exceed your racket's max</p>
+                  </div>
+                )}
               </div>
 
               {tension.wasCappedByRacketMax && (
@@ -162,7 +174,11 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
 
         {/* Podium — top-3 ranked results, replacing the old text-heavy Cross-Brand Alternative / Specialist Choice cards. */}
         <div className="mt-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
+          {onChangeDataSource ? (
+            <DataSourceSwitch value={dataSource} onChange={onChangeDataSource} />
+          ) : (
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
+          )}
           <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">Your top 3 matches</h2>
           <RecommendationPodium
             topThree={rec.topThree}

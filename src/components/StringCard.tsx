@@ -10,6 +10,7 @@ import StockBadge from './StockBadge'
 import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
+import SpecialistHighlights from './SpecialistHighlights'
 import PurchaseOptions from './PurchaseOptions'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
@@ -98,6 +99,8 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           maxWidthClassName="max-w-[320px]"
         />
       )}
+
+      <SpecialistHighlights profile={specialistProfile} />
 
       {item.notes && (
         <div className="text-sm text-ink-700/70 dark:text-shuttle-100/70">

@@ -12,7 +12,7 @@ import ProgressBar from './ProgressBar'
 import CalculatingAnimation from './CalculatingAnimation'
 import RecommendationResult from './RecommendationResult'
 
-type Phase = 'settings' | 'quiz' | 'calculating' | 'result'
+type Phase = 'quiz' | 'calculating' | 'result'
 
 // Product feedback: players should eventually be able to edit a single
 // quiz answer without restarting entirely. Not built this phase (too
@@ -24,14 +24,6 @@ type Phase = 'settings' | 'quiz' | 'calculating' | 'result'
 // step's position in `steps` and set phase back to 'quiz' — no restructuring
 // of the state model required.
 
-const DATA_SOURCE_OPTIONS: { id: DataSource; label: string; blurb: string }[] = [
-  { id: 'manufacturer-only', label: 'Manufacturer data only', blurb: 'Uses only official manufacturer specifications, for an unbiased comparison.' },
-  {
-    id: 'manufacturer-specialist',
-    label: 'Manufacturer + Specialist calibration (Recommended)',
-    blurb: 'Uses official data plus Smash Lab specialist adjustments intended to compensate for marketing bias and better match real-world feedback.',
-  },
-]
 
 interface StringFinderProps {
   onExit: () => void
@@ -57,7 +49,7 @@ function buildSteps(answers: QuizAnswers): string[] {
 export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId }: StringFinderProps) {
   const [answers, setAnswers] = useState<QuizAnswers>({})
   const [stepIndex, setStepIndex] = useState(0)
-  const [phase, setPhase] = useState<Phase>('settings')
+  const [phase, setPhase] = useState<Phase>('quiz')
   const [direction, setDirection] = useState(1)
   // A setting, not a scored quiz answer — never fed into QuizAnswers or the
   // recommendation engine's own logic. Its only effect is which
@@ -70,6 +62,18 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   const resolvedSpecialistProfiles = resolveSpecialistProfiles(dataSource, specialistProfiles)
 
   const steps = useMemo(() => buildSteps(answers), [answers])
+  // For the progress bar only: count conditional follow-up questions as long as they're still possible,
+  // so the total can only shrink ("12" -> "10" after a "No") instead of growing mid-quiz ("9" -> "11" -> "12").
+  const displayTotal = useMemo(
+    () =>
+      buildSteps({
+        ...answers,
+        priorities: answers.priorities ?? ['durability'],
+        currentTensionKnown: answers.currentTensionKnown ?? 'yes',
+        maxTensionKnown: answers.maxTensionKnown ?? 'yes',
+      }).length,
+    [answers],
+  )
   const currentStepId = steps[stepIndex]
 
   function goToIndex(nextIndex: number, dir: number) {
@@ -123,51 +127,6 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     goToIndex(stepIndex - 1, -1)
   }
 
-  if (phase === 'settings') {
-    return (
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            type="button"
-            onClick={onExit}
-            className="focus-ring text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60 hover:text-ink-900 dark:hover:text-shuttle-50 flex items-center gap-1 cursor-pointer"
-          >
-            ← Exit
-          </button>
-        </div>
-        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Which data should we base this on?</h2>
-        <p className="text-ink-700/70 dark:text-shuttle-100/70 mb-6">You can change this later by retaking the quiz.</p>
-        <div className="grid gap-3 mt-6" role="radiogroup" aria-label="Recommendation data source">
-          {DATA_SOURCE_OPTIONS.map((opt) => {
-            const isSelected = dataSource === opt.id
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => setDataSource(opt.id)}
-                className={`focus-ring text-left w-full rounded-2xl border-2 p-4 sm:p-5 transition-colors cursor-pointer ${
-                  isSelected ? 'border-shuttle-500 bg-shuttle-100/60 dark:bg-shuttle-500/10' : 'border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 hover:border-shuttle-400'
-                }`}
-              >
-                <span className="block font-semibold text-ink-900 dark:text-shuttle-50">{opt.label}</span>
-                <span className="block text-sm text-ink-700/70 dark:text-shuttle-100/70 mt-0.5">{opt.blurb}</span>
-              </button>
-            )
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={() => setPhase('quiz')}
-          className="focus-ring mt-8 rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
-        >
-          Continue
-        </button>
-      </div>
-    )
-  }
-
   if (phase === 'calculating') {
     return (
       <div className="max-w-2xl mx-auto px-4">
@@ -184,6 +143,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
           onRetake={restart}
           onCompare={onCompare}
           dataSource={dataSource}
+          onChangeDataSource={setDataSource}
           pool={pool}
           specialistProfiles={resolvedSpecialistProfiles}
           retailerListingsByStringId={retailerListingsByStringId}
@@ -195,7 +155,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   function restart() {
     setAnswers({})
     setStepIndex(0)
-    setPhase('settings')
+    setPhase('quiz')
   }
 
   return (
@@ -203,14 +163,14 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
-          onClick={stepIndex === 0 ? () => setPhase('settings') : handleBack}
+          onClick={stepIndex === 0 ? onExit : handleBack}
           className="focus-ring text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60 hover:text-ink-900 dark:hover:text-shuttle-50 flex items-center gap-1 cursor-pointer"
         >
-          ← Back
+          {stepIndex === 0 ? '← Exit' : '← Back'}
         </button>
       </div>
 
-      <ProgressBar step={stepIndex} total={steps.length} />
+      <ProgressBar step={stepIndex} total={displayTotal} />
 
       <div className="mt-8 min-h-[420px]">
         <AnimatePresence mode="wait" custom={direction}>

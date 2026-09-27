@@ -12,9 +12,9 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-shuttle-50/80 dark:bg-[#0c1210]/80 border-b border-court-900/10 dark:border-white/10">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <button type="button" onClick={onHome} className="focus-ring flex items-center gap-2 font-display font-bold text-lg text-court-800 dark:text-shuttle-50 cursor-pointer">
-          <Shuttlecock className="w-7 h-7 text-shuttle-500" />
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <button type="button" onClick={onHome} className="focus-ring flex items-center gap-1.5 sm:gap-2 font-display font-bold text-base sm:text-lg text-court-800 dark:text-shuttle-50 cursor-pointer whitespace-nowrap shrink-0">
+          <Shuttlecock className="w-6 h-6 sm:w-7 sm:h-7 text-shuttle-500" />
           Smash Lab
         </button>
         <nav aria-label="Main" className="hidden sm:flex items-center gap-6 text-sm font-semibold text-ink-700/70 dark:text-shuttle-100/70">
@@ -28,13 +28,14 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
             Contact
           </a>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={onOpenFinder}
-            className="focus-ring rounded-full bg-court-800 hover:bg-court-700 text-white text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
+            className="focus-ring rounded-full bg-court-800 hover:bg-court-700 text-white text-sm font-bold px-3 sm:px-4 py-2 transition-colors cursor-pointer whitespace-nowrap"
           >
-            🏸 Find My String
+            🏸 <span className="min-[400px]:hidden">Find String</span>
+            <span className="hidden min-[400px]:inline">Find My String</span>
           </button>
           <button
             type="button"

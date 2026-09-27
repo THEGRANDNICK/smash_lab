@@ -92,7 +92,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
   const gauge = formatGauge(item)
   const matchLabel = getMatchLabel(matchPercent)
 
-  const reason = isBest ? buildPodiumBestReason(scored) : buildPodiumAlternativeReason(scored, best, profile, bestProfile)
+  const reason = isBest ? buildPodiumBestReason(scored, profile) : buildPodiumAlternativeReason(scored, best, profile, bestProfile)
   const structured = buildStructuredExplanation(scored, '', profile)
   const vsWinnerReasons = isBest ? [] : buildAlternativeReasons(scored, best, profile, bestProfile)
 

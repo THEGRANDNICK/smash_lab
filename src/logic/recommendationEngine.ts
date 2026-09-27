@@ -283,6 +283,24 @@ interface SpecialistScoreResult {
   topDims: SpecialistDimensionKey[]
 }
 
+/**
+ * Objective fallback for beginnerFriendliness when nobody has rated it: the
+ * gauge. Common rule of thumb in the community — 0.70 mm and thicker suits
+ * beginners, 0.68 mm and thinner is for developing/advanced players. For a
+ * hybrid, the THINNER side counts (thin crosses are what break). Without it,
+ * every unrated string defaulted to a neutral 3 and thin, high-spec strings
+ * (Exbolt 63, AeroBite) won a third of all beginner results.
+ */
+const GAUGE_BEGINNER_CONFIDENCE: Confidence = 'medium'
+function gaugeBeginnerFriendliness(item: StringItem): number | undefined {
+  const gauge = item.isHybrid
+    ? Math.min(item.mainString?.gauge ?? Infinity, item.crossString?.gauge ?? Infinity)
+    : item.tension?.gauge
+  if (gauge == null || !Number.isFinite(gauge)) return undefined
+  const t = (gauge - 0.61) / (0.7 - 0.61)
+  return Math.round(Math.min(4, Math.max(1.5, 1.5 + t * 2.5)) * 4) / 4
+}
+
 /** Neutral fallback for specialist dimensions nobody has hands-on data for: "average, unproven" instead of "ignored". */
 const NEUTRAL_SPECIALIST_VALUE = 3
 const NEUTRAL_CONFIDENCE: Confidence = 'low'
@@ -305,10 +323,14 @@ function scoreSpecialist(
     const w = specialistWeights[key]
     if (w <= 0) continue
     const v = profile?.dimensions[key]
+    const gaugeFallback = key === 'beginnerFriendliness' && v == null ? gaugeBeginnerFriendliness(item) : undefined
     if (v != null && profile) {
       weightedValue += w * v
       trustWeighted += w * CONFIDENCE_TRUST[dimensionConfidence(profile, key)]
       known.push([key, v])
+    } else if (gaugeFallback != null) {
+      weightedValue += w * gaugeFallback
+      trustWeighted += w * CONFIDENCE_TRUST[GAUGE_BEGINNER_CONFIDENCE]
     } else {
       // Missing knowledge is neither a bonus nor a free pass: score it as average, with low trust.
       weightedValue += w * NEUTRAL_SPECIALIST_VALUE
