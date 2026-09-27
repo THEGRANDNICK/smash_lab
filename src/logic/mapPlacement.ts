@@ -11,10 +11,11 @@
 //     placement only fills blanks, so existing hand-tuned profiles
 //     (BG80, Nanogy 99, …) behave exactly as before.
 //   - Derived dimensions are marked with a confidence one step below the
-//     profile's own (never above 'medium'), so the engine trusts a
-//     hand-typed value more than a map-derived one.
-//   - tensionRetention and value are deliberately NOT derived — nothing
-//     on the map says anything about them.
+//     profile's own, so the engine trusts a hand-typed value more than a
+//     map-derived one.
+//   - Only feel, liveliness and durability are derived (see
+//     deriveDimensions). Everything else is a character trait the map
+//     can't know — it stays hand-typed, or neutral when unknown.
 
 import type { Confidence, SpecialistDimensionKey, SpecialistDimensions, StringSpecialistProfile } from '../data/stringSpecialistProfiles.js'
 
@@ -57,46 +58,49 @@ export function isValidPlacement(p: unknown): p is MapPlacement {
   return true
 }
 
-/** Every dimension the map can speak to, derived from one placement. */
+/**
+ * Only what the map genuinely encodes: FEEL (soft <-> hard) and LIVELINESS
+ * (hold <-> repulsion), plus the two durability answers.
+ *
+ * Deliberately NOT derived — character traits the position can't know, and
+ * where deriving them produced wrong values in practice: shuttle grip and
+ * net play (a rough coating like BG80's grips regardless of liveliness),
+ * control precision (BG66 Ultimax is lively AND controlled), hard-hitter
+ * fit, attack/smash, all-round suitability and beginner friendliness.
+ * Those stay hand-typed, or neutral when unknown.
+ */
 export function deriveDimensions(p: MapPlacement): SpecialistDimensions {
   const x = clamp01(p.holdRepulsion) // lively
   const y = clamp01(p.softHard) // hard
-  const hold = 1 - x
   const soft = 1 - y
 
   const dims: SpecialistDimensions = {
     easyPower: toScore(0.6 * x + 0.4 * soft),
-    hardHitterFit: toScore(0.65 * y + 0.35 * hold),
-    attackSmash: toScore(0.5 * x + 0.5 * y),
     fastDoubles: toScore(0.75 * x + 0.25 * y),
     flatDriveGame: toScore(0.7 * x + 0.3 * y),
-    controlPrecision: toScore(0.6 * hold + 0.4 * y),
-    shuttleGripHold: toScore(hold),
-    netTechnical: toScore(0.75 * hold + 0.25 * soft),
     comfort: toScore(soft),
     softness: toScore(soft),
     directness: toScore(y),
-    // Distance from the centre of the map: close to the middle = all-rounder.
-    allRoundSuitability: toScore(1 - Math.min(1, Math.hypot(x - 0.5, y - 0.5) * 2.2)),
   }
 
   if (p.durability != null) dims.normalWearDurability = p.durability
   const mishitScore = p.mishit ? MISHIT_SCORE[p.mishit] : p.durability
   if (mishitScore != null) dims.mishitTolerance = mishitScore
 
-  // Forgiving = softer feel + survives mishits.
-  const mishitUnit = mishitScore != null ? (mishitScore - 1) / 4 : 0.5
-  dims.beginnerFriendliness = toScore(0.5 * soft + 0.5 * mishitUnit)
-
   return dims
 }
 
 const CONFIDENCE_ORDER: Confidence[] = ['unknown', 'low', 'medium', 'high', 'very-high']
 
-/** One step below the profile's confidence, capped at 'medium'. */
+/**
+ * One step below the profile's own confidence (very-high -> high, high -> medium, ...).
+ * No fixed ceiling: a stringer who marks a profile very-high knows the string,
+ * and a hard 'medium' cap made well-known strings LOSE influence the moment
+ * they were profiled via the map.
+ */
 export function derivedConfidence(profileConfidence: Confidence): Confidence {
   const i = CONFIDENCE_ORDER.indexOf(profileConfidence)
-  return CONFIDENCE_ORDER[Math.max(0, Math.min(i - 1, CONFIDENCE_ORDER.indexOf('medium')))]
+  return CONFIDENCE_ORDER[Math.max(0, i - 1)]
 }
 
 /**

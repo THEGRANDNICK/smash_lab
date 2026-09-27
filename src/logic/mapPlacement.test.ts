@@ -9,20 +9,18 @@ const hardHold = { holdRepulsion: 0.3, softHard: 0.9 }
 const softLively = { holdRepulsion: 0.9, softHard: 0.15 }
 
 describe('deriveDimensions', () => {
-  it('reads hard + hold as a direct, precise hard-hitter string', () => {
+  it('reads hard + hold as direct, uncomfortable and not easy power', () => {
     const d = deriveDimensions(hardHold)
     expect(d.directness).toBeGreaterThanOrEqual(4.5)
-    expect(d.hardHitterFit).toBeGreaterThanOrEqual(4.5)
-    expect(d.controlPrecision).toBeGreaterThanOrEqual(4)
     expect(d.comfort).toBeLessThanOrEqual(1.5)
-    expect(d.easyPower!).toBeLessThan(d.hardHitterFit!)
+    expect(d.easyPower).toBeLessThanOrEqual(2)
   })
 
   it('reads soft + lively as easy power and comfort', () => {
     const d = deriveDimensions(softLively)
     expect(d.easyPower).toBeGreaterThanOrEqual(4.5)
     expect(d.comfort).toBeGreaterThanOrEqual(4.5)
-    expect(d.shuttleGripHold).toBeLessThanOrEqual(1.5)
+    expect(d.fastDoubles).toBeGreaterThanOrEqual(3.5)
   })
 
   it('keeps every derived score inside 1–5 at the extreme corners', () => {
@@ -36,17 +34,17 @@ describe('deriveDimensions', () => {
     }
   })
 
-  it('centre of the map = all-rounder', () => {
-    expect(deriveDimensions({ holdRepulsion: 0.5, softHard: 0.5 }).allRoundSuitability).toBe(5)
-    expect(deriveDimensions({ holdRepulsion: 1, softHard: 1 }).allRoundSuitability).toBe(1)
+  it('never guesses character traits the map cannot know', () => {
+    const d = deriveDimensions({ holdRepulsion: 1, softHard: 0.5, durability: 3, mishit: 'normal' })
+    for (const key of ['shuttleGripHold', 'netTechnical', 'controlPrecision', 'hardHitterFit', 'attackSmash', 'allRoundSuitability', 'beginnerFriendliness', 'tensionRetention', 'value'] as const) {
+      expect(d[key]).toBeUndefined()
+    }
   })
 
-  it('only sets durability dimensions when answered, and never guesses tension retention or value', () => {
+  it('only sets durability dimensions when answered', () => {
     const bare = deriveDimensions(hardHold)
     expect(bare.normalWearDurability).toBeUndefined()
     expect(bare.mishitTolerance).toBeUndefined()
-    expect(bare.tensionRetention).toBeUndefined()
-    expect(bare.value).toBeUndefined()
 
     const full = deriveDimensions({ ...hardHold, durability: 5, mishit: 'sensitive' })
     expect(full.normalWearDurability).toBe(5)
@@ -61,12 +59,13 @@ describe('applyMapPlacement', () => {
     const out = applyMapPlacement({ ...base, mapPlacement: hardHold })
     expect(out.dimensions.directness).toBe(2)
     expect(out.dimensionConfidence?.directness).toBeUndefined()
-    expect(out.dimensions.hardHitterFit).toBeGreaterThan(4)
+    expect(out.dimensions.comfort).toBeLessThanOrEqual(1.5)
   })
 
-  it('trusts derived values less than the profile itself, capped at medium', () => {
+  it('trusts derived values one step less than the profile itself', () => {
     const out = applyMapPlacement({ ...base, mapPlacement: hardHold })
-    expect(out.dimensionConfidence?.hardHitterFit).toBe('medium')
+    expect(out.dimensionConfidence?.comfort).toBe('high')
+    expect(derivedConfidence('high')).toBe('medium')
     expect(derivedConfidence('medium')).toBe('low')
     expect(derivedConfidence('unknown')).toBe('unknown')
   })
@@ -112,7 +111,7 @@ describe('map + read path', () => {
     if (result.ok) {
       expect(result.profile.dimensions.normalWearDurability).toBe(5)
       expect(result.profile.dimensions.mishitTolerance).toBe(5)
-      expect(result.profile.dimensions.allRoundSuitability).toBeGreaterThan(3)
+      expect(result.profile.dimensions.comfort).toBeGreaterThan(3)
     }
   })
 

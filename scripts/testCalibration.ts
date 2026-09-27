@@ -154,7 +154,9 @@ console.log('\n=== 5. Net precision / control ===')
   const ranking = fullRanking(answers)
   const rec = recommendStrings(answers, localCatalog, STRING_SPECIALIST_PROFILES)
 
-  const KNOWN_CONTROL_SPECIALISTS = ['yonex-aerobite', 'yonex-nanogy-99', 'yonex-bg66-force', 'yonex-bg66-ultimax']
+  // BG80 added 2026-09: control precision, shuttle grip and net play are all 5 in its specialist
+  // profile — a genuine control specialist, and the opposite of a broad high-average string on paper.
+  const KNOWN_CONTROL_SPECIALISTS = ['yonex-aerobite', 'yonex-nanogy-99', 'yonex-bg66-force', 'yonex-bg66-ultimax', 'yonex-bg80']
   test('a genuine control specialist leads, not just a broad high-average string', () => {
     assert.ok(KNOWN_CONTROL_SPECIALISTS.includes(ranking[0].string.id), `got ${ranking[0].string.id}`)
   })

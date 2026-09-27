@@ -76,9 +76,9 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
 ]
 
 const FIXTURES: { best: string; pct: number; cross?: string; spec: string }[] = [
-  { best: 'yonex-exbolt-63', pct: 88, cross: 'lining-no1', spec: 'yonex-bg80' },
-  { best: 'yonex-skyarc', pct: 91, cross: undefined, spec: 'yonex-exbolt-65' },
-  { best: 'yonex-aerobite', pct: 89, cross: 'lining-no1-boost', spec: 'yonex-nanogy-99' },
+  { best: 'yonex-bg80', pct: 89, cross: 'lining-no1', spec: 'yonex-aerobite' },
+  { best: 'yonex-skyarc', pct: 86, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
+  { best: 'yonex-bg80', pct: 91, cross: undefined, spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 
@@ -159,7 +159,7 @@ test('buildTradeoffs caps at 2', () => {
 })
 
 test('buildTradeoffs falls back to a generic dimension trade-off when there is no specialist profile', () => {
-  const scored = scoreFor('yonex-exbolt-63', SAMPLE_ANSWERS[0])
+  const scored = scoreFor('yonex-aerobite', SAMPLE_ANSWERS[0])
   const tradeoffs = buildTradeoffs(scored, undefined)
   assert.ok(tradeoffs.length > 0, 'expected a fallback trade-off derived from manufacturer dimensions')
   const knownSentences = Object.values(DIMENSION_DISPLAY).map((d) => d.tradeoff)
@@ -237,7 +237,7 @@ test('buildAlternativeReasons flags higher durability than the baseline', () => 
 })
 
 test('buildAlternativeReasons never returns more than 3 reasons', () => {
-  const rec = recommendStrings(SAMPLE_ANSWERS[2], localCatalog, STRING_SPECIALIST_PROFILES)
+  const rec = recommendStrings(SAMPLE_ANSWERS[0], localCatalog, STRING_SPECIALIST_PROFILES)
   const alt = rec.crossBrandAlternative!
   const reasons = buildAlternativeReasons(alt, rec.best, STRING_SPECIALIST_PROFILES[alt.string.id], STRING_SPECIALIST_PROFILES[rec.best.string.id])
   assert.ok(reasons.length <= 3)
