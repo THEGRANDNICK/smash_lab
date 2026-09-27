@@ -283,38 +283,45 @@ interface SpecialistScoreResult {
   topDims: SpecialistDimensionKey[]
 }
 
+/** Neutral fallback for specialist dimensions nobody has hands-on data for: "average, unproven" instead of "ignored". */
+const NEUTRAL_SPECIALIST_VALUE = 3
+const NEUTRAL_CONFIDENCE: Confidence = 'low'
+
 function scoreSpecialist(
   item: StringItem,
   specialistWeights: SpecialistWeightVector,
   totalWeightBudget: number,
   specialistProfiles: Record<string, StringSpecialistProfile>,
 ): SpecialistScoreResult | undefined {
+  if (totalWeightBudget <= 0.0001) return undefined
+  // Manufacturer-only mode (empty profile map): no specialist layer at all.
+  if (Object.keys(specialistProfiles).length === 0) return undefined
   const profile = specialistProfiles[item.id]
-  if (!profile) return undefined
-
-  const availableDims = (Object.entries(profile.dimensions) as [SpecialistDimensionKey, number | undefined][]).filter(
-    (entry): entry is [SpecialistDimensionKey, number] => entry[1] != null,
-  )
-  if (availableDims.length === 0) return undefined
-
-  const weightSum = availableDims.reduce((sum, [key]) => sum + specialistWeights[key], 0)
-  if (weightSum <= 0.0001) return undefined // player's answers don't touch anything this string has specialist data for
 
   let weightedValue = 0
   let trustWeighted = 0
-  for (const [key, value] of availableDims) {
+  const known: [SpecialistDimensionKey, number][] = []
+  for (const key of ALL_SPECIALIST_KEYS) {
     const w = specialistWeights[key]
-    weightedValue += w * value
-    trustWeighted += w * CONFIDENCE_TRUST[dimensionConfidence(profile, key)]
+    if (w <= 0) continue
+    const v = profile?.dimensions[key]
+    if (v != null && profile) {
+      weightedValue += w * v
+      trustWeighted += w * CONFIDENCE_TRUST[dimensionConfidence(profile, key)]
+      known.push([key, v])
+    } else {
+      // Missing knowledge is neither a bonus nor a free pass: score it as average, with low trust.
+      weightedValue += w * NEUTRAL_SPECIALIST_VALUE
+      trustWeighted += w * CONFIDENCE_TRUST[NEUTRAL_CONFIDENCE]
+    }
   }
 
-  const percent = (weightedValue / weightSum / 5) * 100
-  const confidenceMultiplier = trustWeighted / weightSum
-  const relevance = totalWeightBudget > 0 ? Math.min(1, weightSum / totalWeightBudget) : 0
+  const percent = (weightedValue / totalWeightBudget / 5) * 100
+  const confidenceMultiplier = trustWeighted / totalWeightBudget
+  const topDims = known.sort((a, b) => specialistWeights[b[0]] * b[1] - specialistWeights[a[0]] * a[1]).map(([k]) => k).slice(0, 2)
 
-  const topDims = [...availableDims].sort((a, b) => specialistWeights[b[0]] * b[1] - specialistWeights[a[0]] * a[1]).map(([key]) => key).slice(0, 2)
-
-  return { percent, relevance, confidenceMultiplier, topDims }
+  // relevance is always 1 now: every string is judged on everything the player asked for.
+  return { percent, relevance: 1, confidenceMultiplier, topDims }
 }
 
 /** Scores a single string by blending manufacturer data with Smash Lab specialist knowledge. `specialistProfiles` defaults to the local data file — pass the live, Supabase-merged map from useSpecialistProfiles() to source it from there instead; the scoring math itself never changes. */

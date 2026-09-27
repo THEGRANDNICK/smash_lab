@@ -45,8 +45,8 @@ export const WEIGHT_CONTRIBUTIONS: Record<string, Record<string, Contribution>> 
     tournament: { control: 1, hittingSound: 1 },
   },
   playStyles: {
-    aggressive: { repulsion: 3, hittingSound: 2, control: 1, durability: 1 },
-    fastDoubles: { repulsion: 2, control: 2, hittingSound: 1, durability: 1 },
+    aggressive: { repulsion: 3, hittingSound: 2, control: 1 },
+    fastDoubles: { repulsion: 2, control: 2, hittingSound: 1 },
     control: { control: 3, repulsion: 1, hittingSound: 1, shockAbsorption: 1 },
     defensive: { control: 2, shockAbsorption: 2, durability: 1 },
     balanced: { repulsion: 1.5, control: 1.5, durability: 1.5, hittingSound: 1.5, shockAbsorption: 1.5 },
@@ -81,9 +81,9 @@ export const WEIGHT_CONTRIBUTIONS: Record<string, Record<string, Contribution>> 
     dontKnow: {},
   },
   frequency: {
-    occasionally: { durability: 0.5 },
-    oneTwoWeek: { durability: 1 },
-    threePlusWeek: { durability: 2 },
+    occasionally: {},
+    oneTwoWeek: {},
+    threePlusWeek: { durability: 1 },
   },
   restringReason: {
     mishitBreakage: { durability: 2 },
