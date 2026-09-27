@@ -19,9 +19,13 @@ import DisclaimerBox from './DisclaimerBox'
 import StringMap from './StringMap'
 import RecommendationPodium, { PODIUM_COMPARE_LIMIT } from './RecommendationPodium'
 import StringingEnquiry from './StringingEnquiry'
+import TensionTuner from './TensionTuner'
+import StringBasics from './StringBasics'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
+  /** Lets the optional tension panel update racket details; omitted → the panel isn't shown (e.g. opened from a share link). */
+  onChangeAnswers?: (next: QuizAnswers) => void
   onRetake: () => void
   onCompare: () => void
   dataSource: DataSource
@@ -35,7 +39,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, onChangeDataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, onChangeDataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -159,6 +163,8 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
           </div>
         </div>
 
+        {onChangeAnswers && <TensionTuner answers={answers} onChange={onChangeAnswers} />}
+
         {/* Best available now, shown separately when the best overall match isn't in stock */}
         {rec.bestAvailable && (
           <div className="mt-6 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5">
@@ -177,7 +183,7 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
           {onChangeDataSource ? (
             <DataSourceSwitch value={dataSource} onChange={onChangeDataSource} />
           ) : (
-            <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
           )}
           <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">Your top 3 matches</h2>
           <RecommendationPodium
@@ -197,12 +203,14 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
           </p>
         )}
 
+        <StringBasics className="mt-6" />
+
         <DisclaimerBox className="mt-6" />
 
         {/* String map — a sibling visualization to the podium, not a replacement; shows where the top 3 sit relative to the rest of the pool. */}
         {mapPool.length > 1 && (
           <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6 sm:p-7">
-            <p className="text-center text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400 mb-1">Where they sit</p>
+            <p className="text-center text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">Where they sit</p>
             <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70 text-center mb-4 max-w-md mx-auto">Your top 3 matches, placed on the feel map against the rest of the lineup.</p>
             <div className="max-w-md mx-auto">
               <StringMap items={mapPool} specialistProfiles={specialistProfiles} useSpecialistData={dataSource === 'manufacturer-specialist'} rankedIds={topThreeIds} />
@@ -219,6 +227,7 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
           dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
           answers={answers}
           dataSource={dataSource}
+          stringCost={rec.best.string.stringCost}
         />
 
         {/* Secondary actions */}

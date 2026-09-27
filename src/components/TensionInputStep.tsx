@@ -10,6 +10,8 @@ interface TensionInputStepProps {
   onChange: (kg: number | undefined) => void
   min?: number
   max?: number
+  /** Compact form for the results page: a small label instead of a page heading. */
+  compact?: boolean
 }
 
 /** Parses a raw input string (accepting either "." or "," as the decimal separator) into kg, or undefined if it isn't a complete number yet. */
@@ -25,7 +27,7 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
 
-export default function TensionInputStep({ title, subtitle, valueKg, onChange, min = 5, max = 20 }: TensionInputStepProps) {
+export default function TensionInputStep({ title, subtitle, valueKg, onChange, min = 5, max = 20, compact = false }: TensionInputStepProps) {
   const [unit, setUnit] = useState<TensionUnit>('kg')
   // The text the user is actively typing lives in its own state, decoupled from
   // valueKg — deriving it straight from valueKg on every keystroke was what
@@ -57,10 +59,14 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
 
   return (
     <div>
-      <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{title}</h2>
-      {subtitle && <p className="text-ink-700/70 dark:text-shuttle-100/70 mb-6">{subtitle}</p>}
+      {compact ? (
+        <p className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{title}</p>
+      ) : (
+        <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{title}</h2>
+      )}
+      {subtitle && <p className={`text-ink-700/70 dark:text-shuttle-100/70 ${compact ? 'text-xs mt-0.5' : 'mb-6'}`}>{subtitle}</p>}
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mt-6">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className={compact ? 'mt-2' : 'mt-6'}>
         <div className="flex items-stretch gap-3 max-w-sm">
           <input
             type="text"
@@ -70,7 +76,7 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
             placeholder={unit === 'kg' ? 'e.g. 10' : 'e.g. 22'}
             aria-label={`Tension in ${unit}`}
             aria-invalid={outOfRange}
-            className="focus-ring flex-1 min-w-0 rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-3 text-lg font-semibold text-ink-900 dark:text-shuttle-50"
+            className={`focus-ring flex-1 min-w-0 rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 font-semibold text-ink-900 dark:text-shuttle-50 ${compact ? 'py-2 text-base' : 'py-3 text-lg'}`}
           />
           <div className="flex rounded-xl border-2 border-court-900/10 dark:border-white/15 overflow-hidden shrink-0" role="group" aria-label="Unit">
             {(['kg', 'lbs'] as TensionUnit[]).map((u) => (
@@ -93,7 +99,7 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
             Please enter a tension between {min} and {max} kg ({minLbs}–{maxLbs} lbs).
           </p>
         ) : (
-          converted && <p className="mt-3 text-sm text-ink-700/60 dark:text-shuttle-100/60">{converted}</p>
+          converted && <p className="mt-2 text-sm text-ink-700/70 dark:text-shuttle-100/70">{converted}</p>
         )}
       </motion.div>
     </div>

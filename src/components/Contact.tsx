@@ -7,7 +7,7 @@ export default function Contact() {
   return (
     <section id="contact" className="py-20 px-4 sm:px-6 max-w-3xl mx-auto scroll-mt-20">
       <div className="text-center mb-10">
-        <p className="text-shuttle-600 font-semibold tracking-wide uppercase">Get in touch</p>
+        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold tracking-wide uppercase">Get in touch</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Say hello</h2>
         <p className="text-ink-700/70 dark:text-shuttle-100/70 mt-3">
           Got a question about a string, your setup, or a restring? Message me directly — I usually reply within a day.
@@ -22,7 +22,7 @@ export default function Contact() {
           <ContactRow emoji="💬" label="WhatsApp" value="Message on WhatsApp" href={WHATSAPP_URL} external />
         </div>
 
-        <p className="mt-6 pt-6 border-t border-court-900/10 dark:border-white/10 text-center text-sm text-ink-700/60 dark:text-shuttle-100/60">
+        <p className="mt-6 pt-6 border-t border-court-900/10 dark:border-white/10 text-center text-sm text-ink-700/70 dark:text-shuttle-100/60">
           🕒 {SERVICE_CONFIG.turnaroundNote}
         </p>
       </div>
@@ -37,12 +37,12 @@ function ContactRow({ emoji, label, value, href, external }: { emoji: string; la
         {emoji}
       </span>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{label}</p>
         {href ? (
           <a
             href={href}
             {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline hover:text-shuttle-600 dark:hover:text-shuttle-400 [overflow-wrap:normal] [word-break:keep-all]"
+            className="font-semibold text-ink-900 dark:text-shuttle-50 hover:underline hover:text-shuttle-700 dark:hover:text-shuttle-400 [overflow-wrap:normal] [word-break:keep-all]"
           >
             {withEmailBreak(value)}
           </a>

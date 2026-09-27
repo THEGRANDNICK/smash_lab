@@ -62,7 +62,7 @@ export default function RetailerForm({ initial, context, editingId, saving, save
         Active — selectable for new listings and visible on the public site
       </label>
       {editingId != null && !input.active && (
-        <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+        <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
           Deactivating hides this retailer's existing listings from the public site and prevents it from being chosen for new listings — its listings and data are kept, not deleted.
         </p>
       )}
@@ -125,7 +125,7 @@ function TextField({ label, value, onChange, error, disabled, placeholder, mono,
         placeholder={placeholder}
         className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
       />
-      {hint && !error && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{hint}</p>}
+      {hint && !error && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</p>}
       {error && <FieldError message={error} />}
     </label>
   )

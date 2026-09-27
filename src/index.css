@@ -38,6 +38,8 @@
   --color-shuttle-400: #ffce6b;
   --color-shuttle-500: #ffb830;
   --color-shuttle-600: #f39a0e;
+  /* Text-safe orange for LIGHT backgrounds (~5:1 on shuttle-50). shuttle-600 is only 2.1:1 there — fine for fills and borders, not for text. */
+  --color-shuttle-700: #9c5c00;
 
   --color-ink-900: #10151a;
   --color-ink-700: #2a333b;

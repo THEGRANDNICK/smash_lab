@@ -60,7 +60,7 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
           muted ? 'odd:bg-transparent even:bg-court-900/[0.015] dark:even:bg-white/[0.015]' : 'odd:bg-transparent even:bg-court-900/[0.02] dark:even:bg-white/[0.02]'
         }`}
       >
-        <th scope="row" className={`text-left font-medium px-3 py-2 ${muted ? 'text-ink-700/50 dark:text-shuttle-100/50' : 'text-ink-700/70 dark:text-shuttle-100/70'}`}>
+        <th scope="row" className={`text-left font-medium px-3 py-2 ${muted ? 'text-ink-700/70 dark:text-shuttle-100/50' : 'text-ink-700/70 dark:text-shuttle-100/70'}`}>
           {label}
         </th>
         {perItemRows.map((rows, itemIndex) => {
@@ -74,7 +74,7 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
                     <span className="sr-only">{row.text}</span>
                   </span>
                 ) : (
-                  <span className="text-ink-700/40 dark:text-shuttle-100/40">{row.text}</span>
+                  <span className="text-ink-700/70 dark:text-shuttle-100/60">{row.text}</span>
                 )
               ) : (
                 <span>{row.text}</span>
@@ -89,7 +89,7 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
   function renderSectionHeading(group: Exclude<ComparisonRowGroup, 'primary'>) {
     return (
       <tr key={`heading-${group}`} className="border-t border-court-900/10 dark:border-white/10">
-        <th scope="colgroup" colSpan={columnCount} className="text-left font-semibold uppercase tracking-wide text-[0.65rem] text-ink-700/40 dark:text-shuttle-100/40 px-3 pt-3 pb-1">
+        <th scope="colgroup" colSpan={columnCount} className="text-left font-semibold uppercase tracking-wide text-[0.65rem] text-ink-700/70 dark:text-shuttle-100/60 px-3 pt-3 pb-1">
           {SECTION_LABEL[group]}
         </th>
       </tr>
@@ -138,7 +138,7 @@ export default function ComparisonTable({ items, specialistProfiles, retailerLis
                 type="button"
                 onClick={() => setExpanded((e) => !e)}
                 aria-expanded={expanded}
-                className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
               >
                 {expanded ? 'Show fewer details' : 'Show more details'}
               </button>

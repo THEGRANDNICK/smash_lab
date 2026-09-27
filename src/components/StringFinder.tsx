@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
@@ -7,10 +7,10 @@ import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { type DataSource, DEFAULT_DATA_SOURCE, resolveSpecialistProfiles } from '../logic/dataSourcePreference'
 import QuizQuestion from './QuizQuestion'
-import TensionInputStep from './TensionInputStep'
 import ProgressBar from './ProgressBar'
 import CalculatingAnimation from './CalculatingAnimation'
 import RecommendationResult from './RecommendationResult'
+import { type QuizHistoryState, clearStoredQuiz, loadStoredQuiz, newRunId, readHistoryState, safeSessionStorage, saveStoredQuiz } from '../logic/quizSession'
 
 type Phase = 'quiz' | 'calculating' | 'result'
 
@@ -36,52 +36,91 @@ interface StringFinderProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
+/**
+ * Only the questions that decide WHICH string is recommended. The tension
+ * questions (racket goal, current tension, racket max) moved to an optional
+ * "Fine-tune your tension" panel on the results page: they never changed the
+ * string, and they made a "60-second quiz" up to 13 questions long.
+ */
 function buildSteps(answers: QuizAnswers): string[] {
   const steps = ['level', 'playStyles', 'powerGeneration', 'priorities', 'hittingFeel', 'frequency']
   if (answers.priorities?.includes('durability')) steps.push('restringReason')
-  steps.push('racketGoal', 'currentTensionKnown')
-  if (answers.currentTensionKnown === 'yes') steps.push('currentTensionValue', 'currentTensionFeel')
-  steps.push('maxTensionKnown')
-  if (answers.maxTensionKnown === 'yes') steps.push('maxTensionValue')
   return steps
 }
 
 export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId }: StringFinderProps) {
-  const [answers, setAnswers] = useState<QuizAnswers>({})
-  const [stepIndex, setStepIndex] = useState(0)
-  const [phase, setPhase] = useState<Phase>('quiz')
+  // Restore only when this history entry is one of ours (reload, or Back-then-Forward into the quiz).
+  // A fresh visit from the home page carries no marker and always starts clean.
+  const [initial] = useState(() => {
+    const entry = typeof window === 'undefined' ? undefined : readHistoryState(window.history.state)
+    const stored = entry ? loadStoredQuiz(safeSessionStorage()) : undefined
+    if (!entry || !stored || stored.runId !== entry.runId) {
+      clearStoredQuiz(safeSessionStorage())
+      return { runId: newRunId(), answers: {} as QuizAnswers, stepIndex: 0, phase: 'quiz' as Phase, dataSource: DEFAULT_DATA_SOURCE }
+    }
+    return { runId: stored.runId, answers: stored.answers, stepIndex: entry.stepIndex, phase: entry.phase as Phase, dataSource: stored.dataSource ?? DEFAULT_DATA_SOURCE }
+  })
+  const [runId, setRunId] = useState(initial.runId)
+  const [answers, setAnswers] = useState<QuizAnswers>(initial.answers)
+  const [stepIndex, setStepIndex] = useState(initial.stepIndex)
+  const [phase, setPhase] = useState<Phase>(initial.phase)
   const [direction, setDirection] = useState(1)
-  // A setting, not a scored quiz answer — never fed into QuizAnswers or the
-  // recommendation engine's own logic. Its only effect is which
-  // specialist-profile object recommendStrings()/RecommendationResult
-  // receive below: the real map (untouched, default), or {} for a
-  // manufacturer-only run — recommendStrings() already produces
-  // manufacturer-only scoring when given an empty map (see
-  // scripts/testCalibration.ts), so the engine itself is never modified.
-  const [dataSource, setDataSource] = useState<DataSource>(DEFAULT_DATA_SOURCE)
+  // A setting, not a scored quiz answer — its only effect is which
+  // specialist-profile map the recommendation receives (the real one, or {}
+  // for a manufacturer-only run). Switched on the results page.
+  const [dataSource, setDataSource] = useState<DataSource>(initial.dataSource)
   const resolvedSpecialistProfiles = resolveSpecialistProfiles(dataSource, specialistProfiles)
 
-  const steps = useMemo(() => buildSteps(answers), [answers])
-  // For the progress bar only: count conditional follow-up questions as long as they're still possible,
-  // so the total can only shrink ("12" -> "10" after a "No") instead of growing mid-quiz ("9" -> "11" -> "12").
-  const displayTotal = useMemo(
-    () =>
-      buildSteps({
-        ...answers,
-        priorities: answers.priorities ?? ['durability'],
-        currentTensionKnown: answers.currentTensionKnown ?? 'yes',
-        maxTensionKnown: answers.maxTensionKnown ?? 'yes',
-      }).length,
-    [answers],
-  )
-  const currentStepId = steps[stepIndex]
+  // Mark the entry we were opened on as ours, so a reload restores it.
+  useEffect(() => {
+    const state: QuizHistoryState = { smashQuiz: { stepIndex: initial.stepIndex, phase: initial.phase === 'result' ? 'result' : 'quiz', runId: initial.runId } }
+    window.history.replaceState(state, '', window.location.href)
+  }, [initial])
 
-  function goToIndex(nextIndex: number, dir: number) {
-    setDirection(dir)
-    if (nextIndex >= steps.length) {
+  useEffect(() => {
+    saveStoredQuiz(safeSessionStorage(), { runId, answers, dataSource })
+  }, [runId, answers, dataSource])
+
+  // Browser Back / Forward (incl. the Android back gesture) move between questions.
+  useEffect(() => {
+    function onPopState(e: PopStateEvent) {
+      const entry = readHistoryState(e.state)
+      if (!entry) return // left the quiz entirely — App's hashchange handler takes over
+      if (entry.runId !== runId) {
+        // An entry from an earlier quiz run: its answers are gone, so show the start of the current run instead.
+        window.history.replaceState({ smashQuiz: { stepIndex: 0, phase: 'quiz', runId } } satisfies QuizHistoryState, '', window.location.href)
+        setDirection(-1)
+        setPhase('quiz')
+        setStepIndex(0)
+        return
+      }
+      setDirection(entry.stepIndex < stepIndex || entry.phase === 'quiz' ? -1 : 1)
+      setPhase(entry.phase)
+      setStepIndex(entry.stepIndex)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [stepIndex, runId])
+
+  const steps = useMemo(() => buildSteps(answers), [answers])
+  // For the progress bar only: count the conditional follow-up as long as it's still possible,
+  // so the total can only shrink ("7" -> "6") instead of growing mid-quiz.
+  const displayTotal = useMemo(() => buildSteps({ ...answers, priorities: answers.priorities ?? ['durability'] }).length, [answers])
+  const currentStepId = steps[Math.min(stepIndex, steps.length - 1)]
+
+  function pushEntry(next: Omit<QuizHistoryState['smashQuiz'], 'runId'>, forRun: string = runId) {
+    const state: QuizHistoryState = { smashQuiz: { ...next, runId: forRun } }
+    window.history.pushState(state, '', window.location.href)
+  }
+
+  function advance(fromIndex: number, stepsForAnswers: string[]) {
+    setDirection(1)
+    if (fromIndex + 1 >= stepsForAnswers.length) {
+      pushEntry({ stepIndex: fromIndex, phase: 'result' })
       setPhase('calculating')
     } else {
-      setStepIndex(Math.max(0, nextIndex))
+      pushEntry({ stepIndex: fromIndex + 1, phase: 'quiz' })
+      setStepIndex(fromIndex + 1)
     }
   }
 
@@ -94,14 +133,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       const nextAnswers: QuizAnswers = { ...answers, [questionId]: optionId }
       setAnswers(nextAnswers)
       const nextSteps = buildSteps(nextAnswers)
-      setDirection(1)
-      window.setTimeout(() => {
-        if (stepIndex + 1 >= nextSteps.length) {
-          setPhase('calculating')
-        } else {
-          setStepIndex(stepIndex + 1)
-        }
-      }, 220)
+      const from = stepIndex
+      window.setTimeout(() => advance(from, nextSteps), 220)
       return
     }
 
@@ -120,11 +153,28 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   }
 
   function handleContinue() {
-    goToIndex(stepIndex + 1, 1)
+    advance(stepIndex, steps)
   }
 
+  /** The on-screen Back button uses the same history as the browser's, so both always agree. */
   function handleBack() {
-    goToIndex(stepIndex - 1, -1)
+    window.history.back()
+  }
+
+  function handleExit() {
+    clearStoredQuiz(safeSessionStorage())
+    onExit()
+  }
+
+  function restart() {
+    clearStoredQuiz(safeSessionStorage())
+    const fresh = newRunId()
+    setRunId(fresh)
+    setAnswers({})
+    setStepIndex(0)
+    setPhase('quiz')
+    pushEntry({ stepIndex: 0, phase: 'quiz' }, fresh)
+    window.scrollTo({ top: 0 })
   }
 
   if (phase === 'calculating') {
@@ -140,6 +190,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       <div className="px-4">
         <RecommendationResult
           answers={answers}
+          onChangeAnswers={setAnswers}
           onRetake={restart}
           onCompare={onCompare}
           dataSource={dataSource}
@@ -152,19 +203,13 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     )
   }
 
-  function restart() {
-    setAnswers({})
-    setStepIndex(0)
-    setPhase('quiz')
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
-          onClick={stepIndex === 0 ? onExit : handleBack}
-          className="focus-ring text-sm font-semibold text-ink-700/60 dark:text-shuttle-100/60 hover:text-ink-900 dark:hover:text-shuttle-50 flex items-center gap-1 cursor-pointer"
+          onClick={stepIndex === 0 ? handleExit : handleBack}
+          className="focus-ring text-sm font-semibold text-ink-700/70 dark:text-shuttle-100/70 hover:text-ink-900 dark:hover:text-shuttle-50 flex items-center gap-1 cursor-pointer"
         >
           {stepIndex === 0 ? '← Exit' : '← Back'}
         </button>
@@ -182,7 +227,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
             exit={{ opacity: 0, x: direction * -40 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
           >
-            <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} setAnswers={setAnswers} />
+            <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -195,38 +240,9 @@ interface StepContentProps {
   answers: QuizAnswers
   onToggle: (questionId: string, optionId: string) => void
   onContinue: () => void
-  setAnswers: React.Dispatch<React.SetStateAction<QuizAnswers>>
 }
 
-function StepContent({ stepId, answers, onToggle, onContinue, setAnswers }: StepContentProps) {
-  if (stepId === 'currentTensionValue') {
-    return (
-      <div>
-        <TensionInputStep
-          title="What's your current tension?"
-          subtitle="Enter it in whichever unit you know."
-          valueKg={answers.currentTensionValue}
-          onChange={(kg) => setAnswers((a) => ({ ...a, currentTensionValue: kg }))}
-        />
-        <ContinueButton onClick={onContinue} disabled={answers.currentTensionValue == null} />
-      </div>
-    )
-  }
-
-  if (stepId === 'maxTensionValue') {
-    return (
-      <div>
-        <TensionInputStep
-          title="What's the maximum recommended tension for your racket?"
-          subtitle="Check your racket's throat or manufacturer spec sheet."
-          valueKg={answers.maxTensionValue}
-          onChange={(kg) => setAnswers((a) => ({ ...a, maxTensionValue: kg }))}
-        />
-        <ContinueButton onClick={onContinue} disabled={answers.maxTensionValue == null} />
-      </div>
-    )
-  }
-
+function StepContent({ stepId, answers, onToggle, onContinue }: StepContentProps) {
   const question = getQuestion(stepId)
   if (!question) return null
 
@@ -237,20 +253,23 @@ function StepContent({ stepId, answers, onToggle, onContinue, setAnswers }: Step
   return (
     <div>
       <QuizQuestion question={question} selected={selected} onToggle={(optionId) => onToggle(stepId, optionId)} />
-      {isMulti && <ContinueButton onClick={onContinue} disabled={selected.length === 0} />}
+      {isMulti && <ContinueButton onClick={onContinue} disabled={selected.length === 0} selectedCount={selected.length} />}
     </div>
   )
 }
 
-function ContinueButton({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+/** Sticks to the bottom of the screen on phones, where long multi-select lists pushed it below the fold. */
+function ContinueButton({ onClick, disabled, selectedCount }: { onClick: () => void; disabled?: boolean; selectedCount?: number }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="focus-ring mt-6 rounded-full bg-shuttle-500 hover:bg-shuttle-600 disabled:opacity-40 disabled:cursor-not-allowed text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
-    >
-      Continue
-    </button>
+    <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-3 bg-gradient-to-t from-shuttle-50 via-shuttle-50/95 to-shuttle-50/0 dark:from-[#0c1210] dark:via-[#0c1210]/95 dark:to-[#0c1210]/0 sm:static sm:mx-0 sm:p-0 sm:bg-none">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="focus-ring w-full sm:w-auto rounded-full bg-shuttle-500 hover:bg-shuttle-600 disabled:opacity-40 disabled:cursor-not-allowed text-court-900 font-bold px-6 py-3 transition-colors cursor-pointer"
+      >
+        Continue{selectedCount ? ` (${selectedCount} selected)` : ''}
+      </button>
+    </div>
   )
 }

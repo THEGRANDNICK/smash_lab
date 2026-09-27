@@ -27,10 +27,10 @@ export default function QuizQuestion({ question, selected, onToggle }: QuizQuest
 
   return (
     <div>
-      <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{question.title}</h2>
+      <h1 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">{question.title}</h1>
       {question.subtitle && <p className={`text-ink-700/70 dark:text-shuttle-100/70 ${isMulti ? 'mb-1' : 'mb-6'}`}>{question.subtitle}</p>}
       {isMulti && (
-        <p className="text-sm font-semibold text-shuttle-600 mb-6">
+        <p className="text-sm font-semibold text-shuttle-700 dark:text-shuttle-400 mb-6">
           {selected.length} of {question.maxSelect} selected
         </p>
       )}
@@ -69,7 +69,7 @@ export default function QuizQuestion({ question, selected, onToggle }: QuizQuest
               </span>
               <span className="flex-1">
                 <span className="block font-semibold text-ink-900 dark:text-shuttle-50">{option.label}</span>
-                {option.blurb && <span className="block text-sm text-ink-700/60 dark:text-shuttle-100/60 mt-0.5">{option.blurb}</span>}
+                {option.blurb && <span className="block text-sm text-ink-700/70 dark:text-shuttle-100/60 mt-0.5">{option.blurb}</span>}
               </span>
               <span
                 className={`shrink-0 w-5 h-5 ${isMulti ? 'rounded-md' : 'rounded-full'} border-2 flex items-center justify-center transition-colors ${

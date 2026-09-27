@@ -101,12 +101,12 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
             <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 flex items-center gap-2">
               {row.name}
               {!row.active && (
-                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-court-900/10 dark:bg-white/10 text-ink-700/60 dark:text-shuttle-100/60">
+                <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-court-900/10 dark:bg-white/10 text-ink-700/70 dark:text-shuttle-100/60">
                   Inactive
                 </span>
               )}
             </h3>
-            <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40">
+            <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">
               {row.listingCount} listing{row.listingCount === 1 ? '' : 's'}
               {row.country && ` · ${row.country}`}
             </p>
@@ -116,7 +116,7 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
 
       {row.websiteUrl && (
         <p className="text-sm mb-3">
-          <a href={row.websiteUrl} target="_blank" rel="noopener noreferrer nofollow" className="focus-ring text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer">
+          <a href={row.websiteUrl} target="_blank" rel="noopener noreferrer nofollow" className="focus-ring text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer">
             {row.websiteUrl} ↗
           </a>
         </p>
@@ -160,7 +160,7 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40">Updated {new Date(row.updatedAt).toLocaleString()}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">Updated {new Date(row.updatedAt).toLocaleString()}</p>
           <div className="flex items-center gap-3">
             <button
               type="button"

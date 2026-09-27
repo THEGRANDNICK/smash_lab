@@ -5,7 +5,6 @@ import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { buildStructuredExplanation, buildAlternativeReasons, buildPodiumBestReason, buildPodiumAlternativeReason } from '../logic/recommendationExplanation'
 import { formatGauge } from '../logic/formatGauge'
-import { getMatchLabel } from '../logic/matchLabel'
 import StockBadge from './StockBadge'
 import StatBars from './StatBars'
 import SpecialistPanel from './SpecialistPanel'
@@ -90,10 +89,14 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
   const profile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const bestProfile = specialistProfiles ? specialistProfiles[best.string.id] : getSpecialistProfile(best.string.id)
   const gauge = formatGauge(item)
-  const matchLabel = getMatchLabel(matchPercent)
+  // Relative labels: in practice all three results scored 75–89 %, so the old absolute
+  // "Great Match" label appeared on every card and helped no one choose.
+  const gap = best.matchPercent - matchPercent
+  const matchLabel = isBest ? 'Best match' : gap <= 3 ? 'Close alternative' : 'Alternative'
 
-  const reason = isBest ? buildPodiumBestReason(scored, profile) : buildPodiumAlternativeReason(scored, best, profile, bestProfile)
   const structured = buildStructuredExplanation(scored, '', profile)
+  // The hero above already shows the Best Match's one-line reason — here Rank 1 shows its top strength instead of repeating it.
+  const reason = isBest ? (structured.strengths[0] ?? buildPodiumBestReason(scored, profile)) : buildPodiumAlternativeReason(scored, best, profile, bestProfile)
   const vsWinnerReasons = isBest ? [] : buildAlternativeReasons(scored, best, profile, bestProfile)
 
   return (
@@ -103,18 +106,20 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 dark:text-shuttle-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">
             {RANK_MEDAL[rank - 1] ?? `#${rank}`} Rank {rank}
           </p>
-          <p className="text-xs uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mt-1">{item.brand}</p>
+          <p className="text-xs uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mt-1">{item.brand}</p>
           <h3 className={`font-display font-bold text-ink-900 dark:text-shuttle-50 ${prominent ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>
-            {item.name}
-            {gauge != null && <span className="text-sm font-normal text-ink-700/50 dark:text-shuttle-100/50 ml-2">{gauge}</span>}
+            <a href={`#string/${item.id}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
+              {item.name}
+            </a>
+            {gauge != null && <span className="text-sm font-normal text-ink-700/70 dark:text-shuttle-100/50 ml-2">{gauge}</span>}
           </h3>
         </div>
         <div className="text-right shrink-0">
-          <p className={`font-display font-bold text-shuttle-600 dark:text-shuttle-400 leading-none ${prominent ? 'text-3xl sm:text-4xl' : 'text-xl'}`}>{matchLabel}</p>
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{matchPercent}% match</p>
+          <p className={`font-display font-bold text-shuttle-700 dark:text-shuttle-400 leading-none ${prominent ? 'text-3xl sm:text-4xl' : 'text-xl'}`}>{matchLabel}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{matchPercent}% match</p>
         </div>
       </div>
 
@@ -142,7 +147,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
           aria-label={expanded ? `Show less about ${item.name}` : `Read more about ${item.name}`}
-          className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+          className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
         >
           {expanded ? 'Show less' : 'Read more'}
         </button>
@@ -152,7 +157,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
         <div className="mt-5 pt-5 border-t border-court-900/10 dark:border-white/10 space-y-5">
           {!isBest && vsWinnerReasons.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Vs. the top result</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-2">Vs. the top result</p>
               <ul className="space-y-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
                 {vsWinnerReasons.map((r) => (
                   <li key={r} className="flex gap-2">
@@ -168,7 +173,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {structured.strengths.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">✅ Strengths</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-2">✅ Strengths</p>
                   <ul className="space-y-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
                     {structured.strengths.map((s) => (
                       <li key={s} className="flex gap-2">
@@ -181,7 +186,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
               )}
               {structured.tradeoffs.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">⚖️ Trade-offs</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-2">⚖️ Trade-offs</p>
                   <ul className="space-y-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
                     {structured.tradeoffs.map((t) => (
                       <li key={t} className="flex gap-2">
@@ -196,7 +201,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
           )}
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-2">Manufacturer ratings</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-2">Manufacturer ratings</p>
             <StatBars item={item} compact />
           </div>
 

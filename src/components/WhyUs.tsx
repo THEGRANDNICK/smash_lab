@@ -12,7 +12,7 @@ export default function WhyUs() {
     <section id="why-us" className="py-20 px-4 sm:px-6 bg-court-900/5 dark:bg-white/5 scroll-mt-20">
       <div className="max-w-6xl mx-auto">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">Why Smash Lab</p>
+          <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">Why Smash Lab</p>
           <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Independent, and built on your answers</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

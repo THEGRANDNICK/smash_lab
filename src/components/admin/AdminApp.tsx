@@ -59,14 +59,14 @@ export default function AdminApp({ onExit }: AdminAppProps) {
   }
 
   if (status === 'checking') {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-20">Checking session…</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-20">Checking session…</p>
   }
 
   if (status === 'error') {
     return (
       <div className="max-w-lg mx-auto text-center py-20 px-4">
         <p className="font-semibold text-red-600 dark:text-red-400 mb-2">Admin area unavailable</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{error}</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{error}</p>
       </div>
     )
   }
@@ -79,7 +79,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
     return (
       <div className="max-w-lg mx-auto text-center py-20 px-4">
         <p className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50 mb-2">Access denied</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60 mb-6">
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60 mb-6">
           {session?.user.email ?? 'This account'} is signed in but isn't an admin on this project.
         </p>
         <button
@@ -98,7 +98,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-court-900/10 dark:border-white/10">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Smash Lab Admin</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">Smash Lab Admin</p>
           <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">{SECTION_LABEL[section]}</h1>
         </div>
         <div className="flex items-center gap-4 text-sm font-semibold">
@@ -142,7 +142,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       {section === 'retailers' && <RetailerAdminPage />}
       {section === 'retailerListings' && <RetailerListingAdminPage />}
 
-      <footer className="mt-12 pt-4 border-t border-court-900/10 dark:border-white/10 text-center text-xs text-ink-700/40 dark:text-shuttle-100/40">
+      <footer className="mt-12 pt-4 border-t border-court-900/10 dark:border-white/10 text-center text-xs text-ink-700/70 dark:text-shuttle-100/60">
         Smash Lab Admin · {versionInfo.display} · {versionInfo.environment}
       </footer>
     </div>

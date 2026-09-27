@@ -36,7 +36,7 @@ export default function AdminLogin({ onSignIn }: AdminLoginProps) {
           <Shuttlecock className="w-6 h-6 text-shuttle-500" />
           Smash Lab Admin
         </div>
-        <p className="text-ink-700/60 dark:text-shuttle-100/60 text-sm mt-2">Sign in to manage inventory.</p>
+        <p className="text-ink-700/70 dark:text-shuttle-100/60 text-sm mt-2">Sign in to manage inventory.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6 space-y-4">

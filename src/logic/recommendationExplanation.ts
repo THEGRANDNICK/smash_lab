@@ -385,12 +385,73 @@ export function buildPodiumBestReason(scored: ScoredString, profile?: StringSpec
 }
 
 /** One concise sentence for a 2nd/3rd-place podium entry — the single strongest reason it differs from the top result, reusing buildAlternativeReasons() rather than a new comparison. */
+/** "this alternative vs. the Best Match": [when higher → "{…} than your best match", when lower → "but it {…}"]. */
+const TRADEOFF_SPECIALIST: [SpecialistDimensionKey, string, string][] = [
+  ['controlPrecision', 'Offers more precise control', 'offers less precise control'],
+  ['easyPower', 'Gives easier power', 'gives less easy power'],
+  ['comfort', 'Is more comfortable on the arm', 'is harsher on the arm'],
+  ['normalWearDurability', 'Lasts longer', 'wears out sooner'],
+  ['mishitTolerance', 'Survives mishits better', 'is less forgiving of mishits'],
+  ['shuttleGripHold', 'Has more shuttle grip', 'has less shuttle grip'],
+  ['directness', 'Feels more direct', 'feels less direct'],
+  ['fastDoubles', 'Is quicker in fast exchanges', 'is slower in fast exchanges'],
+]
+const TRADEOFF_MANUFACTURER: [Dimension, string, string][] = [
+  ['repulsion', 'Is livelier', 'is less lively'],
+  ['durability', 'Is more durable', 'is less durable'],
+  ['shockAbsorption', 'Has a softer impact', 'has a firmer impact'],
+  ['control', 'Offers more control', 'offers less control'],
+  ['hittingSound', 'Has a crisper sound', 'has a quieter sound'],
+]
+const SPECIALIST_TRADEOFF_MIN = 1
+const MANUFACTURER_TRADEOFF_MIN = 1.5
+
+/**
+ * The single biggest advantage and the single biggest drawback of an
+ * alternative compared with the Best Match — hands-on data where both
+ * strings have it, manufacturer ratings otherwise (scaled to the same 1–5
+ * footing so the two can be compared).
+ */
+export function buildTradeoffVsBest(
+  alternative: ScoredString,
+  best: ScoredString,
+  alternativeProfile: StringSpecialistProfile | undefined,
+  bestProfile: StringSpecialistProfile | undefined,
+): { plus?: string; minus?: string } {
+  const diffs: { diff: number; plus: string; minus: string }[] = []
+  const handsOnCovered = new Set<string>()
+  for (const [key, plus, minus] of TRADEOFF_SPECIALIST) {
+    const a = alternativeProfile?.dimensions[key]
+    const b = bestProfile?.dimensions[key]
+    if (a == null || b == null) continue
+    handsOnCovered.add(key)
+    if (Math.abs(a - b) >= SPECIALIST_TRADEOFF_MIN) diffs.push({ diff: a - b, plus, minus })
+  }
+  const manufacturerCoveredBy: Partial<Record<Dimension, SpecialistDimensionKey>> = { control: 'controlPrecision', durability: 'normalWearDurability', shockAbsorption: 'comfort', repulsion: 'easyPower' }
+  for (const [dim, plus, minus] of TRADEOFF_MANUFACTURER) {
+    const covered = manufacturerCoveredBy[dim]
+    if (covered && handsOnCovered.has(covered)) continue // hands-on already spoke about this
+    const a = alternative.string[dim]
+    const b = best.string[dim]
+    if (a == null || b == null) continue
+    if (Math.abs(a - b) >= MANUFACTURER_TRADEOFF_MIN) diffs.push({ diff: ((a - b) / 11) * 5, plus, minus })
+  }
+  const up = diffs.filter((d) => d.diff > 0).sort((x, y) => y.diff - x.diff)[0]
+  const down = diffs.filter((d) => d.diff < 0).sort((x, y) => x.diff - y.diff)[0]
+  return { plus: up?.plus, minus: down?.minus }
+}
+
+
 export function buildPodiumAlternativeReason(
   scored: ScoredString,
   best: ScoredString,
   scoredProfile: StringSpecialistProfile | undefined,
   bestProfile: StringSpecialistProfile | undefined,
 ): string {
+  const { plus, minus } = buildTradeoffVsBest(scored, best, scoredProfile, bestProfile)
+  if (plus && minus) return `${plus} than your best match, but it ${minus}.`
+  if (plus) return `${plus} than your best match.`
+  if (minus) return `Very close to your best match, but it ${minus}.`
   const [reason] = buildAlternativeReasons(scored, best, scoredProfile, bestProfile)
-  return reason ?? `A strong alternative at ${scored.matchPercent}% match.`
+  return reason ?? 'Very similar to your best match, a good second option.'
 }

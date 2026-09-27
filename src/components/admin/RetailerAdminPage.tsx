@@ -68,14 +68,14 @@ export default function RetailerAdminPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">Loading retailers…</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">Loading retailers…</p>
   }
 
   if (loadState === 'error') {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <p className="font-semibold text-red-600 dark:text-red-400 mb-2">Couldn't load retailers.</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{error}</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{error}</p>
       </div>
     )
   }
@@ -128,12 +128,12 @@ export default function RetailerAdminPage() {
         </div>
       )}
 
-      <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">
+      <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">
         {visible.length} of {rows.length} retailer(s) shown.
       </p>
 
       {visible.length === 0 ? (
-        <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">No retailers match these filters.</p>
+        <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">No retailers match these filters.</p>
       ) : (
         <div className="space-y-4">
           {visible.map((row) => (

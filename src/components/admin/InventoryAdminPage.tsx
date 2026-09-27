@@ -31,25 +31,25 @@ export default function InventoryAdminPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">Loading inventory…</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">Loading inventory…</p>
   }
 
   if (loadState === 'error') {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <p className="font-semibold text-red-600 dark:text-red-400 mb-2">Couldn't load inventory.</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{error}</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{error}</p>
       </div>
     )
   }
 
   if (rows.length === 0) {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">No inventory rows found.</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">No inventory rows found.</p>
   }
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{rows.length} string(s), sorted by brand then name.</p>
+      <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{rows.length} string(s), sorted by brand then name.</p>
       {rows.map((row) => (
         <InventoryAdminRow key={row.stringId} row={row} onSaved={handleSaved} />
       ))}

@@ -94,7 +94,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
       </label>
 
       <fieldset className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4">
-        <legend className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 px-1">Ratings (0–11)</legend>
+        <legend className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 px-1">Ratings (0–11)</legend>
         <div className="space-y-4 mt-2">
           <RatingSlider label="Repulsion" value={input.repulsion} onChange={(v) => set('repulsion', v)} error={errors.repulsion} disabled={saving} />
           <RatingSlider label="Control" value={input.control} onChange={(v) => set('control', v)} error={errors.control} disabled={saving} />
@@ -124,7 +124,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
         {input.isHybrid && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Main string</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">Main string</p>
               <NumberField label="Gauge (mm)" value={input.mainGauge} onChange={(v) => set('mainGauge', v)} error={errors.mainGauge} disabled={saving} placeholder="optional" step="0.01" />
               <TextField label="Material" value={input.mainMaterial} onChange={(v) => set('mainMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.mainConstruction} onChange={(v) => set('mainConstruction', v)} disabled={saving} placeholder="optional" />
@@ -138,7 +138,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
               />
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">Cross string</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">Cross string</p>
               <NumberField label="Gauge (mm)" value={input.crossGauge} onChange={(v) => set('crossGauge', v)} error={errors.crossGauge} disabled={saving} placeholder="optional" step="0.01" />
               <TextField label="Material" value={input.crossMaterial} onChange={(v) => set('crossMaterial', v)} disabled={saving} placeholder="optional" />
               <TextField label="Construction" value={input.crossConstruction} onChange={(v) => set('crossConstruction', v)} disabled={saving} placeholder="optional" />
@@ -156,7 +156,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
       </div>
 
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
-        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Commerce &amp; description</summary>
+        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 cursor-pointer select-none">Commerce &amp; description</summary>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           <NumberField label="String cost (€)" value={input.stringCost} onChange={(v) => set('stringCost', v)} error={errors.stringCost} disabled={saving} placeholder="optional" step="0.01" />
           <NumberField
@@ -182,7 +182,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
       </details>
 
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
-        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Media &amp; links</summary>
+        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 cursor-pointer select-none">Media &amp; links</summary>
         <div className="space-y-3 mt-3">
           <TextField label="Product URL" value={input.productUrl} onChange={(v) => set('productUrl', v)} error={errors.productUrl} disabled={saving} placeholder="https://…" />
           <div>
@@ -203,7 +203,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
       </details>
 
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
-        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Tension metadata (advanced)</summary>
+        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 cursor-pointer select-none">Tension metadata (advanced)</summary>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           <NumberField
             label="Tension adjustment (kg)"
@@ -315,7 +315,7 @@ function TextField({ label, value, onChange, error, disabled, placeholder, mono,
         placeholder={placeholder}
         className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
       />
-      {hint && !error && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{hint}</p>}
+      {hint && !error && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</p>}
       {error && <FieldError message={error} />}
     </label>
   )
@@ -384,7 +384,7 @@ function RatingSlider({ label, value, onChange, error, disabled, nullable, lowLa
             className="focus-ring w-16 rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-2 py-1 text-sm text-center text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
           {nullable && (
-            <label className="flex items-center gap-1 text-xs text-ink-700/60 dark:text-shuttle-100/60 cursor-pointer">
+            <label className="flex items-center gap-1 text-xs text-ink-700/70 dark:text-shuttle-100/60 cursor-pointer">
               <input type="checkbox" checked={isUnknown} onChange={(e) => onChange(e.target.checked ? '' : '5.5')} disabled={disabled} className="focus-ring rounded" />
               Unknown
             </label>
@@ -403,7 +403,7 @@ function RatingSlider({ label, value, onChange, error, disabled, nullable, lowLa
         className="focus-ring w-full accent-shuttle-500 disabled:opacity-40"
       />
       {(lowLabel || highLabel) && (
-        <div className="flex justify-between text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
+        <div className="flex justify-between text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-0.5">
           <span>{lowLabel}</span>
           <span>{highLabel}</span>
         </div>
@@ -418,7 +418,7 @@ function ImagePreview({ url }: { url: string }) {
 
   if (broken) {
     return (
-      <div className="mt-2 flex items-center gap-2 rounded-lg border-2 border-dashed border-court-900/15 dark:border-white/15 px-3 py-2 text-xs text-ink-700/50 dark:text-shuttle-100/50">
+      <div className="mt-2 flex items-center gap-2 rounded-lg border-2 border-dashed border-court-900/15 dark:border-white/15 px-3 py-2 text-xs text-ink-700/70 dark:text-shuttle-100/50">
         <span aria-hidden="true">🖼️</span> Image couldn't be loaded — check the URL.
       </div>
     )

@@ -11,6 +11,7 @@ import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
 import SpecialistHighlights from './SpecialistHighlights'
+import StringPrice from './StringPrice'
 import PurchaseOptions from './PurchaseOptions'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
@@ -27,17 +28,21 @@ interface StringCardProps {
   compareSelected?: boolean
   compareDisabled?: boolean
   onToggleCompare?: (id: string) => void
+  /** 'h2' on the string's own page, where the card is the main content. */
+  headingLevel?: 'h2' | 'h3'
   /** Defaults to the local stringSpecialistProfiles.ts lookup when omitted — pass the live, Supabase-merged map from useSpecialistProfiles() to reflect current data. Display only; never affects recommendation scoring. */
   specialistProfiles?: Record<string, StringSpecialistProfile>
   /** Purchase options for this string, from useRetailerPrices() — omitted or empty renders nothing. Secondary, display-only information; never affects recommendation scoring. */
   retailerListings?: RetailerListing[]
 }
 
-export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, specialistProfiles, retailerListings }: StringCardProps) {
+export default function StringCard({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, specialistProfiles, retailerListings, headingLevel = 'h3' }: StringCardProps) {
   const orderable = item.stock !== 'unavailable'
   const specialistProfile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const gauge = formatGauge(item)
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false)
+  // On the string's own page (headingLevel 'h2') everything is shown in full: no clamped text, hands-on notes open.
+  const isDetailPage = headingLevel === 'h2'
+  const [descriptionExpanded, setDescriptionExpanded] = useState(isDetailPage)
   const descriptionClamped = needsClamp(item.notes)
 
   return (
@@ -47,14 +52,27 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           ? 'border-shuttle-500 ring-2 ring-shuttle-500/30'
           : orderable
             ? 'border-court-900/10 dark:border-white/10 hover:shadow-lg hover:-translate-y-0.5'
-            : 'border-court-900/5 dark:border-white/5 opacity-70'
+            : 'border-dashed border-court-900/20 dark:border-white/20 saturate-50'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.brand}</p>
-          <h3 className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">{item.name}</h3>
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-0.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{item.brand}</p>
+          {(() => {
+            const Heading = headingLevel
+            return (
+              <Heading className="font-display text-lg font-semibold text-ink-900 dark:text-shuttle-50">
+                {headingLevel === 'h3' ? (
+                  <a href={`#string/${item.id}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
+                    {item.name}
+                  </a>
+                ) : (
+                  item.name
+                )}
+              </Heading>
+            )
+          })()}
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-0.5">
             {CATEGORY_LABEL[item.category]}
             {gauge != null && <> · {gauge}</>}
           </p>
@@ -71,7 +89,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           ) : (
             item.popularityRank != null && (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-600 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
+                className="inline-flex items-center gap-1 rounded-full bg-shuttle-100 dark:bg-shuttle-500/15 text-shuttle-700 dark:text-shuttle-400 px-2.5 py-1 text-xs font-semibold"
                 title="Popular with players I string for at my club"
               >
                 ★ Popular
@@ -105,12 +123,12 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
       {item.notes && (
         <div className="text-sm text-ink-700/70 dark:text-shuttle-100/70">
           <p className={descriptionClamped && !descriptionExpanded ? 'line-clamp-3' : ''}>{item.notes}</p>
-          {descriptionClamped && (
+          {descriptionClamped && !isDetailPage && (
             <button
               type="button"
               onClick={() => setDescriptionExpanded((e) => !e)}
               aria-expanded={descriptionExpanded}
-              className="focus-ring mt-1 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+              className="focus-ring mt-1 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
             >
               {descriptionExpanded ? 'Show less' : 'Read more'}
             </button>
@@ -118,7 +136,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
         </div>
       )}
 
-      {specialistProfile && <SpecialistPanel profile={specialistProfile} />}
+      {specialistProfile && <SpecialistPanel profile={specialistProfile} defaultOpen={isDetailPage} />}
 
       {retailerListings && retailerListings.length > 0 && (
         <PricePerMetreSummary listings={retailerListings} />
@@ -131,13 +149,17 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           href={item.productUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="focus-ring self-start text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+          className="focus-ring self-start text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
         >
           View on {item.brand} ↗
         </a>
       )}
 
-      <div className="mt-auto pt-3 border-t border-court-900/10 dark:border-white/10 flex items-center justify-end gap-2">
+      <div className="mt-auto pt-3">
+        <StringPrice stringCost={item.stringCost} />
+      </div>
+
+      <div className="pt-3 border-t border-court-900/10 dark:border-white/10 flex items-center justify-end gap-2">
         {onToggleCompare && (
           <button
             type="button"
@@ -161,7 +183,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
             Request this
           </a>
         ) : (
-          <span className="shrink-0 rounded-full bg-court-900/5 dark:bg-white/5 text-ink-700/40 dark:text-shuttle-100/40 text-sm font-semibold px-4 py-2 select-none">
+          <span className="shrink-0 rounded-full bg-court-900/5 dark:bg-white/5 text-ink-700/70 dark:text-shuttle-100/60 text-sm font-semibold px-4 py-2 select-none">
             Unavailable
           </span>
         )}
@@ -185,7 +207,7 @@ export function PricePerMetreSummary({ listings }: { listings: RetailerListing[]
   return (
     <p className="text-sm">
       <span className="font-semibold text-ink-900 dark:text-shuttle-50">From {summary.formatted}</span>{' '}
-      <span className="text-ink-700/50 dark:text-shuttle-100/50">— {summary.sourceDescription}</span>
+      <span className="text-ink-700/70 dark:text-shuttle-100/50">— {summary.sourceDescription}</span>
     </p>
   )
 }

@@ -148,7 +148,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
     <section className="rounded-xl border-2 border-shuttle-500/40 p-4 space-y-4">
       <div>
         <h4 className="font-semibold text-ink-900 dark:text-shuttle-50">Place it on the map</h4>
-        <p className="text-xs text-ink-700/60 dark:text-shuttle-100/60 mt-1">
+        <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60 mt-1">
           Click or drag where this string sits compared to the others. That plus the two durability answers fills in feel, liveliness and durability — anything you type by hand still wins.
         </p>
       </div>
@@ -215,7 +215,7 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
           </svg>
 
           <div className="flex flex-wrap items-center justify-between gap-2 mt-1 text-xs">
-            <label className="inline-flex items-center gap-1.5 text-ink-700/60 dark:text-shuttle-100/60 cursor-pointer">
+            <label className="inline-flex items-center gap-1.5 text-ink-700/70 dark:text-shuttle-100/60 cursor-pointer">
               <input type="checkbox" checked={showNames} onChange={(e) => setShowNames(e.target.checked)} /> Show names
             </label>
             {value && (
@@ -262,10 +262,10 @@ export default function SpecialistMapPlacer({ stringId, value, onChange, manualD
                   )
                 })}
               </ul>
-              <p className="text-[10px] text-ink-700/50 dark:text-shuttle-100/50 mt-1.5">✎ = typed by hand, overrides the map. The map only knows feel, liveliness and durability — set grip, net play, control, attack and beginner-friendliness by hand in Dimensions below.</p>
+              <p className="text-[10px] text-ink-700/70 dark:text-shuttle-100/50 mt-1.5">✎ = typed by hand, overrides the map. The map only knows feel, liveliness and durability — set grip, net play, control, attack and beginner-friendliness by hand in Dimensions below.</p>
             </div>
           ) : (
-            <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">No placement — the dashed ring shows where the string lands from manufacturer data and any values typed by hand.</p>
+            <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">No placement — the dashed ring shows where the string lands from manufacturer data and any values typed by hand.</p>
           )}
         </div>
       </div>
@@ -293,7 +293,7 @@ function SegmentedChoice<T extends string | number>({
       <legend className="flex w-full items-center justify-between text-xs font-semibold text-ink-900 dark:text-shuttle-50 mb-1.5">
         {label}
         {selected != null && (
-          <button type="button" onClick={onClear} disabled={disabled} className="font-normal text-ink-700/50 dark:text-shuttle-100/50 hover:underline cursor-pointer">
+          <button type="button" onClick={onClear} disabled={disabled} className="font-normal text-ink-700/70 dark:text-shuttle-100/50 hover:underline cursor-pointer">
             clear
           </button>
         )}

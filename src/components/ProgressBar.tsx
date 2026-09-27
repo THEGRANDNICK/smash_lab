@@ -11,7 +11,7 @@ export default function ProgressBar({ step, total }: ProgressBarProps) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-2 text-xs font-medium text-court-800/70 dark:text-shuttle-100/70">
+      <div className="flex items-center justify-between mb-2 text-xs font-medium text-court-800/90 dark:text-shuttle-100/70">
         <span>
           Question {Math.min(step + 1, total)} of {total}
         </span>
@@ -25,7 +25,7 @@ export default function ProgressBar({ step, total }: ProgressBarProps) {
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         />
         <motion.div
-          className="absolute -top-2.5 text-shuttle-600 drop-shadow"
+          className="absolute -top-2.5 text-shuttle-700 dark:text-shuttle-400 drop-shadow"
           initial={false}
           animate={{ left: `calc(${percent}% - 12px)` }}
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
