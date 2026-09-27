@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { stringPagePath } from '../logic/stringPages'
 import type { ScoredString } from '../logic/recommendationEngine'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
@@ -83,8 +84,9 @@ interface PodiumCardProps {
 const RANK_MEDAL = ['🥇', '🥈', '🥉']
 
 function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retailerListings, selected, disabled, onToggleCompare, className = '' }: PodiumCardProps) {
-  const [expanded, setExpanded] = useState(false)
   const isBest = rank === 1
+  // Rank 1 is the "why" panel for the hero above it, so its details are always open.
+  const [expanded, setExpanded] = useState(isBest)
   const { string: item, matchPercent } = scored
   const profile = specialistProfiles ? specialistProfiles[item.id] : getSpecialistProfile(item.id)
   const bestProfile = specialistProfiles ? specialistProfiles[best.string.id] : getSpecialistProfile(best.string.id)
@@ -104,30 +106,42 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
       className={`list-none rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6 ${className}`}
       aria-label={`Rank ${rank} of 3: ${item.brand} ${item.name}, ${matchPercent} percent match, ${matchLabel}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">
-            {RANK_MEDAL[rank - 1] ?? `#${rank}`} Rank {rank}
-          </p>
-          <p className="text-xs uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mt-1">{item.brand}</p>
-          <h3 className={`font-display font-bold text-ink-900 dark:text-shuttle-50 ${prominent ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>
-            <a href={`#string/${item.id}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
-              {item.name}
-            </a>
-            {gauge != null && <span className="text-sm font-normal text-ink-700/70 dark:text-shuttle-100/50 ml-2">{gauge}</span>}
-          </h3>
+      {isBest ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50">Why {item.name} is your best match</h3>
+            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70 mt-1">{matchPercent}% match with your answers</p>
+          </div>
+          <StockBadge stock={item.stock} />
         </div>
-        <div className="text-right shrink-0">
-          <p className={`font-display font-bold text-shuttle-700 dark:text-shuttle-400 leading-none ${prominent ? 'text-3xl sm:text-4xl' : 'text-xl'}`}>{matchLabel}</p>
-          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{matchPercent}% match</p>
+      ) : (
+        <>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">
+              {RANK_MEDAL[rank - 1] ?? `#${rank}`} Rank {rank}
+            </p>
+            <p className="text-xs uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mt-1">{item.brand}</p>
+            <h3 className={`font-display font-bold text-ink-900 dark:text-shuttle-50 ${prominent ? 'text-2xl sm:text-3xl' : 'text-lg'}`}>
+              <a href={`${import.meta.env.BASE_URL}${stringPagePath(item.id)}`} className="focus-ring rounded hover:underline decoration-shuttle-500 decoration-2 underline-offset-4">
+                {item.name}
+              </a>
+              {gauge != null && <span className="text-sm font-normal text-ink-700/70 dark:text-shuttle-100/50 ml-2">{gauge}</span>}
+            </h3>
+          </div>
+          <div className="text-right shrink-0">
+            <p className={`font-display font-bold text-shuttle-700 dark:text-shuttle-400 leading-none ${prominent ? 'text-3xl sm:text-4xl' : 'text-xl'}`}>{matchLabel}</p>
+            <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{matchPercent}% match</p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-3">
-        <StockBadge stock={item.stock} />
-      </div>
+        <div className="mt-3">
+          <StockBadge stock={item.stock} />
+        </div>
 
-      <p className={`mt-3 text-ink-700/80 dark:text-shuttle-100/80 ${prominent ? 'text-base' : 'text-sm'}`}>{reason}</p>
+        <p className={`mt-3 text-ink-700/80 dark:text-shuttle-100/80 ${prominent ? 'text-base' : 'text-sm'}`}>{reason}</p>
+        </>
+      )}
 
       <div className="mt-4 flex items-center gap-2">
         <button
@@ -142,15 +156,17 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
         >
           {selected ? 'Comparing' : '+ Compare'}
         </button>
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          aria-expanded={expanded}
-          aria-label={expanded ? `Show less about ${item.name}` : `Read more about ${item.name}`}
-          className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
+        {!isBest && (
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            aria-expanded={expanded}
+            aria-label={expanded ? `Show less about ${item.name}` : `Read more about ${item.name}`}
+            className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
         >
-          {expanded ? 'Show less' : 'Read more'}
-        </button>
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
       </div>
 
       {expanded && (

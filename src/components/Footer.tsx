@@ -23,10 +23,10 @@ export default function Footer() {
           </a>
         </p>
         <p className="flex items-center gap-3">
-          <a href="#impressum" className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
+          <a href={`${import.meta.env.BASE_URL}#impressum`} className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
             Impressum (DE)
           </a>
-          <a href="#datenschutz" className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
+          <a href={`${import.meta.env.BASE_URL}#datenschutz`} className="underline hover:text-ink-900 dark:hover:text-shuttle-50">
             Privacy Policy (DE)
           </a>
         </p>
