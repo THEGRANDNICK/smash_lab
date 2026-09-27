@@ -49,7 +49,7 @@ export default function SavedSetupBanner() {
             rel={whatsAppUrl ? 'noopener noreferrer' : undefined}
             className="focus-ring rounded-full bg-shuttle-500 hover:bg-shuttle-600 text-court-900 font-bold px-4 py-1.5 text-sm transition-colors cursor-pointer"
           >
-            Request this again
+            Ask about it
           </a>
           <button type="button" onClick={handleClear} className="focus-ring text-xs font-semibold text-white/60 hover:text-white cursor-pointer">
             Clear

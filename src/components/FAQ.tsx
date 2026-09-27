@@ -11,7 +11,7 @@ export default function FAQ() {
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Good questions</h2>
       </div>
 
-      {(['recommendations', 'service'] as const).map((group) => (
+      {(['recommendations', 'about'] as const).map((group) => (
         <div key={group} className="mb-10 last:mb-0">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-3">{GROUP_LABEL[group]}</h3>
           <div className="space-y-3">

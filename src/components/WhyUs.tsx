@@ -2,9 +2,9 @@ const POINTS = [
   { emoji: '🧠', title: 'Personalized, not generic', text: 'Recommendations come from a real scoring model based on how you actually play — not a one-size-fits-all bestseller list.' },
   { emoji: '🏸', title: 'Independent & unbiased', text: 'No sponsorships or paid placements. Every match is based on fit, not on what pays best.' },
   { emoji: '🧵', title: 'Full current lineup', text: 'Compare the whole lineup — repulsion, control, durability, feel — side by side, always up to date.' },
-  { emoji: '📦', title: "Can't find it?", text: "Don't see the string you want in the lineup? I can usually order it in for you." },
-  { emoji: '🎒', title: 'Bring your own string', text: 'Already have a string in mind? Bring it in and only pay the stringing fee.' },
-  { emoji: '🔧', title: 'Careful stringing, when you want it', text: 'Consistent mounting and pattern, with grommets checked along the way — built on ~2.5 years of hands-on experience.' },
+  { emoji: '🔬', title: 'Hands-on, not just marketing', text: 'Manufacturer ratings sit next to ~2.5 years of real playing and stringing experience, so you can see where the numbers and the court disagree.' },
+  { emoji: '⚖️', title: 'Honest trade-offs', text: 'Every recommendation says what you give up, not just what you gain. No string is the best at everything.' },
+  { emoji: '🆓', title: 'Free, no sign-up', text: 'No account and no newsletter. Take the quiz as often as you like, and share your result with whoever strings your racket.' },
 ]
 
 export default function WhyUs() {

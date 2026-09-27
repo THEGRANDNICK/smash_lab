@@ -145,7 +145,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         </label>
         {sortBy === 'popularity' && (
           <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
-            ★ Popular with players I string for at my club — not a global sales ranking.
+            ★ Popular among players at my club — not a global sales ranking.
           </p>
         )}
       </div>

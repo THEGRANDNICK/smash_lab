@@ -26,7 +26,7 @@ export interface EnquiryDetails {
 /**
  * The shared, human-readable message body — used both for the WhatsApp/
  * email prefill and for the standalone "Copy result summary" action.
- * Trailing fields (Racket/Preferred drop-off time/Additional note) are
+ * Trailing fields (Racket/My question) are
  * left as labelled blanks when not filled in, exactly like a real
  * message a customer would send, so the recipient can see at a glance
  * what still needs an answer.
@@ -41,12 +41,12 @@ export function buildResultSummaryText(details: EnquiryDetails): string {
     `Tension: ${formatKg(tensionKg)}`,
   ]
   if (alternativeTensions) lines.push(`Alternative tensions: ${alternativeTensions}`)
-  lines.push(`Match: ${matchPercent}%`, `Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, 'Preferred drop-off time: ', `Additional note: ${note ?? ''}`)
+  lines.push(`Match: ${matchPercent}%`, `Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, `My question: ${note ?? ''}`)
   return lines.join('\n')
 }
 
 export function buildEnquiryMailto(details: EnquiryDetails): string {
-  const subject = `Stringing enquiry — ${details.stringName}`
+  const subject = `Question about my Smash Lab result — ${details.stringName}`
   const body = buildResultSummaryText(details)
   return `mailto:${CONTACT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }
@@ -65,11 +65,11 @@ export function buildEnquiryWhatsAppUrl(details: EnquiryDetails): string | null 
 
 export function buildRequestMessage(stringName: string, tensionKg?: number): string {
   const tensionPart = tensionKg != null ? ` at ${formatKg(tensionKg)}` : ''
-  return `Hi! I used the Smash Lab String Finder and got ${stringName}${tensionPart} as my recommendation. I'd like to get my racket restrung — when could I drop it off?`
+  return `Hi Nick! I have a question about ${stringName}${tensionPart}: `
 }
 
 export function buildRequestMailto(stringName: string, tensionKg?: number): string {
-  const subject = `Restringing request — ${stringName}`
+  const subject = `Question about ${stringName}`
   const body = buildRequestMessage(stringName, tensionKg)
   return `mailto:${CONTACT.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 }

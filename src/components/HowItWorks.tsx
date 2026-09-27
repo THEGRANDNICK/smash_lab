@@ -2,7 +2,7 @@ const STEPS = [
   { emoji: '🏸', title: 'Take the quiz', text: 'Answer a handful of quick questions about how and how often you play — about 30–60 seconds.' },
   { emoji: '🧮', title: 'Get matched', text: 'A weighted scoring engine compares your answers against the whole string lineup, with the reasoning shown.' },
   { emoji: '⚖️', title: 'Compare & decide', text: 'See your top matches side by side, or browse the full lineup, before settling on a setup.' },
-  { emoji: '🧵', title: 'String it (optional)', text: 'Want it professionally strung? Drop off locally in Heidelberg — or take your recommendation anywhere.' },
+  { emoji: '🧵', title: 'Take it to your stringer', text: 'Your recommendation works anywhere: show it to your usual stringer or shop. Questions along the way? Just ask.' },
 ]
 
 export default function HowItWorks() {

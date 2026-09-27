@@ -129,7 +129,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
             </h1>
             <p className="mt-3 text-white/80 max-w-lg">{bestReason}</p>
             {rec.bestAvailable && (
-              <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — order required</p>
+              <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — may need to be ordered</p>
             )}
 
             {/* Tension */}
@@ -227,7 +227,6 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
           dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
           answers={answers}
           dataSource={dataSource}
-          stringCost={rec.best.string.stringCost}
         />
 
         {/* Secondary actions */}

@@ -180,13 +180,13 @@ test('summary matches the reference message shape exactly', () => {
   const text = buildResultSummaryText(ENQUIRY_DETAILS)
   assert.equal(
     text,
-    ['Hello Nick,', 'Smash Lab recommended the following setup:', '', 'String: Yonex BG80', 'Tension: 10.5 kg', 'Match: 91%', 'Data source: Manufacturer + Specialist calibration', '', 'Racket: ', 'Preferred drop-off time: ', 'Additional note: '].join('\n'),
+    ['Hello Nick,', 'Smash Lab recommended the following setup:', '', 'String: Yonex BG80', 'Tension: 10.5 kg', 'Match: 91%', 'Data source: Manufacturer + Specialist calibration', '', 'Racket: ', 'My question: '].join('\n'),
   )
 })
 test('racket model and note are included when provided', () => {
   const text = buildResultSummaryText({ ...ENQUIRY_DETAILS, racketModel: 'Astrox 88D', note: 'Please use a fresh grip too' })
   assert.match(text, /Racket: Astrox 88D/)
-  assert.match(text, /Additional note: Please use a fresh grip too/)
+  assert.match(text, /My question: Please use a fresh grip too/)
 })
 test('mailto URL is correctly percent-encoded and targets CONTACT.email', () => {
   const url = buildEnquiryMailto(ENQUIRY_DETAILS)

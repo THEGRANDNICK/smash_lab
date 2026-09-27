@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { formatEuro } from '../logic/pricing'
 import { buildEnquiryMailto, buildEnquiryWhatsAppUrl, buildResultSummaryText } from '../logic/contactMessage'
 import { formatKg } from '../logic/units'
 import { writeSavedSetup, type SavedSetup } from '../logic/savedSetup'
@@ -16,20 +15,18 @@ interface StringingEnquiryProps {
   /** The exact quiz answers + data-source choice that produced this result — encoded into the "Share result" link so opening it recomputes the identical recommendation client-side. Never written anywhere but the URL itself. */
   answers: QuizAnswers
   dataSource: DataSource
-  /** Hand-entered string price; null/undefined shows "price on request" for the string part. */
-  stringCost?: number | null
 }
 
 /**
  * The result page's primary conversion path — Part 3's "Stringing
- * enquiry" / "Request this setup" action. Deliberately framed as the
+ * question" / "Ask about this setup" action. Deliberately framed as the
  * natural next step after seeing a recommendation ("Want this setup in
  * your racket?"), not a bolted-on second CTA. Racket model and the note
  * only ever live in this component's own state — they're read into a
  * message body at the moment the player taps Send/Copy, never stored or
  * transmitted anywhere before that.
  */
-export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource, stringCost }: StringingEnquiryProps) {
+export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource }: StringingEnquiryProps) {
   const [racketModel, setRacketModel] = useState('')
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState(false)
@@ -84,18 +81,11 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
   return (
     <section className="mt-8 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/50 dark:bg-shuttle-500/10 p-6 sm:p-7" aria-labelledby="enquiry-heading">
       <h2 id="enquiry-heading" className="font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50">
-        Ready to try this setup?
+        Questions about this setup?
       </h2>
       <p className="mt-1 text-sm text-ink-700/70 dark:text-shuttle-100/70">
-        Need {fullName} at {formatKg(tensionKg)} professionally strung? Contact Nick in Heidelberg via WhatsApp or email — no account needed, nothing
-        is sent until you tap Send.
+        Want a second opinion on {fullName} at {formatKg(tensionKg)}? Send me your result via WhatsApp or email. No account needed, and nothing is sent until you tap Send.
       </p>
-      {stringCost != null && (
-        <p className="mt-3 text-sm text-ink-900 dark:text-shuttle-50">
-          <span className="font-bold">{formatEuro(stringCost)}</span>
-          <span className="text-ink-700/70 dark:text-shuttle-100/70"> string price (for information)</span>
-        </p>
-      )}
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
@@ -109,12 +99,12 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
           />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Additional note (optional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Your question (optional)</span>
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Anything else worth knowing?"
+            placeholder="What would you like to know?"
             className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
           />
         </label>

@@ -12,7 +12,6 @@ src/
     contact.ts                   # Owner contact details + optional WhatsApp number
     legalConfig.ts                # Impressum/Datenschutz required fields — see docs/legal-setup.md
     siteConfig.ts                 # Canonical site URL/name/description (mirrored by hand into index.html's meta tags)
-    serviceConfig.ts              # Homepage turnaround-time note
   config/
     recommendationWeights.ts     # How each quiz answer nudges the string-matching score
     tensionRules.ts               # Base tension ranges, goal/feel adjustments, safety margins

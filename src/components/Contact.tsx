@@ -1,5 +1,4 @@
 import { CONTACT } from '../data/contact'
-import { SERVICE_CONFIG } from '../data/serviceConfig'
 
 const WHATSAPP_URL = `https://wa.me/${CONTACT.whatsappNumber}?text=${encodeURIComponent('Hi Nick! I have a question about Smash Lab.')}`
 
@@ -10,7 +9,7 @@ export default function Contact() {
         <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold tracking-wide uppercase">Get in touch</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Say hello</h2>
         <p className="text-ink-700/70 dark:text-shuttle-100/70 mt-3">
-          Got a question about a string, your setup, or a restring? Message me directly — I usually reply within a day.
+          Got a question about a string or your setup? Message me — I usually reply within a day.
         </p>
       </div>
 
@@ -22,9 +21,6 @@ export default function Contact() {
           <ContactRow emoji="💬" label="WhatsApp" value="Message on WhatsApp" href={WHATSAPP_URL} external />
         </div>
 
-        <p className="mt-6 pt-6 border-t border-court-900/10 dark:border-white/10 text-center text-sm text-ink-700/70 dark:text-shuttle-100/60">
-          🕒 {SERVICE_CONFIG.turnaroundNote}
-        </p>
       </div>
     </section>
   )
