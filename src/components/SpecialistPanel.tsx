@@ -31,8 +31,8 @@ function formatTag(tag: string): string {
     .join(' ')
 }
 
-export default function SpecialistPanel({ profile }: { profile: StringSpecialistProfile }) {
-  const [open, setOpen] = useState(false)
+export default function SpecialistPanel({ profile, defaultOpen = false }: { profile: StringSpecialistProfile; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
 
   return (
     <div className="rounded-xl border border-court-900/10 dark:border-white/10 bg-court-900/[0.03] dark:bg-white/[0.03] overflow-hidden">
@@ -51,21 +51,21 @@ export default function SpecialistPanel({ profile }: { profile: StringSpecialist
         <div className="px-4 pb-4 space-y-3 text-sm">
           {profile.specialistTags && profile.specialistTags.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Best for</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Best for</p>
               <p className="text-ink-900 dark:text-shuttle-50 mt-0.5">{profile.specialistTags.slice(0, 4).map(formatTag).join(' • ')}</p>
             </div>
           )}
 
           {profile.feel && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Feel</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Feel</p>
               <p className="text-ink-900 dark:text-shuttle-50 mt-0.5">{FEEL_LABEL[profile.feel]}</p>
             </div>
           )}
 
           {profile.strengths && profile.strengths.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Strengths</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Strengths</p>
               <ul className="mt-0.5 space-y-0.5 text-ink-700/80 dark:text-shuttle-100/80">
                 {profile.strengths.map((s) => (
                   <li key={s}>• {s}</li>
@@ -76,7 +76,7 @@ export default function SpecialistPanel({ profile }: { profile: StringSpecialist
 
           {profile.weaknesses && profile.weaknesses.length > 0 && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Trade-offs</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Trade-offs</p>
               <ul className="mt-0.5 space-y-0.5 text-ink-700/80 dark:text-shuttle-100/80">
                 {profile.weaknesses.map((w) => (
                   <li key={w}>• {w}</li>
@@ -89,21 +89,21 @@ export default function SpecialistPanel({ profile }: { profile: StringSpecialist
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-court-900/10 dark:border-white/10 text-xs">
             <p>
-              <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">Experience: </span>
+              <span className="font-semibold text-ink-700/70 dark:text-shuttle-100/60">Experience: </span>
               <span className="text-ink-900 dark:text-shuttle-50">{EXPERIENCE_LABEL[profile.experienceSource]}</span>
             </p>
             <p>
-              <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">Confidence: </span>
+              <span className="font-semibold text-ink-700/70 dark:text-shuttle-100/60">Confidence: </span>
               <span className="text-ink-900 dark:text-shuttle-50">{CONFIDENCE_LABEL[profile.confidence]}</span>
             </p>
             {profile.reviewer && (
               <p>
-                <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">Reviewer: </span>
+                <span className="font-semibold text-ink-700/70 dark:text-shuttle-100/60">Reviewer: </span>
                 <span className="text-ink-900 dark:text-shuttle-50">{profile.reviewer}</span>
               </p>
             )}
           </div>
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
             Based on personal play, stringing observations and club experience — separate from the manufacturer ratings above.
           </p>
         </div>

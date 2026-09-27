@@ -1,5 +1,5 @@
 import type { StringItem } from '../data/strings'
-import { PERFORMANCE_AXES, PERFORMANCE_MAX, getPerformanceValues } from './performanceAxes'
+import { AXIS_EXPLANATION, PERFORMANCE_AXES, PERFORMANCE_MAX, getPerformanceValues } from './performanceAxes'
 
 export default function StatBars({ item, compact = false }: { item: StringItem; compact?: boolean }) {
   const values = getPerformanceValues(item)
@@ -12,7 +12,9 @@ export default function StatBars({ item, compact = false }: { item: StringItem; 
             <span className={`w-6 text-center shrink-0 ${compact ? 'text-xs' : ''}`} aria-hidden="true">
               {axis.emoji}
             </span>
-            <span className="w-32 shrink-0 text-ink-700/70 dark:text-shuttle-100/70">{axis.label}</span>
+            <span className="w-32 shrink-0 text-ink-700/70 dark:text-shuttle-100/70 cursor-help" title={AXIS_EXPLANATION[axis.key]}>
+              {axis.label}
+            </span>
             <span
               className="flex-1 h-2 rounded-full bg-court-900/10 dark:bg-white/10 overflow-hidden"
               role="img"
@@ -25,7 +27,7 @@ export default function StatBars({ item, compact = false }: { item: StringItem; 
                 />
               )}
             </span>
-            <span className="w-8 text-right tabular-nums text-xs text-ink-700/60 dark:text-shuttle-100/60">{value ?? '—'}</span>
+            <span className="w-8 text-right tabular-nums text-xs text-ink-700/70 dark:text-shuttle-100/60">{value ?? '—'}</span>
           </div>
         )
       })}

@@ -53,7 +53,7 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
   if (state === 'editing' || state === 'saving') {
     return (
       <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mb-1">{row.brand}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">{row.brand}</p>
         <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">{row.name}</h3>
         <CatalogStringForm
           mode="edit"
@@ -75,12 +75,12 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
     <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{row.brand}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{row.brand}</p>
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{row.name}</h3>
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40 font-mono">{row.id}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60 font-mono">{row.id}</p>
         </div>
         <div className="flex items-center gap-2">
-          {row.isHybrid && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-shuttle-500/20 text-shuttle-600">Hybrid</span>}
+          {row.isHybrid && <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-shuttle-500/20 text-shuttle-700 dark:text-shuttle-400">Hybrid</span>}
           <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-court-900/5 dark:bg-white/10 text-ink-700 dark:text-shuttle-100 capitalize">{row.category}</span>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default function CatalogAdminCard({ row, otherRows, onSaved, onDeleted }:
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40">Updated {new Date(row.updatedAt).toLocaleString()}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">Updated {new Date(row.updatedAt).toLocaleString()}</p>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -173,7 +173,7 @@ function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
     const crossRaw = row.crossStringMeta?.color
     if (!mainRaw && !crossRaw) return null
     return (
-      <p className="flex items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
+      <p className="flex items-center gap-2 text-xs text-ink-700/70 dark:text-shuttle-100/50 mb-4">
         <span className="font-semibold uppercase tracking-wide">Colors</span>
         <span>{mainRaw || 'unset'} main / {crossRaw || 'unset'} cross</span>
       </p>
@@ -182,7 +182,7 @@ function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
 
   if (!row.colors || row.colors.length === 0) return null
   return (
-    <p className="flex flex-wrap items-center gap-2 text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-4">
+    <p className="flex flex-wrap items-center gap-2 text-xs text-ink-700/70 dark:text-shuttle-100/50 mb-4">
       <span className="font-semibold uppercase tracking-wide">Colors</span>
       <span>{row.colors.join(', ')}</span>
     </p>
@@ -192,7 +192,7 @@ function CatalogColorPreview({ row }: { row: AdminCatalogRow }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{label}</dt>
       <dd className="text-ink-900 dark:text-shuttle-50">{value}</dd>
     </div>
   )

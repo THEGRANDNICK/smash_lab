@@ -9,7 +9,7 @@ export default function HowItWorks() {
   return (
     <section id="how-it-works" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
       <div className="text-center max-w-2xl mx-auto mb-12">
-        <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">How it works</p>
+        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">How it works</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">From quiz to your ideal setup</h2>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

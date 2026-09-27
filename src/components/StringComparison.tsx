@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { strings as defaultStrings, type StringItem } from '../data/strings'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
@@ -12,6 +12,7 @@ import ComparisonTable from './ComparisonTable'
 import ComparisonOverlayBars from './ComparisonOverlayBars'
 import StringMap from './StringMap'
 import DisclaimerBox from './DisclaimerBox'
+import StringBasics from './StringBasics'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
@@ -54,6 +55,25 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   const sorted = sortStrings(filtered, sortBy, retailerListingsByStringId)
   const compareItems = compareIds.map((id) => strings.find((s) => s.id === id)).filter((s): s is StringItem => s != null)
 
+  // The comparison panel renders above the whole grid — often thousands of pixels away from the
+  // card whose "+ Compare" was just clicked. Track whether it's on screen, and if not, show a
+  // sticky bar so the selection is visible and one tap away.
+  const panelRef = useRef<HTMLDivElement>(null)
+  const hasSelection = compareItems.length > 0
+  const [panelVisible, setPanelVisible] = useState(false)
+  useEffect(() => {
+    const el = panelRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setPanelVisible(entry.isIntersecting), { threshold: 0.15 })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasSelection])
+
+  function jumpToPanel() {
+    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    panelRef.current?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
+  }
+
   function toggleCompare(id: string) {
     setCompareIds((prev) => {
       if (prev.includes(id)) return prev.filter((existing) => existing !== id)
@@ -65,7 +85,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   return (
     <section id="strings" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
       <div className="text-center max-w-2xl mx-auto mb-10">
-        <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">The lineup</p>
+        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">The lineup</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Browse every string</h2>
         <p className="text-ink-700/70 dark:text-shuttle-100/70 mt-3">
           Not into quizzes? Compare the full lineup directly — repulsion, control, durability, sound and comfort, side by side.
@@ -124,7 +144,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
           </select>
         </label>
         {sortBy === 'popularity' && (
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
             ★ Popular with players I string for at my club — not a global sales ranking.
           </p>
         )}
@@ -153,9 +173,9 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
       </div>
 
       {compareItems.length > 0 && (
-        <div className="mb-8 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-4 sm:p-5">
+        <div ref={panelRef} className="mb-8 scroll-mt-24 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 className="font-display text-lg font-bold text-court-800 dark:text-shuttle-400">
+            <h3 tabIndex={-1} className="font-display text-lg font-bold text-court-800 dark:text-shuttle-400 outline-none">
               Comparing {compareItems.length} string{compareItems.length > 1 ? 's' : ''}
             </h3>
             <button
@@ -179,7 +199,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                   type="button"
                   onClick={() => toggleCompare(item.id)}
                   aria-label={`Remove ${item.name} from comparison`}
-                  className="focus-ring shrink-0 rounded-full w-5 h-5 flex items-center justify-center text-ink-700/50 dark:text-shuttle-100/50 hover:bg-court-900/10 dark:hover:bg-white/15 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
+                  className="focus-ring shrink-0 rounded-full w-5 h-5 flex items-center justify-center text-ink-700/70 dark:text-shuttle-100/50 hover:bg-court-900/10 dark:hover:bg-white/15 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
                 >
                   <span aria-hidden="true">✕</span>
                 </button>
@@ -233,7 +253,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                       type="button"
                       onClick={() => setRadarShowMore((s) => !s)}
                       aria-expanded={radarShowMore}
-                      className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                      className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
                     >
                       {radarShowMore ? 'Show fewer details' : 'Show more details'}
                     </button>
@@ -258,8 +278,10 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         </div>
       )}
 
+      <StringBasics className="mb-6 max-w-3xl mx-auto" />
+
       {sorted.length === 0 ? (
-        <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">No strings match those filters right now.</p>
+        <p className="text-center text-ink-700/70 dark:text-shuttle-100/70 py-12">No strings match these filters. Try another category or turn off “Available now”.</p>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map((item) => (
@@ -274,6 +296,33 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               retailerListings={retailerListingsByStringId?.[item.id]}
             />
           ))}
+        </div>
+      )}
+
+      {compareItems.length > 0 && !panelVisible && (
+        <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 pointer-events-none">
+          <div
+            role="region"
+            aria-label="Strings selected for comparison"
+            className="pointer-events-auto mx-auto max-w-xl flex items-center gap-3 rounded-2xl border-2 border-shuttle-500 bg-court-900 text-white shadow-2xl px-4 py-3"
+          >
+            <p className="min-w-0 flex-1 text-sm">
+              <span className="font-bold">
+                {compareItems.length} of {MAX_COMPARE} selected
+              </span>
+              <span className="block truncate text-white/70">{compareItems.map((i) => i.name).join(', ')}</span>
+            </p>
+            <button type="button" onClick={() => setCompareIds([])} className="focus-ring shrink-0 text-xs font-semibold text-white/70 hover:text-white cursor-pointer">
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={jumpToPanel}
+              className="focus-ring shrink-0 rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-sm font-bold px-4 py-2 cursor-pointer"
+            >
+              {compareItems.length === 1 ? 'View' : 'Compare now'}
+            </button>
+          </div>
         </div>
       )}
     </section>

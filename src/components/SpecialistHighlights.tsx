@@ -38,7 +38,7 @@ export default function SpecialistHighlights({ profile }: { profile: StringSpeci
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]" aria-label="Smash Lab hands-on strengths">
-      <span className="font-semibold text-ink-700/60 dark:text-shuttle-100/60">🔬 Smash Lab:</span>
+      <span className="font-semibold text-ink-700/70 dark:text-shuttle-100/60">🔬 Smash Lab:</span>
       {chips.map((c) => (
         <span key={c.label} className="rounded-full border border-shuttle-500/50 bg-shuttle-500/10 px-2 py-0.5 font-semibold text-ink-900 dark:text-shuttle-50">
           {c.label} {Number.isInteger(c.value) ? c.value : c.value.toFixed(1)}/5

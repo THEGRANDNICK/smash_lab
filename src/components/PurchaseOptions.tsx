@@ -35,7 +35,7 @@ export default function PurchaseOptions({ listings }: PurchaseOptionsProps) {
 
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer select-none font-semibold text-shuttle-600 dark:text-shuttle-400 focus-ring rounded">
+      <summary className="cursor-pointer select-none font-semibold text-shuttle-700 dark:text-shuttle-400 focus-ring rounded">
         🛒 Purchase options ({ordered.length})
       </summary>
       <ul className="mt-2 space-y-2">
@@ -53,22 +53,22 @@ export default function PurchaseOptions({ listings }: PurchaseOptionsProps) {
                 <div className="min-w-0">
                   <p className="font-semibold text-ink-900 dark:text-shuttle-50 truncate">
                     {listing.retailerName}
-                    {listing.isPreferred && <span className="ml-1.5 text-xs font-normal text-shuttle-600 dark:text-shuttle-400">preferred</span>}
+                    {listing.isPreferred && <span className="ml-1.5 text-xs font-normal text-shuttle-700 dark:text-shuttle-400">preferred</span>}
                   </p>
-                  <p className="text-xs text-ink-700/60 dark:text-shuttle-100/60">
+                  <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">
                     {packageLabel(listing)} · {AVAILABILITY_LABELS[listing.availabilityStatus]}
                   </p>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 {price != null && <p className="font-semibold text-ink-900 dark:text-shuttle-50">{price}</p>}
-                {perMetre != null && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">{formatRetailerPrice(perMetre, listing.currency)}/m</p>}
+                {perMetre != null && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">{formatRetailerPrice(perMetre, listing.currency)}/m</p>}
                 {safeUrl != null && (
                   <a
                     href={safeUrl}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="focus-ring inline-block mt-1 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                    className="focus-ring inline-block mt-1 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
                   >
                     Buy ↗
                   </a>

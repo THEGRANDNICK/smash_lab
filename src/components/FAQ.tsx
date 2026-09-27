@@ -7,13 +7,13 @@ export default function FAQ() {
   return (
     <section id="faq" className="py-20 px-4 sm:px-6 max-w-3xl mx-auto scroll-mt-20">
       <div className="text-center mb-10">
-        <p className="text-shuttle-600 font-semibold text-sm tracking-wide uppercase">FAQ</p>
+        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">FAQ</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Good questions</h2>
       </div>
 
       {(['recommendations', 'service'] as const).map((group) => (
         <div key={group} className="mb-10 last:mb-0">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50 mb-3">{GROUP_LABEL[group]}</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50 mb-3">{GROUP_LABEL[group]}</h3>
           <div className="space-y-3">
             {FAQS.map((item, i) => {
               if (item.group !== group) return null

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatEuro } from '../logic/pricing'
 import { buildEnquiryMailto, buildEnquiryWhatsAppUrl, buildResultSummaryText } from '../logic/contactMessage'
 import { formatKg } from '../logic/units'
 import { writeSavedSetup, type SavedSetup } from '../logic/savedSetup'
@@ -15,6 +16,8 @@ interface StringingEnquiryProps {
   /** The exact quiz answers + data-source choice that produced this result — encoded into the "Share result" link so opening it recomputes the identical recommendation client-side. Never written anywhere but the URL itself. */
   answers: QuizAnswers
   dataSource: DataSource
+  /** Hand-entered string price; null/undefined shows "price on request" for the string part. */
+  stringCost?: number | null
 }
 
 /**
@@ -26,7 +29,7 @@ interface StringingEnquiryProps {
  * message body at the moment the player taps Send/Copy, never stored or
  * transmitted anywhere before that.
  */
-export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource }: StringingEnquiryProps) {
+export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource, stringCost }: StringingEnquiryProps) {
   const [racketModel, setRacketModel] = useState('')
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState(false)
@@ -87,10 +90,16 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
         Need {fullName} at {formatKg(tensionKg)} professionally strung? Contact Nick in Heidelberg via WhatsApp or email — no account needed, nothing
         is sent until you tap Send.
       </p>
+      {stringCost != null && (
+        <p className="mt-3 text-sm text-ink-900 dark:text-shuttle-50">
+          <span className="font-bold">{formatEuro(stringCost)}</span>
+          <span className="text-ink-700/70 dark:text-shuttle-100/70"> string price (for information)</span>
+        </p>
+      )}
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Racket model (optional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Racket model (optional)</span>
           <input
             type="text"
             value={racketModel}
@@ -100,7 +109,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
           />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Additional note (optional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Additional note (optional)</span>
           <input
             type="text"
             value={note}

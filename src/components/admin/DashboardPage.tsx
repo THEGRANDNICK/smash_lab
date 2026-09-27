@@ -67,14 +67,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   }, [load])
 
   if (loadState === 'loading' && !data) {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">Loading dashboard…</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">Loading dashboard…</p>
   }
 
   if (loadState === 'full-error' || !data) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <p className="font-semibold text-red-600 dark:text-red-400 mb-2">Couldn't load the dashboard.</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60 mb-4">Every data source failed to load. Check your connection and try again.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60 mb-4">Every data source failed to load. Check your connection and try again.</p>
         <button
           type="button"
           onClick={() => void load(false)}
@@ -95,7 +95,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <h2 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">Operational overview</h2>
         <div className="flex items-center gap-3">
           {lastRefreshedAt && (
-            <span className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+            <span className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
               Last refreshed <time dateTime={lastRefreshedAt}>{formatRelativeTime(lastRefreshedAt)}</time>
             </span>
           )}
@@ -136,7 +136,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <SummaryCard title="Catalog" unavailable={failedSources.has('catalog')} onNavigate={() => onNavigate('catalog')} linkLabel="View catalog">
             <p className="text-3xl font-bold text-ink-900 dark:text-shuttle-50">{data.summary.catalog.total}</p>
-            <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">strings</p>
+            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">strings</p>
           </SummaryCard>
 
           <SummaryCard title="Inventory" unavailable={failedSources.has('inventory')} onNavigate={() => onNavigate('inventory')} linkLabel="View inventory">
@@ -155,9 +155,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
           <SummaryCard title="Specialists" unavailable={failedSources.has('specialists')} onNavigate={() => onNavigate('specialists')} linkLabel="View specialists">
             <p className="text-2xl font-bold text-ink-900 dark:text-shuttle-50">
-              {data.summary.specialists.withProfile} <span className="text-base font-normal text-ink-700/50 dark:text-shuttle-100/50">of {data.summary.specialists.totalCatalogStrings}</span>
+              {data.summary.specialists.withProfile} <span className="text-base font-normal text-ink-700/70 dark:text-shuttle-100/50">of {data.summary.specialists.totalCatalogStrings}</span>
             </p>
-            <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{data.summary.specialists.coveragePercent}% coverage</p>
+            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{data.summary.specialists.coveragePercent}% coverage</p>
           </SummaryCard>
 
           <SummaryCard title="Retailers" unavailable={failedSources.has('retailers')} onNavigate={() => onNavigate('retailers')} linkLabel="View retailers">
@@ -235,11 +235,11 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-4 flex flex-col gap-2">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{title}</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{title}</h4>
       <div className="flex-1">
-        {unavailable ? <p className="text-sm text-ink-700/50 dark:text-shuttle-100/50">Unavailable right now</p> : children}
+        {unavailable ? <p className="text-sm text-ink-700/70 dark:text-shuttle-100/50">Unavailable right now</p> : children}
       </div>
-      <button type="button" onClick={onNavigate} className="focus-ring self-start text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer">
+      <button type="button" onClick={onNavigate} className="focus-ring self-start text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer">
         {linkLabel} →
       </button>
     </div>
@@ -249,9 +249,9 @@ function SummaryCard({
 function DataQualitySection({ issues, degraded, onNavigate }: { issues: DataQualityIssue[]; degraded: boolean; onNavigate: (s: AdminSection) => void }) {
   return (
     <Panel title="Needs attention">
-      {degraded && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-3">Some issues may be missing because a data source failed to load — see the notice above.</p>}
+      {degraded && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mb-3">Some issues may be missing because a data source failed to load — see the notice above.</p>}
       {issues.length === 0 ? (
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">No data-quality issues detected right now.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">No data-quality issues detected right now.</p>
       ) : (
         <ul className="divide-y divide-court-900/10 dark:divide-white/10">
           {issues.map((issue) => (
@@ -265,7 +265,7 @@ function DataQualitySection({ issues, degraded, onNavigate }: { issues: DataQual
                 <button
                   type="button"
                   onClick={() => onNavigate(issue.section)}
-                  className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                  className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
                 >
                   Review
                 </button>
@@ -297,15 +297,15 @@ function InventoryAttentionSection({
     <Panel
       title="Inventory status"
       action={
-        <button type="button" onClick={() => onNavigate('inventory')} className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer">
+        <button type="button" onClick={() => onNavigate('inventory')} className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer">
           View all inventory
         </button>
       }
     >
       {unavailable ? (
-        <p className="text-sm text-ink-700/50 dark:text-shuttle-100/50">Unavailable right now.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/50">Unavailable right now.</p>
       ) : attention.items.length === 0 ? (
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">Nothing needs attention — every inventory row is in stock with complete data.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">Nothing needs attention — every inventory row is in stock with complete data.</p>
       ) : (
         <>
           <ul className="divide-y divide-court-900/10 dark:divide-white/10">
@@ -315,7 +315,7 @@ function InventoryAttentionSection({
                   <p className="text-sm font-semibold text-ink-900 dark:text-shuttle-50 truncate">
                     {item.brand} {item.name}
                   </p>
-                  <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+                  <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
                     {item.priority === 'data-issue' ? `${PRIORITY_LABEL[item.priority]} — ` : ''}
                     qty {item.quantity ?? '—'} · {item.packageType} · updated {formatRelativeTime(item.updatedAt)}
                   </p>
@@ -325,7 +325,7 @@ function InventoryAttentionSection({
                   <button
                     type="button"
                     onClick={() => onNavigate('inventory')}
-                    className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                    className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
                   >
                     Open
                   </button>
@@ -334,7 +334,7 @@ function InventoryAttentionSection({
             ))}
           </ul>
           {attention.totalNeedingAttention > attention.items.length && (
-            <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-3">
+            <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-3">
               Showing {attention.items.length} of {attention.totalNeedingAttention} entries needing attention.
             </p>
           )}
@@ -363,7 +363,7 @@ function ProgressRow({ label, present, total, percent, onNavigate }: { label: st
       >
         <div className="h-full rounded-full bg-shuttle-500" style={{ width: `${percent}%` }} />
       </div>
-      <button type="button" onClick={onNavigate} className="focus-ring mt-1 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer">
+      <button type="button" onClick={onNavigate} className="focus-ring mt-1 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer">
         {total - present} still need one →
       </button>
     </div>
@@ -377,7 +377,7 @@ function CountRow({ label, count, onNavigate }: { label: string; count: number; 
       <span className="text-sm text-ink-900 dark:text-shuttle-50">{label}</span>
       <span className="flex items-center gap-3">
         <span className="text-sm font-semibold tabular-nums text-ink-900 dark:text-shuttle-50">{count}</span>
-        <button type="button" onClick={onNavigate} className="focus-ring text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer">
+        <button type="button" onClick={onNavigate} className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer">
           Review
         </button>
       </span>
@@ -389,7 +389,7 @@ function CoverageSection({ coverage, unavailable, onNavigate }: { coverage: Dash
   return (
     <Panel title="Catalog &amp; specialist coverage">
       {unavailable ? (
-        <p className="text-sm text-ink-700/50 dark:text-shuttle-100/50">Unavailable right now.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/50">Unavailable right now.</p>
       ) : (
         <div className="space-y-4">
           <ProgressRow
@@ -410,7 +410,7 @@ function CoverageSection({ coverage, unavailable, onNavigate }: { coverage: Dash
             coverage.missingProductUrl === 0 &&
             coverage.missingImageUrl === 0 &&
             coverage.missingShockAbsorption === 0 &&
-            coverage.hybridMissingStructuredMeta === 0 && <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">Catalog metadata is fully complete.</p>}
+            coverage.hybridMissingStructuredMeta === 0 && <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">Catalog metadata is fully complete.</p>}
         </div>
       )}
     </Panel>
@@ -421,7 +421,7 @@ function RetailerHealthSection({ health, unavailable, onNavigate }: { health: Da
   return (
     <Panel title="Retailer &amp; listing health">
       {unavailable ? (
-        <p className="text-sm text-ink-700/50 dark:text-shuttle-100/50">Unavailable right now.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/50">Unavailable right now.</p>
       ) : (
         <div className="space-y-3">
           <ul className="text-sm space-y-1">
@@ -446,7 +446,7 @@ function RetailerHealthSection({ health, unavailable, onNavigate }: { health: Da
           {health.inactiveRetailersWithListings.length > 0 && (
             <div>
               <p className="text-sm text-ink-900 dark:text-shuttle-50 mb-1">Inactive retailers with existing listings</p>
-              <ul className="text-xs text-ink-700/60 dark:text-shuttle-100/60 space-y-0.5">
+              <ul className="text-xs text-ink-700/70 dark:text-shuttle-100/60 space-y-0.5">
                 {health.inactiveRetailersWithListings.map((r) => (
                   <li key={r.retailerId}>
                     {r.retailerName} — {r.listingCount} listing{r.listingCount === 1 ? '' : 's'}
@@ -456,7 +456,7 @@ function RetailerHealthSection({ health, unavailable, onNavigate }: { health: Da
               <button
                 type="button"
                 onClick={() => onNavigate('retailers')}
-                className="focus-ring mt-1 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                className="focus-ring mt-1 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
               >
                 Review retailers
               </button>
@@ -471,26 +471,26 @@ function RetailerHealthSection({ health, unavailable, onNavigate }: { health: Da
 function RecentUpdatesSection({ updates, degraded, onNavigate }: { updates: RecentUpdateItem[]; degraded: boolean; onNavigate: (s: AdminSection) => void }) {
   return (
     <Panel title="Recent data updates">
-      {degraded && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mb-3">This list may be incomplete because a data source failed to load — see the notice above.</p>}
+      {degraded && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mb-3">This list may be incomplete because a data source failed to load — see the notice above.</p>}
       {updates.length === 0 ? (
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">No recent updates yet.</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">No recent updates yet.</p>
       ) : (
         <ul className="divide-y divide-court-900/10 dark:divide-white/10">
           {updates.map((item) => (
             <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{item.sourceLabel}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{item.sourceLabel}</p>
                 <p className="text-sm text-ink-900 dark:text-shuttle-50 truncate">
                   {item.title} updated{item.secondary ? ` (${item.secondary})` : ''}
                 </p>
-                <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50">
+                <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
                   <time dateTime={item.updatedAt}>{formatRelativeTime(item.updatedAt)}</time>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => onNavigate(item.section)}
-                className="focus-ring shrink-0 text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline cursor-pointer"
+                className="focus-ring shrink-0 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
               >
                 Open →
               </button>

@@ -30,7 +30,7 @@ export default function DataSourceSwitch({ value, onChange }: { value: DataSourc
           </button>
         ))}
       </div>
-      {active && <p className="text-center text-[11px] text-ink-700/50 dark:text-shuttle-100/50 max-w-md">{active.blurb}</p>}
+      {active && <p className="text-center text-[11px] text-ink-700/70 dark:text-shuttle-100/50 max-w-md">{active.blurb}</p>}
     </div>
   )
 }

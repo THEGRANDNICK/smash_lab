@@ -68,14 +68,14 @@ export default function SpecialistAdminPage() {
   }
 
   if (loadState === 'loading') {
-    return <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">Loading specialist profiles…</p>
+    return <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">Loading specialist profiles…</p>
   }
 
   if (loadState === 'error') {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <p className="font-semibold text-red-600 dark:text-red-400 mb-2">Couldn't load specialist profiles.</p>
-        <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">{error}</p>
+        <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{error}</p>
       </div>
     )
   }
@@ -101,12 +101,12 @@ export default function SpecialistAdminPage() {
         </select>
       </div>
 
-      <p className="text-sm text-ink-700/60 dark:text-shuttle-100/60">
+      <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">
         {visible.length} of {rows.length} string(s) shown — {rows.filter((r) => r.hasProfile).length} have a specialist profile.
       </p>
 
       {visible.length === 0 ? (
-        <p className="text-center text-ink-700/60 dark:text-shuttle-100/60 py-12">No strings match these filters.</p>
+        <p className="text-center text-ink-700/70 dark:text-shuttle-100/60 py-12">No strings match these filters.</p>
       ) : (
         <div className="space-y-4">
           {visible.map((row) => (

@@ -140,7 +140,7 @@ export default function SupabaseDebugPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
       <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mb-1">Development only — not linked from the site</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">Development only — not linked from the site</p>
         <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mb-6">Supabase Debug</h1>
 
         <dl className="space-y-4 text-sm">
@@ -156,7 +156,7 @@ export default function SupabaseDebugPage() {
           {error && <Row label="Error" value={error} />}
         </dl>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 4 — catalog loading</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mt-8 mb-1">Phase 4 — catalog loading</p>
         <dl className="space-y-4 text-sm">
           <Row label="Catalog source" value={lastCatalogFetch ? (lastCatalogFetch.source === 'live' ? '🟢 Live (public.strings)' : '🟡 Local fallback (strings.ts)') : 'Not fetched yet'} />
           <Row
@@ -172,7 +172,7 @@ export default function SupabaseDebugPage() {
           <Row label="Catalog ids missing an inventory row" value={missingInventoryIds.length === 0 ? 'None' : missingInventoryIds.join(', ')} />
         </dl>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 6 — decimal ratings, hybrids &amp; specialist profiles</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mt-8 mb-1">Phase 6 — decimal ratings, hybrids &amp; specialist profiles</p>
         <dl className="space-y-4 text-sm">
           <Row label="Decimal validation status" value={decimalValidationLabel(lastCatalogFetch, decimalRatingCount)} />
           <Row label="Hybrid strings in catalog" value={hybridCount == null ? '—' : String(hybridCount)} />
@@ -190,7 +190,7 @@ export default function SupabaseDebugPage() {
           <Row label="Specialist profiles referencing missing strings (orphaned)" value={orphanSpecialistIds.length === 0 ? 'None' : orphanSpecialistIds.join(', ')} />
         </dl>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 9 — string colors</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mt-8 mb-1">Phase 9 — string colors</p>
         <dl className="space-y-4 text-sm">
           <Row label="Strings with an inventory color" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.withInventoryColor)} />
           <Row label="Strings with catalog colors" value={colorDiagnostics == null ? '—' : String(colorDiagnostics.withCatalogColors)} />
@@ -258,7 +258,7 @@ export default function SupabaseDebugPage() {
           />
         </dl>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailers</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mt-8 mb-1">Phase 7 — retailers</p>
         <dl className="space-y-4 text-sm">
           <Row
             label="Retailer entity source"
@@ -283,7 +283,7 @@ export default function SupabaseDebugPage() {
           />
         </dl>
 
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mt-8 mb-1">Phase 7 — retailer listings &amp; purchase options</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mt-8 mb-1">Phase 7 — retailer listings &amp; purchase options</p>
         <dl className="space-y-4 text-sm">
           <Row label="Retailer source" value={retailerFetch ? (retailerFetch.source === 'live' ? '🟢 Live (public.retailer_prices)' : '🔴 Unavailable — no purchase options shown') : 'Not fetched yet'} />
           <Row

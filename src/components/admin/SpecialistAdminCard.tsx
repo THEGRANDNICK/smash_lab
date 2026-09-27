@@ -58,7 +58,7 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
   if (state === 'editing' || state === 'saving') {
     return (
       <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mb-1">{row.brand}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">{row.brand}</p>
         <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">{row.name}</h3>
         <SpecialistProfileForm
           stringId={row.stringId}
@@ -79,12 +79,12 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
     <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{row.brand}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{row.brand}</p>
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{row.name}</h3>
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40 font-mono">{row.stringId}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60 font-mono">{row.stringId}</p>
         </div>
         {!row.hasProfile && (
-          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-court-900/5 dark:bg-white/10 text-ink-700/50 dark:text-shuttle-100/50">No profile</span>
+          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-court-900/5 dark:bg-white/10 text-ink-700/70 dark:text-shuttle-100/50">No profile</span>
         )}
       </div>
 
@@ -133,7 +133,7 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40">{row.updatedAt ? `Updated ${new Date(row.updatedAt).toLocaleString()}` : 'No specialist profile yet'}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">{row.updatedAt ? `Updated ${new Date(row.updatedAt).toLocaleString()}` : 'No specialist profile yet'}</p>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -161,7 +161,7 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{label}</dt>
       <dd className="text-ink-900 dark:text-shuttle-50 capitalize">{value}</dd>
     </div>
   )

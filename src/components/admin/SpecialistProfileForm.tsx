@@ -202,8 +202,8 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
       {errors.mapPlacement && <FieldError message={errors.mapPlacement} />}
 
       <details className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-4 group">
-        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 cursor-pointer select-none">Dimensions (1–5, advanced)</summary>
-        <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-2 mb-3">Only needed to override the map. Blank fields use the value shown in grey, derived from the placement above.</p>
+        <summary className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 cursor-pointer select-none">Dimensions (1–5, advanced)</summary>
+        <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-2 mb-3">Only needed to override the map. Blank fields use the value shown in grey, derived from the placement above.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {DIMENSION_OPTIONS.map(({ key, label }) => (
             <label key={key} className="block text-sm">

@@ -24,6 +24,15 @@ export const PERFORMANCE_AXES: PerformanceAxis[] = [
   { key: 'shockAbsorption', label: 'Shock absorption', shortLabel: 'Abs', emoji: '🤲' },
 ]
 
+/** Plain-language meaning of each rating, keyed like PERFORMANCE_AXES. */
+export const AXIS_EXPLANATION: Record<PerformanceDimension, string> = {
+  repulsion: 'How fast the string throws the shuttle back off the racket. Higher means more free power and speed.',
+  control: 'How precisely you can place the shuttle. Higher means more accurate shots, usually with a little less free power.',
+  durability: 'How long the string lasts before it breaks. Thicker strings usually last longer.',
+  hittingSound: 'How loud and crisp the "ping" is on impact. Many players use it as feedback on a clean hit.',
+  shockAbsorption: 'How much vibration the string soaks up. Higher feels softer and is easier on the arm.',
+}
+
 /** Same 0–11 scale used consistently across every string, so charts can be compared directly. */
 export const PERFORMANCE_MAX = 11
 

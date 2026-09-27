@@ -68,7 +68,8 @@ function describePosition(holdRepulsion: number, softHard: number): string {
  */
 export default function StringMap({ items, specialistProfiles, useSpecialistData = true, rankedIds = [], selectedIds = [], selectionFull = false, onToggleSelect, className = '' }: StringMapProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [showList, setShowList] = useState(false)
+  // On phones the map renders ~330px wide and its labels get very small, so the readable list starts open there.
+  const [showList, setShowList] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 480px)').matches)
 
   const points = useMemo(
     () =>
@@ -96,16 +97,16 @@ export default function StringMap({ items, specialistProfiles, useSpecialistData
         <line x1={CENTER - CIRCLE_R} y1={CENTER} x2={CENTER + CIRCLE_R} y2={CENTER} className="stroke-court-900/15 dark:stroke-white/15" />
         <line x1={CENTER} y1={CENTER - CIRCLE_R} x2={CENTER} y2={CENTER + CIRCLE_R} className="stroke-court-900/15 dark:stroke-white/15" />
 
-        <text x={CENTER} y={CENTER - AXIS_LABEL_R} textAnchor="middle" className="fill-ink-700/50 dark:fill-shuttle-100/50 text-[9px] font-semibold uppercase tracking-wide">
+        <text x={CENTER} y={CENTER - AXIS_LABEL_R} textAnchor="middle" className="fill-ink-700/70 dark:fill-shuttle-100/70 text-[11px] font-semibold uppercase tracking-wide">
           Hard feel
         </text>
-        <text x={CENTER} y={CENTER + AXIS_LABEL_R + 6} textAnchor="middle" className="fill-ink-700/50 dark:fill-shuttle-100/50 text-[9px] font-semibold uppercase tracking-wide">
+        <text x={CENTER} y={CENTER + AXIS_LABEL_R + 6} textAnchor="middle" className="fill-ink-700/70 dark:fill-shuttle-100/70 text-[11px] font-semibold uppercase tracking-wide">
           Soft feel
         </text>
-        <text x={CENTER - AXIS_LABEL_R} y={CENTER + 3} textAnchor="middle" className="fill-ink-700/50 dark:fill-shuttle-100/50 text-[9px] font-semibold uppercase tracking-wide">
+        <text x={CENTER - AXIS_LABEL_R} y={CENTER + 3} textAnchor="middle" className="fill-ink-700/70 dark:fill-shuttle-100/70 text-[11px] font-semibold uppercase tracking-wide">
           Maximum hold
         </text>
-        <text x={CENTER + AXIS_LABEL_R} y={CENTER + 3} textAnchor="middle" className="fill-ink-700/50 dark:fill-shuttle-100/50 text-[9px] font-semibold uppercase tracking-wide">
+        <text x={CENTER + AXIS_LABEL_R} y={CENTER + 3} textAnchor="middle" className="fill-ink-700/70 dark:fill-shuttle-100/70 text-[11px] font-semibold uppercase tracking-wide">
           Quick repulsion
         </text>
 
@@ -164,7 +165,7 @@ export default function StringMap({ items, specialistProfiles, useSpecialistData
                   x={labelX}
                   y={labelY}
                   textAnchor="middle"
-                  className={`text-[7px] uppercase tracking-wide pointer-events-none ${isTopRank ? 'fill-ink-900 dark:fill-shuttle-50 font-bold' : 'fill-ink-700/60 dark:fill-shuttle-100/60 font-semibold'}`}
+                  className={`${isTopRank ? 'text-[10px]' : 'text-[8px]'} uppercase tracking-wide pointer-events-none ${isTopRank ? 'fill-ink-900 dark:fill-shuttle-50 font-bold' : 'fill-ink-700/70 dark:fill-shuttle-100/70 font-semibold'}`}
                 >
                   {item.name}
                 </text>
@@ -178,7 +179,7 @@ export default function StringMap({ items, specialistProfiles, useSpecialistData
         {(['repulsion', 'control', 'durability'] as StringCategory[])
           .filter((c) => usedCategories.has(c))
           .map((c) => (
-            <span key={c} className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-700/60 dark:text-shuttle-100/60">
+            <span key={c} className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/60">
               <span className={`w-2 h-2 rounded-full ${CATEGORY_COLOR[c].dot}`} />
               {CATEGORY_COLOR[c].label}
             </span>
@@ -186,15 +187,15 @@ export default function StringMap({ items, specialistProfiles, useSpecialistData
       </div>
 
       {active && (
-        <p className="mt-2 text-center text-[11px] text-ink-700/60 dark:text-shuttle-100/60">
+        <p className="mt-2 text-center text-[11px] text-ink-700/70 dark:text-shuttle-100/60">
           {active.item.brand} {active.item.name} — {CATEGORY_COLOR[active.item.category].label} — {describePosition(active.position.holdRepulsion, active.position.softHard)}
           {onToggleSelect && <> · {selectedIds.includes(active.item.id) ? 'selected for comparison' : 'click to add to comparison'}</>}
         </p>
       )}
-      <p className="mt-1 text-center text-xs text-ink-700/50 dark:text-shuttle-100/50">Positions are directional estimates, not a precise measurement.</p>
+      <p className="mt-1 text-center text-xs text-ink-700/70 dark:text-shuttle-100/50">Positions are directional estimates, not a precise measurement.</p>
 
       <details className="mt-3" open={showList} onToggle={(e) => setShowList((e.target as HTMLDetailsElement).open)}>
-        <summary className="focus-ring cursor-pointer select-none text-xs font-semibold text-shuttle-600 dark:text-shuttle-400 hover:underline">{showList ? 'Hide list view' : 'Show as a list'}</summary>
+        <summary className="focus-ring cursor-pointer select-none text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline">{showList ? 'Hide list view' : 'Show as a list'}</summary>
         <ul className="mt-2 divide-y divide-court-900/10 dark:divide-white/10 border-2 border-court-900/10 dark:border-white/10 rounded-xl text-sm">
           {points.map(({ item, position }) => (
             <li key={item.id} className="flex items-center justify-between gap-3 px-3 py-2">
@@ -202,7 +203,7 @@ export default function StringMap({ items, specialistProfiles, useSpecialistData
                 <span className="font-semibold text-ink-900 dark:text-shuttle-50">
                   {item.brand} {item.name}
                 </span>
-                <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50">
+                <span className="block text-xs text-ink-700/70 dark:text-shuttle-100/50">
                   {CATEGORY_COLOR[item.category].label} · {describePosition(position.holdRepulsion, position.softHard)}
                 </span>
               </span>

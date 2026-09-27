@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import Nav from './components/Nav'
 import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
@@ -13,15 +13,25 @@ import StringFinder from './components/StringFinder'
 import SavedSetupBanner from './components/SavedSetupBanner'
 import RecommendationResult from './components/RecommendationResult'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
-import AdminApp from './components/admin/AdminApp'
+// Lazy-loaded: the admin area (forms, map placer, Supabase auth UI) is never needed by visitors,
+// so it stays out of the main bundle and only downloads when #admin is opened.
+const AdminApp = lazy(() => import('./components/admin/AdminApp'))
 import Impressum from './components/legal/Impressum'
 import Datenschutz from './components/legal/Datenschutz'
 import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 import { useRetailerPrices } from './hooks/useRetailerPrices'
 import { decodeResultShareState } from './logic/resultShareState'
+import StringDetail from './components/StringDetail'
+import { strings } from './data/strings'
 
-type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result'
+type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string'
+
+/** Reads the string id from a "#string/<id>" URL. */
+function getStringIdFromHash(): string {
+  const hash = window.location.hash.replace('#', '')
+  return hash.startsWith('string/') ? decodeURIComponent(hash.slice('string/'.length)) : ''
+}
 
 /** Reads the encoded payload from a "#result/<encoded>" URL. */
 function getSharedResultEncoded(): string {
@@ -47,6 +57,10 @@ function getPageTitle(hash: string): string {
   if (clean === 'datenschutz') return 'Datenschutzerklärung — Smash Lab'
   if (clean.startsWith('admin')) return 'Admin — Smash Lab'
   if (clean.startsWith('result/')) return 'Your Recommendation — Smash Lab'
+  if (clean.startsWith('string/')) {
+    const item = strings.find((s) => s.id === decodeURIComponent(clean.slice('string/'.length)))
+    if (item) return `${item.brand} ${item.name} — Smash Lab`
+  }
   return BASE_TITLE
 }
 
@@ -54,6 +68,7 @@ function viewFromHash(): View {
   const hash = window.location.hash.replace('#', '')
   if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
   if (hash.startsWith('result/')) return 'result'
+  if (hash.startsWith('string/')) return 'string'
   // Not linked from the public nav — a direct URL is the entry point.
   // Security is enforced by Supabase Auth + RLS inside AdminApp, not by
   // this route being hard to find.
@@ -83,6 +98,7 @@ function App() {
   // the previous shared result. This always changes when the hash does,
   // and is used as a React `key` below to force a fresh render.
   const [sharedResultEncoded, setSharedResultEncoded] = useState<string>(getSharedResultEncoded)
+  const [stringId, setStringId] = useState<string>(getStringIdFromHash)
   const liveStrings = useStringPool()
   const specialistProfiles = useSpecialistProfiles()
   const retailerListingsByStringId = useRetailerPrices()
@@ -91,6 +107,9 @@ function App() {
     const onHashChange = () => {
       setView(viewFromHash())
       setSharedResultEncoded(getSharedResultEncoded())
+      const nextStringId = getStringIdFromHash()
+      setStringId(nextStringId)
+      if (nextStringId) window.scrollTo({ top: 0, behavior: 'auto' })
       document.title = getPageTitle(window.location.hash)
     }
     document.title = getPageTitle(window.location.hash)
@@ -109,7 +128,11 @@ function App() {
   // inside AdminApp. Real protection is Supabase Auth + RLS, handled
   // entirely inside AdminApp; this route split is just presentation.
   if (view === 'admin') {
-    return <AdminApp onExit={() => goTo('home')} />
+    return (
+      <Suspense fallback={<p className="p-8 text-center text-ink-700/70 dark:text-shuttle-100/70">Loading admin…</p>}>
+        <AdminApp onExit={() => goTo('home')} />
+      </Suspense>
+    )
   }
 
   // Legal pages are deliberately isolated from the main app shell — a
@@ -185,6 +208,19 @@ function App() {
               )
             })()}
           </div>
+        )}
+
+        {view === 'string' && (
+          <StringDetail
+            key={stringId}
+            stringId={stringId}
+            strings={liveStrings}
+            specialistProfiles={specialistProfiles}
+            retailerListingsByStringId={retailerListingsByStringId}
+            onBrowse={() => goTo('compare')}
+            onCompare={() => goTo('compare')}
+            onQuiz={() => goTo('finder')}
+          />
         )}
 
         {view === 'compare' && (

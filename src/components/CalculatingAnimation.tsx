@@ -34,7 +34,7 @@ export default function CalculatingAnimation({ onDone, durationMs = 2200 }: Calc
         <Shuttlecock className="w-16 h-16" />
       </motion.div>
       <p className="font-display text-xl font-semibold mt-6 text-ink-900 dark:text-shuttle-50">Calculating your perfect string…</p>
-      <motion.p key={messageIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-ink-700/60 dark:text-shuttle-100/60 mt-2 h-6">
+      <motion.p key={messageIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-ink-700/70 dark:text-shuttle-100/60 mt-2 h-6">
         {MESSAGES[messageIndex]}
       </motion.p>
       <div className="flex gap-1.5 mt-6" aria-hidden="true">

@@ -63,7 +63,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             </option>
           ))}
         </select>
-        {editingId != null && <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">The string can't be changed after a listing is created.</p>}
+        {editingId != null && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">The string can't be changed after a listing is created.</p>}
         {errors.stringId && <FieldError message={errors.stringId} />}
       </label>
 
@@ -83,7 +83,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
               </option>
             ))}
           </select>
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">
             Don't see the retailer you need? Add it first from the Retailers tab.
           </p>
           {errors.retailerId && <FieldError message={errors.retailerId} />}
@@ -153,7 +153,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             disabled={saving}
             placeholder="e.g. 200 for a reel — leave blank if unknown"
           />
-          <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">
             Package length is required for price-per-metre comparison. Leaving it blank is allowed, but this listing won't be sortable or comparable by price per metre.
           </p>
         </div>

@@ -102,9 +102,9 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
     <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600">{row.brand}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{row.brand}</p>
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{row.name}</h3>
-          <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40 font-mono">{row.stringId}</p>
+          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60 font-mono">{row.stringId}</p>
         </div>
         {!isEditing && <StockBadge stock={row.stockStatus} />}
       </div>
@@ -115,7 +115,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
             <Field label="Quantity" value={row.quantity == null ? '—' : String(row.quantity)} />
             <Field label="Package" value={row.packageType} />
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">Color</dt>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">Color</dt>
               <dd className="text-ink-900 dark:text-shuttle-50">
                 <InventoryColorPreview row={row} />
               </dd>
@@ -123,7 +123,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
             <Field label="Notes" value={row.notes || '—'} />
           </dl>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-ink-700/40 dark:text-shuttle-100/40">Updated {new Date(row.updatedAt).toLocaleString()}</p>
+            <p className="text-xs text-ink-700/70 dark:text-shuttle-100/60">Updated {new Date(row.updatedAt).toLocaleString()}</p>
             <div className="flex items-center gap-3">
               {savedFlash && <span className="text-xs font-semibold text-green-700 dark:text-green-400">✓ Saved</span>}
               <button
@@ -212,14 +212,14 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                   placeholder="e.g. Yellow — optional"
                   className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
                 />
-                <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">
+                <span className="block text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">
                   Enter one physical color for this inventory item, e.g. White or Sky Blue. To list more than one currently-available color, separate them with commas (e.g. "White, Red") — each shows as its own swatch.
                 </span>
                 {containsSlash(color) && (
                   <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mt-1">A "/" is ambiguous here — use a comma to list multiple colors instead (e.g. "White, Red").</p>
                 )}
                 {containsUnambiguousDelimiter(color) && splitColorList(color).length > 1 && (
-                  <p className="text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">Will be shown as {splitColorList(color).length} separate colors: {splitColorList(color).join(', ')}.</p>
+                  <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">Will be shown as {splitColorList(color).length} separate colors: {splitColorList(color).join(', ')}.</p>
                 )}
               </label>
             )}
@@ -285,7 +285,7 @@ function ColorNameField({ label, value, onChange, disabled, hint }: { label: str
         placeholder="optional"
         className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
-      <span className="block text-xs text-ink-700/50 dark:text-shuttle-100/50 mt-1">{hint}</span>
+      <span className="block text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</span>
     </label>
   )
 }
@@ -298,7 +298,7 @@ function InventoryColorPreview({ row }: { row: AdminInventoryRow }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/50 dark:text-shuttle-100/50">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{label}</dt>
       <dd className="text-ink-900 dark:text-shuttle-50">{value}</dd>
     </div>
   )

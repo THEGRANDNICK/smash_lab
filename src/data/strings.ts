@@ -207,7 +207,7 @@ export const strings: StringItem[] = [
     // thread itself could not be fetched directly by this tool either, so treat this as
     // general background rather than a direct quote).
     notes:
-      "One of Yonex's longest-standing performance strings — a 0.68mm Vectran-braided construction that Yonex positions around quick repulsion, a crisp hitting sound, and strong tension retention. Its five-axis ratings look modest next to newer, thinner Exbolt-series strings, but it remains a go-to choice for players who generate their own power: the direct, connected feel rewards a strong swing rather than doing the work for you. In practice, many hard-hitting attacking players still prefer it over thinner modern strings for the extra control and feedback, even if it's not the easiest string for generating power from scratch.",
+      "One of Yonex's longest-standing performance strings — a 0.68mm Vectran-braided construction that Yonex positions around quick repulsion, a crisp hitting sound, and strong tension retention. Its five-axis ratings look modest next to newer, thinner Exbolt-series strings, but on court it's one of the best all-round upgrades from intermediate club level up: more power than a durability string, lots of control and shuttle grip, and durability that holds up well for a performance string. The feel is hard and direct, so it suits players with a reasonably clean swing rather than complete beginners.",
     tension: { gauge: 0.68 },
     productUrl: 'https://www.yonex.com/badminton/strings/bg80',
   },
