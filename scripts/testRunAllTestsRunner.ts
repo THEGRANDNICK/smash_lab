@@ -12,7 +12,7 @@
 
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { resolveNpmCommand, interpretSpawnResult, discoverLegacySuiteScripts } from './testRunnerCore.js'
+import { resolveNpmCommand, needsShell, interpretSpawnResult, discoverLegacySuiteScripts } from './testRunnerCore.js'
 
 let passed = 0
 let failed = 0
@@ -33,6 +33,13 @@ console.log('=== Cross-platform npm command resolution ===')
 
 test('resolveNpmCommand uses npm.cmd on win32 (spawnSync cannot resolve bare "npm" there)', () => {
   assert.equal(resolveNpmCommand('win32'), 'npm.cmd')
+})
+test('needsShell is true on win32 (Node refuses to spawn npm.cmd without a shell: EINVAL)', () => {
+  assert.equal(needsShell('win32'), true)
+})
+test('needsShell is false on linux and darwin', () => {
+  assert.equal(needsShell('linux'), false)
+  assert.equal(needsShell('darwin'), false)
 })
 test('resolveNpmCommand uses plain npm on linux', () => {
   assert.equal(resolveNpmCommand('linux'), 'npm')

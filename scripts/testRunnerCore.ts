@@ -13,6 +13,17 @@ export function resolveNpmCommand(platform: Platform = process.platform): string
   return platform === 'win32' ? 'npm.cmd' : 'npm'
 }
 
+/**
+ * Since Node 18.20.2 / 20.12.2 / 22 (CVE-2024-27980), spawning a .cmd/.bat
+ * file on Windows WITHOUT a shell fails immediately with EINVAL — which is
+ * exactly what npm.cmd is. So on win32 the runner must spawn through the
+ * shell. Safe here: every argument is a fixed script name from our own
+ * package.json, never user input.
+ */
+export function needsShell(platform: Platform = process.platform): boolean {
+  return platform === 'win32'
+}
+
 export interface SpawnOutcome {
   status: number | null
   error?: Error

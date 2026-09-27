@@ -24,7 +24,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { resolveNpmCommand, interpretSpawnResult, discoverLegacySuiteScripts, type SuiteOutcome } from './testRunnerCore.js'
+import { resolveNpmCommand, needsShell, interpretSpawnResult, discoverLegacySuiteScripts, type SuiteOutcome } from './testRunnerCore.js'
 
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf-8')) as {
   scripts: Record<string, string>
@@ -42,7 +42,7 @@ const results: SuiteResult[] = []
 
 function runNpmScript(name: string, scriptName: string) {
   console.log(`\n=== npm run ${scriptName} ===\n`)
-  const result = spawnSync(npmCommand, ['run', '--silent', scriptName], { stdio: 'inherit' })
+  const result = spawnSync(npmCommand, ['run', '--silent', scriptName], { stdio: 'inherit', shell: needsShell() })
   const outcome = interpretSpawnResult(result)
   if (outcome.kind === 'runner-error') {
     console.error(`\n${name} could not be started (runner error, not a test failure): ${outcome.message}`)
