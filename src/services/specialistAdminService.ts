@@ -19,6 +19,7 @@ import { getSupabaseClient } from '../lib/supabase.js'
 import type { Database } from '../types/database.js'
 import type { SpecialistFeel, ExperienceSource, Confidence, SpecialistDimensionKey } from '../data/stringSpecialistProfiles.js'
 import { normalizeDecimalInput } from '../logic/decimalInput.js'
+import { isValidPlacement, type MapPlacement } from '../logic/mapPlacement.js'
 
 type SpecialistRow = Database['public']['Tables']['specialist_profiles']['Row']
 /** Upsert payload shape (string_id supplied separately by the caller) — deliberately based on Insert, not Update, since experience_source/confidence are NOT NULL columns with no default and every upsert here is expected to supply them (validateSpecialistInput always sets both). */
@@ -70,6 +71,7 @@ export interface AdminSpecialistRow {
   personalTensionMinKg: number | null
   personalTensionMaxKg: number | null
   dimensions: Partial<Record<SpecialistDimensionKey, number>>
+  mapPlacement?: MapPlacement | null
   updatedAt: string | null
 }
 
@@ -90,6 +92,7 @@ function mergeRow(catalogRow: { id: string; brand: string; name: string }, profi
     personalTensionMinKg: profile?.personal_tension_min_kg ?? null,
     personalTensionMaxKg: profile?.personal_tension_max_kg ?? null,
     dimensions: profile?.dimensions ?? {},
+    mapPlacement: profile?.map_placement && isValidPlacement(profile.map_placement) ? profile.map_placement : null,
     updatedAt: profile?.updated_at ?? null,
   }
 }
@@ -129,6 +132,8 @@ export interface SpecialistFormInput {
   personalTensionMaxKg: string
   /** One raw text value per dimension key — blank means "not scored", matching the sparse-by-design dimensions model. */
   dimensions: Partial<Record<SpecialistDimensionKey, string>>
+  /** Where the string was dropped on the feel map — null until the stringer places it. */
+  mapPlacement: MapPlacement | null
 }
 
 export function emptySpecialistFormInput(): SpecialistFormInput {
@@ -144,6 +149,7 @@ export function emptySpecialistFormInput(): SpecialistFormInput {
     personalTensionMinKg: '',
     personalTensionMaxKg: '',
     dimensions: {},
+    mapPlacement: null,
   }
 }
 
@@ -165,10 +171,11 @@ export function specialistFormInputFromRow(row: AdminSpecialistRow): SpecialistF
     personalTensionMinKg: row.personalTensionMinKg != null ? String(row.personalTensionMinKg) : '',
     personalTensionMaxKg: row.personalTensionMaxKg != null ? String(row.personalTensionMaxKg) : '',
     dimensions,
+    mapPlacement: row.mapPlacement ?? null,
   }
 }
 
-export type SpecialistFormErrors = Partial<Record<Exclude<keyof SpecialistFormInput, 'dimensions'>, string>> & {
+export type SpecialistFormErrors = Partial<Record<Exclude<keyof SpecialistFormInput, 'dimensions' | 'mapPlacement'>, string>> & { mapPlacement?: string } & {
   dimensions?: Partial<Record<SpecialistDimensionKey, string>>
 }
 
@@ -242,6 +249,10 @@ export function validateSpecialistInput(input: SpecialistFormInput): SpecialistV
   }
   if (Object.keys(dimensionErrors).length > 0) errors.dimensions = dimensionErrors
 
+  if (input.mapPlacement != null && !isValidPlacement(input.mapPlacement)) {
+    errors.mapPlacement = 'Map placement is out of range — drop the pin inside the map again.'
+  }
+
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors }
   }
@@ -258,6 +269,7 @@ export function validateSpecialistInput(input: SpecialistFormInput): SpecialistV
     personal_tension_min_kg: minKg,
     personal_tension_max_kg: maxKg,
     dimensions,
+    map_placement: input.mapPlacement,
   }
 
   return { ok: true, update }

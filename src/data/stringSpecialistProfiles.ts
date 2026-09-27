@@ -33,6 +33,9 @@
 // specialist profile. Never fabricate personal experience for a string
 // nobody at Smash Lab has actually used.
 
+import type { MapPlacement } from '../logic/mapPlacement.js'
+import { applyMapPlacementToAll } from '../logic/mapPlacement.js'
+
 export type ExperienceSource = 'personal' | 'club' | 'stringing-observation' | 'manufacturer' | 'community' | 'mixed'
 
 export type Confidence = 'very-high' | 'high' | 'medium' | 'low' | 'unknown'
@@ -98,11 +101,13 @@ export interface StringSpecialistProfile {
   subjectiveNotes?: string
   experienceSource: ExperienceSource
   confidence: Confidence
+  /** Quick profiling: where the stringer dropped this string on the feel map. Fills any dimension left blank above (see logic/mapPlacement.ts). */
+  mapPlacement?: MapPlacement
   /** Who made this assessment (a name, or e.g. "club consensus") — distinct from experienceSource (how the knowledge was gained) and confidence (how much to trust it). */
   reviewer?: string
 }
 
-export const STRING_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
+const RAW_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = {
   'yonex-bg80': {
     feel: 'hard',
     personalTensionKg: { min: 11, max: 12.5 },
@@ -355,6 +360,9 @@ export const STRING_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile>
       'Think of these as different points on the same spectrum: Exbolt 63 = maximum raw repulsion/very lively. BG66 Ultimax = fast + controlled. Exbolt 65 = best all-round balance.',
   },
 }
+
+/** Static profiles with any map placement already resolved into dimensions. */
+export const STRING_SPECIALIST_PROFILES: Record<string, StringSpecialistProfile> = applyMapPlacementToAll(RAW_SPECIALIST_PROFILES)
 
 export function getSpecialistProfile(id: string): StringSpecialistProfile | undefined {
   return STRING_SPECIALIST_PROFILES[id]

@@ -37,6 +37,7 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
       personalTensionMinKg: update.personal_tension_min_kg ?? null,
       personalTensionMaxKg: update.personal_tension_max_kg ?? null,
       dimensions: update.dimensions ?? {},
+      mapPlacement: update.map_placement ?? null,
       updatedAt: new Date().toISOString(),
     })
     setState('viewing')
@@ -60,6 +61,7 @@ export default function SpecialistAdminCard({ row, onSaved, onCleared }: Special
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-600 mb-1">{row.brand}</p>
         <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">{row.name}</h3>
         <SpecialistProfileForm
+          stringId={row.stringId}
           initial={row.hasProfile ? specialistFormInputFromRow(row) : emptySpecialistFormInput()}
           saving={state === 'saving'}
           saveError={error}

@@ -59,6 +59,7 @@ export default function SpecialistAdminPage() {
               personalTensionMinKg: null,
               personalTensionMaxKg: null,
               dimensions: {},
+              mapPlacement: null,
               updatedAt: null,
             }
           : r,
