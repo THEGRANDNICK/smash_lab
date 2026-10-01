@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { RADAR_BASELINE, radarRatio } from './RadarChart'
-import { PERFORMANCE_MAX } from './performanceAxes'
+import { PERFORMANCE_MAX, RADAR_BASELINE, radarRatio } from './performanceAxes'
 
 describe('radar scale', () => {
   it('starts at the baseline and ends at the maximum', () => {

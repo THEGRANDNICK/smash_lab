@@ -5,6 +5,7 @@ import {
   fetchCatalogImageState,
   fetchExistingProfiles,
   insertCatalogStrings,
+  checkImportReadiness,
   prepareImage,
   readJson,
   readZip,
@@ -30,8 +31,17 @@ export default function ImportsAdminPage() {
   const [tab, setTab] = useState<'images' | 'research'>('images')
   // Bumped after missing strings are added, so the importers re-read the catalog from scratch.
   const [refreshKey, setRefreshKey] = useState(0)
+  // null = still checking. Imports stay locked until the database has proven it can store them.
+  const [problems, setProblems] = useState<string[] | null>(null)
+  const runCheck = () => {
+    setProblems(null)
+    void checkImportReadiness().then(setProblems)
+  }
+  useEffect(runCheck, [])
+  const blocked = problems == null || problems.length > 0
   return (
     <div className="space-y-6">
+      <ReadinessBanner problems={problems} onRecheck={runCheck} />
       <MissingCatalogBanner onAdded={() => setRefreshKey((k) => k + 1)} />
       <div className="flex gap-2" role="tablist" aria-label="Importer">
         {(
@@ -52,7 +62,25 @@ export default function ImportsAdminPage() {
           </button>
         ))}
       </div>
-      {tab === 'images' ? <ImageImportPanel key={`img-${refreshKey}`} /> : <ResearchImportPanel key={`res-${refreshKey}`} />}
+      {tab === 'images' ? <ImageImportPanel key={`img-${refreshKey}`} blocked={blocked} /> : <ResearchImportPanel key={`res-${refreshKey}`} blocked={blocked} />}
+    </div>
+  )
+}
+
+function ReadinessBanner({ problems, onRecheck }: { problems: string[] | null; onRecheck: () => void }) {
+  if (problems == null) return <p className="text-sm text-ink-700/80 dark:text-shuttle-100/80">Checking that the database is ready for imports…</p>
+  if (problems.length === 0) return <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ Database ready for imports (test upload succeeded).</p>
+  return (
+    <div role="alert" className="rounded-xl border-2 border-red-500/60 bg-red-500/10 p-4 text-sm">
+      <p className="font-semibold">The database isn't ready for imports yet — nothing can be saved until this is fixed:</p>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        {problems.map((p) => (
+          <li key={p}>{p}</li>
+        ))}
+      </ul>
+      <button type="button" onClick={onRecheck} className="focus-ring mt-3 rounded-full border-2 border-court-900/20 dark:border-white/30 px-4 py-1.5 font-semibold cursor-pointer">
+        Check again
+      </button>
     </div>
   )
 }
@@ -129,7 +157,7 @@ interface LoadedImagePack {
   plan: PlannedString[]
 }
 
-function ImageImportPanel() {
+function ImageImportPanel({ blocked }: { blocked: boolean }) {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
   const [pack, setPack] = useState<LoadedImagePack | null>(null)
@@ -262,7 +290,7 @@ function ImageImportPanel() {
               </li>
             ))}
           </ul>
-          <ImportBar count={selected.size} busy={progress != null} progress={progress} onImport={runImport} noun="string" />
+          <ImportBar count={selected.size} busy={progress != null} blocked={blocked} progress={progress} onImport={runImport} noun="string" />
         </>
       )}
       <Log lines={log} />
@@ -295,7 +323,7 @@ interface LoadedResearch {
   conflicts: Record<string, string[]>
 }
 
-function ResearchImportPanel() {
+function ResearchImportPanel({ blocked }: { blocked: boolean }) {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
   const [data, setData] = useState<LoadedResearch | null>(null)
@@ -386,7 +414,7 @@ function ResearchImportPanel() {
               <ResearchCard key={plan.stringId} plan={plan} conflicts={data.conflicts[plan.stringId] ?? []} disabled={progress != null} onChange={(change) => update(plan.stringId, change)} />
             ))}
           </ul>
-          <ImportBar count={stringsToWrite} busy={progress != null} progress={progress} onImport={runImport} noun="string" extra={`${totalFields} field(s)`} />
+          <ImportBar count={stringsToWrite} busy={progress != null} blocked={blocked} progress={progress} onImport={runImport} noun="string" extra={`${totalFields} field(s)`} />
         </>
       )}
       <Log lines={log} />
@@ -527,13 +555,13 @@ function ErrorList({ errors }: { errors: string[] }) {
   )
 }
 
-function ImportBar({ count, busy, progress, onImport, noun, extra }: { count: number; busy: boolean; progress: string | null; onImport: () => void; noun: string; extra?: string }) {
+function ImportBar({ count, busy, blocked, progress, onImport, noun, extra }: { count: number; busy: boolean; blocked: boolean; progress: string | null; onImport: () => void; noun: string; extra?: string }) {
   return (
     <div className="sticky bottom-0 z-10 -mx-4 px-4 py-3 bg-shuttle-50/95 dark:bg-[#0c1210]/95 border-t border-court-900/10 dark:border-white/10 flex flex-wrap items-center gap-3">
       <button
         type="button"
         onClick={onImport}
-        disabled={busy || count === 0}
+        disabled={busy || blocked || count === 0}
         className="focus-ring rounded-full bg-court-800 hover:bg-court-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 cursor-pointer"
       >
         Import {count} {noun}
@@ -541,16 +569,28 @@ function ImportBar({ count, busy, progress, onImport, noun, extra }: { count: nu
         {extra ? ` (${extra})` : ''}
       </button>
       {progress && <span className="text-sm">{progress}</span>}
-      {count === 0 && !busy && <span className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Nothing selected or nothing to change.</span>}
+      {blocked && !busy && <span className="text-sm font-semibold text-red-600 dark:text-red-400">Locked until the database check above passes.</span>}
+      {!blocked && count === 0 && !busy && <span className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Nothing selected or nothing to change.</span>}
     </div>
   )
 }
 
 function Log({ lines }: { lines: string[] }) {
   if (lines.length === 0) return null
+  const ok = lines.filter((l) => l.startsWith('✓')).length
+  const failed = lines.filter((l) => l.startsWith('✗'))
+  const done = lines.some((l) => l.startsWith('Done.'))
   return (
-    <pre aria-live="polite" className="rounded-xl bg-court-900/5 dark:bg-white/5 p-3 text-xs whitespace-pre-wrap">
-      {lines.join('\n')}
-    </pre>
+    <div aria-live="polite" className="space-y-2">
+      {done && (
+        <div className={`rounded-xl border-2 p-4 text-sm font-semibold ${failed.length ? 'border-red-500/60 bg-red-500/10' : 'border-emerald-600/50 bg-emerald-600/10'}`}>
+          {failed.length === 0 ? `✓ All ${ok} imported successfully.` : `✗ ${failed.length} failed, ${ok} succeeded. First problem: ${failed[0].replace(/^✗\s*/, '')}`}
+        </div>
+      )}
+      <details open={failed.length > 0}>
+        <summary className="cursor-pointer text-sm">Full log ({lines.length} lines)</summary>
+        <pre className="mt-2 rounded-xl bg-court-900/5 dark:bg-white/5 p-3 text-xs whitespace-pre-wrap">{lines.join('\n')}</pre>
+      </details>
+    </div>
   )
 }

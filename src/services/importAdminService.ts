@@ -113,8 +113,10 @@ export function uploadStringImage(stringId: string, side: ImageSide, sha256: str
   return wrap(async () => {
     const path = storagePath(stringId, side, sha256, image.extension)
     const storage = getSupabaseClient().storage.from(BUCKET)
-    const { error } = await storage.upload(path, image.blob, { upsert: true, contentType: image.blob.type, cacheControl: '31536000' })
-    if (error) throw new Error(error.message)
+    // No upsert: paths contain the image's checksum, so a file that already exists IS this image.
+    // (Upsert would also need an extra SELECT permission on storage — the cause of the first failed imports.)
+    const { error } = await storage.upload(path, image.blob, { upsert: false, contentType: image.blob.type, cacheControl: '31536000' })
+    if (error && !isAlreadyExists(error)) throw new Error(explainStorageError(error.message))
     return storage.getPublicUrl(path).data.publicUrl
   })
 }
@@ -172,4 +174,42 @@ export function insertCatalogStrings(items: StringItem[]): Promise<AdminResult<n
     if (error) throw new Error(error.message)
     return items.length
   })
+}
+
+const isAlreadyExists = (error: { message: string; statusCode?: string }) => error.statusCode === '409' || /already exists|duplicate/i.test(error.message)
+
+const MIGRATION_HINT = 'Run supabase/migrations/20261002120000_string_images_fix_storage_policies.sql in the Supabase SQL editor.'
+
+function explainStorageError(message: string): string {
+  if (/bucket not found/i.test(message)) return `The image storage doesn't exist yet. ${MIGRATION_HINT}`
+  if (/row-level security|unauthorized|not allowed|permission/i.test(message)) return `Upload refused by storage permissions (${message}). ${MIGRATION_HINT}`
+  return message
+}
+
+/** A valid 1×1 transparent PNG — used only to prove that uploading works. */
+const TEST_PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='), (c) => c.charCodeAt(0))
+
+/**
+ * Checks, before anything is imported, that the database is actually ready: the new columns
+ * exist and an admin can really upload to (and remove from) the image storage. Returns a list
+ * of problems in plain words — empty when everything is fine.
+ */
+export async function checkImportReadiness(): Promise<string[]> {
+  const problems: string[] = []
+  const client = getSupabaseClient()
+  try {
+    const cols = await client.from('strings').select('id, image_back_url, image_meta').limit(1)
+    if (cols.error) problems.push(`The strings table is missing the image columns (${cols.error.message}). ${MIGRATION_HINT}`)
+    const research = await client.from('specialist_profiles').select('string_id, research_import').limit(1)
+    if (research.error) problems.push(`The specialist profiles table is missing the research column (${research.error.message}). ${MIGRATION_HINT}`)
+
+    const storage = client.storage.from(BUCKET)
+    const path = `_selftest/check-${Date.now()}.png`
+    const upload = await storage.upload(path, new Blob([TEST_PNG], { type: 'image/png' }), { upsert: false, contentType: 'image/png' })
+    if (upload.error) problems.push(explainStorageError(upload.error.message))
+    else await storage.remove([path])
+  } catch (err) {
+    problems.push(err instanceof Error ? err.message : String(err))
+  }
+  return problems
 }
