@@ -58,6 +58,8 @@ export interface StringRecommendation {
    * already computed internally, changes no scoring or ranking.
    */
   topThree: ScoredString[]
+  /** Every candidate, best first, in exactly the order used for topThree — lets the results page show any string the player picks (e.g. from the answer tree) with its real match against THEIR answers. Additive only; changes no scoring. */
+  ranked: ScoredString[]
   profile: DimensionWeights
   /** The player-intent archetype (config/archetypes.ts) that best matches their own computed weight vector — display/explanation label only, never a second scoring path. */
   dominantArchetype: ArchetypeId
@@ -582,6 +584,7 @@ export function recommendStrings(
     crossBrandAlternative,
     specialistChoice,
     topThree: byPerformance.slice(0, 3),
+    ranked: byPerformance,
     profile,
     dominantArchetype,
     explanations: {

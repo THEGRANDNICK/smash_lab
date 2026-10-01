@@ -15,6 +15,8 @@ interface StringingEnquiryProps {
   /** The exact quiz answers + data-source choice that produced this result — encoded into the "Share result" link so opening it recomputes the identical recommendation client-side. Never written anywhere but the URL itself. */
   answers: QuizAnswers
   dataSource: DataSource
+  /** The string's position in the player's ranking (1 = the recommendation). */
+  rank?: number
 }
 
 /**
@@ -26,7 +28,7 @@ interface StringingEnquiryProps {
  * message body at the moment the player taps Send/Copy, never stored or
  * transmitted anywhere before that.
  */
-export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource }: StringingEnquiryProps) {
+export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource, rank }: StringingEnquiryProps) {
   const [racketModel, setRacketModel] = useState('')
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState(false)
@@ -34,7 +36,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
   const [saved, setSaved] = useState(false)
 
   const fullName = `${stringBrand} ${stringName}`
-  const details = { stringName: fullName, tensionKg, matchPercent, dataSourceLabel, racketModel: racketModel.trim() || undefined, note: note.trim() || undefined }
+  const details = { stringName: fullName, tensionKg, matchPercent, dataSourceLabel, racketModel: racketModel.trim() || undefined, note: note.trim() || undefined, rank }
   const whatsAppUrl = buildEnquiryWhatsAppUrl(details)
   const mailtoUrl = buildEnquiryMailto(details)
 

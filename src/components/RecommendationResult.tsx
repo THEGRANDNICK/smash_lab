@@ -4,7 +4,7 @@ import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
 import { formatGauge } from '../logic/formatGauge'
-import { buildPodiumBestReason } from '../logic/recommendationExplanation'
+import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/recommendationExplanation'
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import DataSourceSwitch from './DataSourceSwitch'
@@ -21,6 +21,7 @@ import RecommendationPodium, { PODIUM_COMPARE_LIMIT } from './RecommendationPodi
 import StringingEnquiry from './StringingEnquiry'
 import TensionTuner from './TensionTuner'
 import StringBasics from './StringBasics'
+import AnswerTree from './AnswerTree'
 
 interface RecommendationResultProps {
   answers: QuizAnswers
@@ -47,11 +48,28 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
   // always identical to calling it directly; this is a rendering
   // optimization only, never a change to what gets computed.
   const rec = useMemo(() => recommendStrings(answers, pool, specialistProfiles), [answers, pool, specialistProfiles])
-  const tension = useMemo(() => recommendTension(answers, rec.best.string), [answers, rec.best.string])
+  // The string shown at the top. Defaults to the recommendation; tapping another match (podium or
+  // answer tree) "features" it instead — its tension, reasoning and the WhatsApp/email message all
+  // follow — until "Back to recommended". Scored against the player's OWN answers via rec.ranked.
+  const [featuredId, setFeaturedId] = useState<string | null>(null)
+  const featured = (featuredId ? rec.ranked.find((s) => s.string.id === featuredId) : undefined) ?? rec.best
+  const isRecommended = featured.string.id === rec.best.string.id
+  const featuredRank = rec.ranked.findIndex((s) => s.string.id === featured.string.id) + 1
+  const tension = useMemo(() => recommendTension(answers, featured.string), [answers, featured.string])
 
-  const bestGauge = formatGauge(rec.best.string)
-  const bestProfile = specialistProfiles ? specialistProfiles[rec.best.string.id] : getSpecialistProfile(rec.best.string.id)
+  const profileOf = (id: string) => (specialistProfiles ? specialistProfiles[id] : getSpecialistProfile(id))
+  const bestProfile = profileOf(rec.best.string.id)
+  const featuredProfile = profileOf(featured.string.id)
+  const featuredGauge = formatGauge(featured.string)
   const bestReason = useMemo(() => buildPodiumBestReason(rec.best, bestProfile), [rec.best, bestProfile])
+  const heroReason = isRecommended ? bestReason : buildPodiumAlternativeReason(featured, rec.best, featuredProfile, bestProfile)
+
+  const [tab, setTab] = useState<'matches' | 'answers'>('matches')
+
+  function feature(id: string) {
+    setFeaturedId(id === rec.best.string.id ? null : id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
 
@@ -120,15 +138,30 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
           </motion.div>
 
           <div className="relative max-w-2xl">
-            <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
+            {isRecommended ? (
+              <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase">
+                  👀 Your #{featuredRank} match · {featured.matchPercent}%
+                </p>
+                <button
+                  type="button"
+                  onClick={() => feature(rec.best.string.id)}
+                  className="focus-ring rounded-full border-2 border-white/30 hover:border-white/70 px-3 py-1 text-xs font-semibold cursor-pointer"
+                >
+                  ↩ Back to recommended ({rec.best.string.name})
+                </button>
+              </div>
+            )}
 
-            <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{rec.best.string.brand}</p>
+            <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{featured.string.brand}</p>
             <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
-              {rec.best.string.name}
-              {bestGauge != null && <span className="text-base font-normal text-white/50 ml-2">{bestGauge}</span>}
+              {featured.string.name}
+              {featuredGauge != null && <span className="text-base font-normal text-white/50 ml-2">{featuredGauge}</span>}
             </h1>
-            <p className="mt-3 text-white/80 max-w-lg">{bestReason}</p>
-            {rec.bestAvailable && (
+            <p className="mt-3 text-white/80 max-w-lg">{heroReason}</p>
+            {isRecommended && rec.bestAvailable && (
               <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — may need to be ordered</p>
             )}
 
@@ -185,7 +218,36 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
           ) : (
             <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
           )}
-          <h2 className="text-center font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50 mt-1">Your top 3 matches</h2>
+          <div role="tablist" aria-label="Result details" className="mt-4 flex justify-center gap-2">
+            {(
+              [
+                ['matches', 'Your top 3'],
+                ['answers', 'Your answers'],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`result-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls={`result-panel-${id}`}
+                onClick={() => setTab(id)}
+                className={`focus-ring rounded-full border-2 px-5 py-2 text-sm font-bold transition-colors cursor-pointer ${
+                  tab === id ? 'border-court-800 bg-court-800 text-white dark:border-shuttle-500 dark:bg-shuttle-500 dark:text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <h2 className="sr-only">{tab === 'matches' ? 'Your top 3 matches' : 'Your answers'}</h2>
+          {tab === 'answers' ? (
+            <div role="tabpanel" id="result-panel-answers" aria-labelledby="result-tab-answers" className="mt-6">
+              <AnswerTree answers={answers} pool={pool} specialistProfiles={specialistProfiles} featuredId={featured.string.id} onFeature={feature} />
+            </div>
+          ) : (
+          <div role="tabpanel" id="result-panel-matches" aria-labelledby="result-tab-matches">
           <RecommendationPodium
             topThree={rec.topThree}
             specialistProfiles={specialistProfiles}
@@ -193,7 +255,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
             selectedForCompare={selectedForCompare}
             compareFull={selectedForCompare.size >= PODIUM_COMPARE_LIMIT}
             onToggleCompare={toggleCompare}
+            featuredId={featured.string.id}
+            onFeature={feature}
           />
+          </div>
+          )}
         </div>
 
         {bestAvailableOutsidePodium && (
@@ -220,10 +286,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
 
         {/* Conversion — the primary action, framed as the natural next step after seeing a recommendation. */}
         <StringingEnquiry
-          stringBrand={rec.best.string.brand}
-          stringName={rec.best.string.name}
+          stringBrand={featured.string.brand}
+          stringName={featured.string.name}
           tensionKg={tension.recommendedKg}
-          matchPercent={rec.best.matchPercent}
+          matchPercent={featured.matchPercent}
+          rank={featuredRank}
           dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
           answers={answers}
           dataSource={dataSource}
