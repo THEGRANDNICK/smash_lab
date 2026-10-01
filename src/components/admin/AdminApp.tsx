@@ -9,6 +9,7 @@ import CatalogAdminPage from './CatalogAdminPage'
 import SpecialistAdminPage from './SpecialistAdminPage'
 import RetailerAdminPage from './RetailerAdminPage'
 import RetailerListingAdminPage from './RetailerListingAdminPage'
+import ImportsAdminPage from './ImportsAdminPage'
 
 interface AdminAppProps {
   onExit: () => void
@@ -24,6 +25,7 @@ const SECTION_HASH: Record<AdminSection, string> = {
   specialists: 'admin/specialists',
   retailers: 'admin/retailers',
   retailerListings: 'admin/retailer-listings',
+  imports: 'admin/imports',
 }
 
 /** Phase 11: bare `#admin` (and any hash this map doesn't recognize) now lands on the Dashboard by default — previously it fell through to Inventory. Every existing explicit hash (#admin/inventory, #admin/catalog, etc.) is unaffected and still opens exactly that section, so this is additive, not a breaking change to any bookmarked/shared link. */
@@ -40,6 +42,7 @@ const SECTION_LABEL: Record<AdminSection, string> = {
   specialists: 'Specialists',
   retailers: 'Retailers',
   retailerListings: 'Retailer Listings',
+  imports: 'Imports',
 }
 
 export default function AdminApp({ onExit }: AdminAppProps) {
@@ -120,7 +123,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       </div>
 
       <nav className="flex items-center gap-2 mb-8 flex-wrap" aria-label="Admin sections">
-        {(['dashboard', 'inventory', 'catalog', 'specialists', 'retailers', 'retailerListings'] as const).map((s) => (
+        {(['dashboard', 'inventory', 'catalog', 'specialists', 'retailers', 'retailerListings', 'imports'] as const).map((s) => (
           <button
             key={s}
             type="button"
@@ -141,6 +144,7 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       {section === 'specialists' && <SpecialistAdminPage />}
       {section === 'retailers' && <RetailerAdminPage />}
       {section === 'retailerListings' && <RetailerListingAdminPage />}
+      {section === 'imports' && <ImportsAdminPage />}
 
       <footer className="mt-12 pt-4 border-t border-court-900/10 dark:border-white/10 text-center text-xs text-ink-700/70 dark:text-shuttle-100/60">
         Smash Lab Admin · {versionInfo.display} · {versionInfo.environment}

@@ -227,6 +227,8 @@ export function mapCatalogRow(row: StringsRow): CatalogRowValidation {
     }
     imageUrl = row.image_url
   }
+  // The back image is optional and purely visual: an invalid value is ignored rather than dropping the whole string.
+  const imageBackUrl = typeof row.image_back_url === 'string' && SAFE_URL_PATTERN.test(row.image_back_url) ? row.image_back_url : undefined
 
   let tension: StringTensionMeta | undefined
   const meta = row.tension_meta
@@ -292,6 +294,7 @@ export function mapCatalogRow(row: StringsRow): CatalogRowValidation {
     ...(popularityRank != null ? { popularityRank } : {}),
     ...(productUrl ? { productUrl } : {}),
     ...(imageUrl ? { imageUrl } : {}),
+    ...(imageBackUrl ? { imageBackUrl } : {}),
     ...(row.is_hybrid ? { isHybrid: true } : {}),
     ...(mainStringResult.value ? { mainString: mainStringResult.value } : {}),
     ...(crossStringResult.value ? { crossString: crossStringResult.value } : {}),
