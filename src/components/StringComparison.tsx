@@ -12,7 +12,6 @@ import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
 import ComparisonOverlayBars from './ComparisonOverlayBars'
 import StringMap from './StringMap'
-import DisclaimerBox from './DisclaimerBox'
 import StringBasics from './StringBasics'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
@@ -85,75 +84,60 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
 
   return (
     <section id="strings" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
-      <div className="text-center max-w-2xl mx-auto mb-10">
+      <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-8">
         <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">The lineup</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Browse every string</h2>
-        <p className="text-ink-700/70 dark:text-shuttle-100/70 mt-3">
+        <p className="hidden sm:block text-ink-700/70 dark:text-shuttle-100/70 mt-3">
           Not into quizzes? Compare the full lineup directly — repulsion, control, durability, sound and comfort, side by side.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3 mb-8" role="group" aria-label="Filter strings">
-        <FilterPills
-          value={category}
-          onChange={setCategory}
-          options={[
-            { id: 'all', label: 'All' },
-            { id: 'repulsion', label: '🚀 Quick Repulsion' },
-            { id: 'control', label: '🎯 Control' },
-            { id: 'durability', label: '🧵 Durability' },
-          ]}
-        />
-        <select
-          value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-4 py-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
-          aria-label="Filter by brand"
-        >
-          <option value="all">All brands</option>
-          {brands.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
-        <label className="flex items-center gap-2 rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-4 py-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={availableOnly}
-            onChange={(e) => setAvailableOnly(e.target.checked)}
-            className="focus-ring w-4 h-4 accent-shuttle-500"
+      {/* One compact toolbar instead of four stacked control blocks: on a phone the filters are a
+          single swipeable row and brand / sort / view share the second row. */}
+      <div className="mb-4 space-y-2">
+        <div role="group" aria-label="Filter strings" className="-mx-4 px-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0 sm:justify-center sm:flex-wrap sm:overflow-visible">
+          <FilterPills
+            value={category}
+            onChange={setCategory}
+            options={[
+              { id: 'all', label: 'All' },
+              { id: 'repulsion', label: '🚀 Repulsion' },
+              { id: 'control', label: '🎯 Control' },
+              { id: 'durability', label: '🧵 Durability' },
+            ]}
           />
-          Available now
-        </label>
-      </div>
+          <label className="shrink-0 whitespace-nowrap flex items-center gap-2 rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer">
+            <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="focus-ring w-4 h-4 accent-shuttle-500" />
+            Available now
+          </label>
+        </div>
 
-      <div className="flex flex-col items-center gap-2 mb-4">
-        <label className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
-          Sort by
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <select
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            aria-label="Filter by brand"
+          >
+            <option value="all">All brands</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-4 py-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            className="focus-ring max-w-[11rem] rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
             aria-label="Sort strings"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.id} value={opt.id}>
-                {opt.label}
+                {opt.id === 'recommended' ? 'Sort: Recommended' : opt.label}
               </option>
             ))}
           </select>
-        </label>
-        {sortBy === 'popularity' && (
-          <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50">
-            ★ Popular among players at my club — not a global sales ranking.
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center gap-2 mb-8">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
-          Performance view
           <div className="flex rounded-full border-2 border-court-900/10 dark:border-white/15 overflow-hidden" role="group" aria-label="Performance view">
             {(['bars', 'radar'] as PerformanceView[]).map((v) => (
               <button
@@ -161,7 +145,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                 type="button"
                 onClick={() => setView(v)}
                 aria-pressed={view === v}
-                className={`focus-ring px-4 py-2 text-sm font-semibold capitalize cursor-pointer transition-colors ${
+                className={`focus-ring px-3 py-1.5 text-sm font-semibold capitalize cursor-pointer transition-colors ${
                   view === v ? 'bg-court-800 text-white' : 'bg-white/80 dark:bg-white/5 text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
                 }`}
               >
@@ -170,7 +154,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             ))}
           </div>
         </div>
-        <DisclaimerBox className="max-w-md" />
+        {sortBy === 'popularity' && <p className="text-center text-xs text-ink-700/70 dark:text-shuttle-100/70">★ Popular among players at my club — not a global sales ranking.</p>}
       </div>
 
       {compareItems.length > 0 && (
@@ -279,7 +263,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         </div>
       )}
 
-      <StringBasics className="mb-6 max-w-3xl mx-auto" />
+      <StringBasics className="mb-5 max-w-3xl mx-auto" />
 
       {sorted.length === 0 ? (
         <p className="text-center text-ink-700/70 dark:text-shuttle-100/70 py-12">No strings match these filters. Try another category or turn off “Available now”.</p>
@@ -345,7 +329,7 @@ function FilterPills<T extends string>({
           type="button"
           onClick={() => onChange(opt.id)}
           aria-pressed={value === opt.id}
-          className={`focus-ring rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+          className={`focus-ring shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
             value === opt.id
               ? 'bg-court-800 text-white'
               : 'bg-white/80 dark:bg-white/5 border-2 border-court-900/10 dark:border-white/15 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'

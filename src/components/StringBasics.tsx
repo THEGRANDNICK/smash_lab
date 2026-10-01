@@ -4,7 +4,7 @@ const EXTRA_TERMS: { term: string; text: string }[] = [
   { term: 'Gauge (mm)', text: 'The string’s thickness. Around 0.70 mm lasts long and suits beginners; 0.61–0.66 mm feels livelier but breaks sooner.' },
   { term: 'Hybrid', text: 'Different strings for the long (main) and short (cross) direction, e.g. AeroBite, for extra spin and shuttle grip.' },
   { term: 'Tension', text: 'How tightly the string is pulled. Lower is more forgiving with easier power; higher gives more control but needs a clean swing.' },
-  { term: '0–11 bars vs. 🔬 x/5', text: 'The bars are each manufacturer’s own ratings, so they aren’t fully comparable across brands. The 🔬 Smash Lab ratings out of 5 come from hands-on stringing and playing.' },
+  { term: '0–11 bars vs. 🔬 x/5', text: 'The bars are each manufacturer’s own ratings, so they aren’t fully comparable across brands. The 🔬 Smash Lab ratings out of 5 come from hands-on stringing and playing. Real feel always varies with racket, tension and player.' },
 ]
 
 /**

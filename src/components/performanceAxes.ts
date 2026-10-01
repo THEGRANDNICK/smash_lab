@@ -85,3 +85,16 @@ export const RADAR_COMPARE_COLORS: RadarCompareColor[] = [
     svgTextClassName: 'fill-rose-600 dark:fill-rose-400',
   },
 ]
+
+/**
+ * The radial scale starts at RADAR_BASELINE, not 0. Almost every manufacturer rating sits between
+ * 6 and 11, so a 0-based scale crammed every shape against the outer ring — big, "fat" polygons
+ * that all looked alike. Starting at 3 spreads them out; the rings are labelled (5, 7, 9, 11) so
+ * the scale stays honest.
+ */
+export const RADAR_BASELINE = 3
+
+export function radarRatio(value: number | null): number {
+  if (value == null) return 0
+  return Math.max(0, Math.min(1, (value - RADAR_BASELINE) / (PERFORMANCE_MAX - RADAR_BASELINE)))
+}
