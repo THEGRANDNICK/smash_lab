@@ -6,7 +6,8 @@ import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
 import { readStoredComparisonView, writeStoredComparisonView, type ComparisonView } from '../logic/comparisonViewPreference'
 import { consumePendingComparisonSelection } from '../logic/pendingComparisonSelection'
-import StringCard, { type PerformanceView } from './StringCard'
+import { type PerformanceView } from './StringCard'
+import StringTile from './StringTile'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
 import ComparisonOverlayBars from './ComparisonOverlayBars'
@@ -283,17 +284,15 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
       {sorted.length === 0 ? (
         <p className="text-center text-ink-700/70 dark:text-shuttle-100/70 py-12">No strings match these filters. Try another category or turn off “Available now”.</p>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
           {sorted.map((item) => (
-            <StringCard
+            <StringTile
               key={item.id}
               item={item}
               view={view}
               compareSelected={compareIds.includes(item.id)}
               compareDisabled={compareIds.length >= MAX_COMPARE}
               onToggleCompare={toggleCompare}
-              specialistProfiles={specialistProfiles}
-              retailerListings={retailerListingsByStringId?.[item.id]}
             />
           ))}
         </div>

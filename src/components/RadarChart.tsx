@@ -23,10 +23,25 @@ function pointAt(index: number, ratio: number, center: number, radius: number) {
   }
 }
 
+/**
+ * The radial scale starts at RADAR_BASELINE, not 0. Almost every manufacturer rating sits between
+ * 6 and 11, so a 0-based scale crammed every shape against the outer ring — big, "fat" polygons
+ * that all looked alike. Starting at 3 spreads them out; the rings are labelled (5, 7, 9, 11) so
+ * the scale stays honest.
+ */
+export const RADAR_BASELINE = 3
+
+export function radarRatio(value: number | null): number {
+  if (value == null) return 0
+  return Math.max(0, Math.min(1, (value - RADAR_BASELINE) / (PERFORMANCE_MAX - RADAR_BASELINE)))
+}
+
+const RING_VALUES = [5, 7, 9, PERFORMANCE_MAX]
+
 function polygonPoints(values: Record<PerformanceDimension, number | null>, center: number, radius: number): string {
   return PERFORMANCE_AXES.map((axis, i) => {
     const raw = values[axis.key]
-    const ratio = raw == null ? 0 : Math.max(0, Math.min(1, raw / PERFORMANCE_MAX))
+    const ratio = radarRatio(raw)
     const { x, y } = pointAt(i, ratio, center, radius)
     return `${x},${y}`
   }).join(' ')
@@ -67,7 +82,9 @@ export default function RadarChart({ series, size = 220, showValues = false, max
   const padding = size * (showAxisValues ? 0.3 : 0.24)
   const center = size / 2
   const radius = size / 2 - padding
-  const rings = [0.25, 0.5, 0.75, 1]
+  const rings = RING_VALUES.map(radarRatio)
+  // Overlapping fills turn into mush in a comparison: keep them faint there, and let the lines and dots carry the shape.
+  const fillOpacity = series.length > 1 ? 0.45 : 1
 
   const ariaLabel = series.length === 1 ? describeSeries(series[0]) : `Radar comparison of ${series.length} strings: ${series.map(describeSeries).join('. ')}`
 
@@ -82,8 +99,17 @@ export default function RadarChart({ series, size = 220, showValues = false, max
       <svg viewBox={`0 0 ${size} ${size}`} className={`w-full h-auto mx-auto ${maxWidthClassName}`} role="img" aria-label={ariaLabel}>
         <title>{ariaLabel}</title>
 
-        {/* Grid rings */}
-        {rings.map((r) => (
+        {/* Board: a softly tinted plot area, so the shapes sit on something instead of floating */}
+        <polygon
+          points={PERFORMANCE_AXES.map((_, i) => {
+            const { x, y } = pointAt(i, 1, center, radius)
+            return `${x},${y}`
+          }).join(' ')}
+          className="fill-court-900/[0.04] dark:fill-white/[0.05] stroke-court-900/20 dark:stroke-white/20"
+          strokeWidth={1}
+        />
+        {/* Inner grid rings (dashed), outer ring is the board edge above */}
+        {rings.slice(0, -1).map((r) => (
           <polygon
             key={r}
             points={PERFORMANCE_AXES.map((_, i) => {
@@ -93,8 +119,18 @@ export default function RadarChart({ series, size = 220, showValues = false, max
             fill="none"
             className="stroke-court-900/10 dark:stroke-white/10"
             strokeWidth={1}
+            strokeDasharray="2 3"
           />
         ))}
+        {/* Ring values along the first (top) spoke */}
+        {RING_VALUES.map((v) => {
+          const { x, y } = pointAt(0, radarRatio(v), center, radius)
+          return (
+            <text key={v} x={x + 3} y={y + 3} className="fill-ink-700/50 dark:fill-shuttle-100/50 text-[7px] tabular-nums" aria-hidden="true">
+              {v}
+            </text>
+          )
+        })}
 
         {/* Spokes */}
         {PERFORMANCE_AXES.map((axis, i) => {
@@ -104,13 +140,15 @@ export default function RadarChart({ series, size = 220, showValues = false, max
 
         {/* Data polygons, drawn after the grid so they sit on top */}
         {series.map((s) => (
-          <polygon
-            key={s.id}
-            points={polygonPoints(s.values, center, radius)}
-            className={`${s.strokeClassName} ${s.fillClassName}`}
-            strokeWidth={2}
-            strokeLinejoin="round"
-          />
+          <g key={s.id}>
+            <polygon points={polygonPoints(s.values, center, radius)} className={`${s.strokeClassName} ${s.fillClassName}`} fillOpacity={fillOpacity} strokeWidth={1.5} strokeLinejoin="round" />
+            {PERFORMANCE_AXES.map((axis, i) => {
+              const raw = s.values[axis.key]
+              if (raw == null) return null
+              const { x, y } = pointAt(i, radarRatio(raw), center, radius)
+              return <circle key={axis.key} cx={x} cy={y} r={2.2} className={`${s.strokeClassName} fill-white dark:fill-[#0c1210]`} strokeWidth={1.5} />
+            })}
+          </g>
         ))}
 
         {/* Axis labels — kept short and close to the ring so they never overflow the viewBox */}
@@ -137,7 +175,7 @@ export default function RadarChart({ series, size = 220, showValues = false, max
           PERFORMANCE_AXES.map((axis, i) => {
             const raw = series[0].values[axis.key]
             if (raw == null) return null
-            const ratio = Math.max(0, Math.min(1, raw / PERFORMANCE_MAX))
+            const ratio = radarRatio(raw)
             const { x, y } = pointAt(i, ratio, center, radius)
             return (
               <text key={axis.key} x={x} y={y - 6} textAnchor="middle" className="fill-ink-900 dark:fill-shuttle-50 text-[9px] font-semibold tabular-nums" aria-hidden="true">
