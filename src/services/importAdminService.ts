@@ -8,6 +8,8 @@ import type { Confidence, ExperienceSource, SpecialistDimensionKey, SpecialistFe
 import type { StringImageMetaJson } from '../types/database.js'
 import { fitWithin, sniffImageType, storagePath, type ImageSide } from '../logic/imagePack.js'
 import type { ExistingProfile } from '../logic/researchPack.js'
+import { stringItemToInsert } from '../logic/catalogSync.js'
+import type { StringItem } from '../data/strings.js'
 
 export type AdminResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
@@ -159,5 +161,15 @@ export function writeProfileRow(row: Record<string, unknown>, isNew: boolean): P
       : client.from('specialist_profiles').update(rest as never).eq('string_id', String(stringId))
     const { error } = await query
     if (error) throw new Error(error.message)
+  })
+}
+
+/** Adds built-in strings that are missing from the database catalog (see logic/catalogSync.ts). */
+export function insertCatalogStrings(items: StringItem[]): Promise<AdminResult<number>> {
+  return wrap(async () => {
+    if (items.length === 0) return 0
+    const { error } = await getSupabaseClient().from('strings').insert(items.map(stringItemToInsert))
+    if (error) throw new Error(error.message)
+    return items.length
   })
 }

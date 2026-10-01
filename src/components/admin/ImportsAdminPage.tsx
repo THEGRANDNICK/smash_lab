@@ -4,6 +4,7 @@ import { buildProfileRow, parseResearchPack, planResearchMerge, takenFields, typ
 import {
   fetchCatalogImageState,
   fetchExistingProfiles,
+  insertCatalogStrings,
   prepareImage,
   readJson,
   readZip,
@@ -16,6 +17,8 @@ import {
 } from '../../services/importAdminService'
 import { DIMENSION_OPTIONS } from '../../services/specialistAdminService'
 import type { StringImageMetaJson } from '../../types/database'
+import { strings as builtInStrings, type StringItem } from '../../data/strings'
+import { missingFromDatabase } from '../../logic/catalogSync'
 
 /**
  * Admin → Imports. Two importers for the packs prepared outside the app:
@@ -25,8 +28,11 @@ import type { StringImageMetaJson } from '../../types/database'
  */
 export default function ImportsAdminPage() {
   const [tab, setTab] = useState<'images' | 'research'>('images')
+  // Bumped after missing strings are added, so the importers re-read the catalog from scratch.
+  const [refreshKey, setRefreshKey] = useState(0)
   return (
     <div className="space-y-6">
+      <MissingCatalogBanner onAdded={() => setRefreshKey((k) => k + 1)} />
       <div className="flex gap-2" role="tablist" aria-label="Importer">
         {(
           [
@@ -46,7 +52,61 @@ export default function ImportsAdminPage() {
           </button>
         ))}
       </div>
-      {tab === 'images' ? <ImageImportPanel /> : <ResearchImportPanel />}
+      {tab === 'images' ? <ImageImportPanel key={`img-${refreshKey}`} /> : <ResearchImportPanel key={`res-${refreshKey}`} />}
+    </div>
+  )
+}
+
+/**
+ * Strings that exist in the built-in data but not in the database. While any are missing, the
+ * public site ignores the whole live catalog (and with it every imported image) and shows the
+ * built-in data — so this is shown above both importers with a one-click fix.
+ */
+function MissingCatalogBanner({ onAdded }: { onAdded: () => void }) {
+  const [missing, setMissing] = useState<StringItem[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchCatalogImageState().then((r) => {
+      if (!cancelled && r.ok) setMissing(missingFromDatabase(builtInStrings, new Set(r.data.map((c) => c.id))))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [message])
+
+  if (!missing || missing.length === 0) return message ? <p className="text-sm text-emerald-700 dark:text-emerald-400">{message}</p> : null
+
+  async function add() {
+    setBusy(true)
+    const result = await insertCatalogStrings(missing ?? [])
+    setBusy(false)
+    if (result.ok) {
+      setMessage(`✓ Added ${result.data} string(s) to the database. The public site now uses your live catalog (reload it to see).`)
+      onAdded()
+    } else setMessage(`Could not add them: ${result.error}`)
+  }
+
+  return (
+    <div role="alert" className="rounded-xl border-2 border-red-500/60 bg-red-500/10 p-4 text-sm">
+      <p className="font-semibold">
+        {missing.length} string{missing.length === 1 ? ' is' : 's are'} missing from your database: {missing.map((s) => `${s.brand} ${s.name}`).join(', ')}.
+      </p>
+      <p className="mt-1">
+        While any built-in string is missing, the public site ignores your whole live catalog — including imported images, prices and stock — and shows the built-in
+        data instead. Adding them copies their built-in details into the database; you can edit them in Catalog afterwards.
+      </p>
+      <button
+        type="button"
+        onClick={add}
+        disabled={busy}
+        className="focus-ring mt-3 rounded-full bg-court-800 hover:bg-court-700 disabled:opacity-50 text-white font-bold px-5 py-2 cursor-pointer"
+      >
+        {busy ? 'Adding…' : `Add ${missing.length} string${missing.length === 1 ? '' : 's'} to the database`}
+      </button>
+      {message && <p className="mt-2">{message}</p>}
     </div>
   )
 }

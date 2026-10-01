@@ -47,6 +47,8 @@
           layer), and retailers are added/edited by the site owner
           through the admin panel, so their exact domains aren't known
           ahead of time and can't be enumerated in a static policy.
+          Plus blob: for the in-browser previews in the admin image
+          importer (same-origin object URLs created by the page itself).
         - font-src: 'self' only — every font is self-hosted (see Part 1);
           no fonts.googleapis.com/fonts.gstatic.com or any other external
           font origin is ever requested.
@@ -62,7 +64,7 @@
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'sha256-u3+90f5iWFFu+16+2iKL95cPNxbj0OeaVXx2Kri0tUk='; style-src 'self' 'unsafe-inline'; img-src 'self' https:; font-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"
+      content="default-src 'self'; script-src 'self' 'sha256-u3+90f5iWFFu+16+2iKL95cPNxbj0OeaVXx2Kri0tUk='; style-src 'self' 'unsafe-inline'; img-src 'self' https: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"
     />
 
     <!--
