@@ -22,6 +22,10 @@ interface RecommendationPodiumProps {
   selectedForCompare: Set<string>
   compareFull: boolean
   onToggleCompare: (id: string) => void
+  /** The string currently shown at the top of the results page (defaults to rank 1). */
+  featuredId?: string
+  /** Shows a string at the top of the results page — its tension and the WhatsApp/email message follow it. */
+  onFeature?: (id: string) => void
 }
 
 /**
@@ -33,7 +37,7 @@ interface RecommendationPodiumProps {
  * more", matching the site's existing progressive-disclosure convention
  * (see ComparisonTable.tsx).
  */
-export default function RecommendationPodium({ topThree, specialistProfiles, retailerListingsByStringId, selectedForCompare, compareFull, onToggleCompare }: RecommendationPodiumProps) {
+export default function RecommendationPodium({ topThree, specialistProfiles, retailerListingsByStringId, selectedForCompare, compareFull, onToggleCompare, featuredId, onFeature }: RecommendationPodiumProps) {
   if (topThree.length === 0) return null
   const best = topThree[0]
 
@@ -49,6 +53,8 @@ export default function RecommendationPodium({ topThree, specialistProfiles, ret
         selected={selectedForCompare.has(topThree[0].string.id)}
         disabled={compareFull && !selectedForCompare.has(topThree[0].string.id)}
         onToggleCompare={() => onToggleCompare(topThree[0].string.id)}
+        featured={featuredId == null || featuredId === topThree[0].string.id}
+        onFeature={onFeature ? () => onFeature(topThree[0].string.id) : undefined}
         className="sm:col-span-2"
       />
       {topThree.slice(1).map((scored, i) => (
@@ -62,6 +68,8 @@ export default function RecommendationPodium({ topThree, specialistProfiles, ret
           selected={selectedForCompare.has(scored.string.id)}
           disabled={compareFull && !selectedForCompare.has(scored.string.id)}
           onToggleCompare={() => onToggleCompare(scored.string.id)}
+          featured={featuredId === scored.string.id}
+          onFeature={onFeature ? () => onFeature(scored.string.id) : undefined}
         />
       ))}
     </ol>
@@ -78,12 +86,14 @@ interface PodiumCardProps {
   selected: boolean
   disabled: boolean
   onToggleCompare: () => void
+  featured?: boolean
+  onFeature?: () => void
   className?: string
 }
 
 const RANK_MEDAL = ['🥇', '🥈', '🥉']
 
-function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retailerListings, selected, disabled, onToggleCompare, className = '' }: PodiumCardProps) {
+function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retailerListings, selected, disabled, onToggleCompare, featured = false, onFeature, className = '' }: PodiumCardProps) {
   const isBest = rank === 1
   // Rank 1 is the "why" panel for the hero above it, so its details are always open.
   const [expanded, setExpanded] = useState(isBest)
@@ -103,7 +113,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
 
   return (
     <li
-      className={`list-none rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6 ${className}`}
+      className={`list-none rounded-2xl border-2 ${featured && onFeature ? 'border-shuttle-500 ring-2 ring-shuttle-500/30' : 'border-court-900/10 dark:border-white/10'} bg-white/80 dark:bg-white/5 p-5 sm:p-6 ${className}`}
       aria-label={`Rank ${rank} of 3: ${item.brand} ${item.name}, ${matchPercent} percent match, ${matchLabel}`}
     >
       {isBest ? (
@@ -143,7 +153,19 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
         </>
       )}
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {onFeature &&
+          (featured ? (
+            <span className="rounded-full bg-shuttle-500/15 text-shuttle-700 dark:text-shuttle-400 text-xs font-semibold px-3 py-2">✓ Shown at the top</span>
+          ) : (
+            <button
+              type="button"
+              onClick={onFeature}
+              className="focus-ring rounded-full bg-court-800 hover:bg-court-700 text-white text-xs font-semibold px-3 py-2 transition-colors cursor-pointer"
+            >
+              {isBest ? '↩ Back to this one' : '↑ Choose this one'}
+            </button>
+          ))}
         <button
           type="button"
           onClick={onToggleCompare}

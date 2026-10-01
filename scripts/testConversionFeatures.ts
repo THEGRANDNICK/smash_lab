@@ -183,6 +183,10 @@ test('summary matches the reference message shape exactly', () => {
     ['Hello Nick,', 'Smash Lab recommended the following setup:', '', 'String: Yonex BG80', 'Tension: 10.5 kg', 'Match: 91%', 'Data source: Manufacturer + Specialist calibration', '', 'Racket: ', 'My question: '].join('\n'),
   )
 })
+test('says when the player picked another match than the recommendation', () => {
+  assert.match(buildResultSummaryText({ ...ENQUIRY_DETAILS, rank: 2 }), /I picked my #2 match from Smash Lab:/)
+  assert.match(buildResultSummaryText({ ...ENQUIRY_DETAILS, rank: 1 }), /Smash Lab recommended the following setup:/)
+})
 test('racket model and note are included when provided', () => {
   const text = buildResultSummaryText({ ...ENQUIRY_DETAILS, racketModel: 'Astrox 88D', note: 'Please use a fresh grip too' })
   assert.match(text, /Racket: Astrox 88D/)

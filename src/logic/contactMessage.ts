@@ -21,6 +21,8 @@ export interface EnquiryDetails {
   alternativeTensions?: string
   racketModel?: string
   note?: string
+  /** Position in the player's ranking; > 1 when they chose another match than the recommendation. */
+  rank?: number
 }
 
 /**
@@ -32,10 +34,11 @@ export interface EnquiryDetails {
  * what still needs an answer.
  */
 export function buildResultSummaryText(details: EnquiryDetails): string {
-  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note } = details
+  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note, rank } = details
   const lines = [
     `Hello ${CONTACT.name},`,
-    'Smash Lab recommended the following setup:',
+    // Says so when the player picked one of their other matches instead of the recommendation.
+    rank != null && rank > 1 ? `I picked my #${rank} match from Smash Lab:` : 'Smash Lab recommended the following setup:',
     '',
     `String: ${stringName}`,
     `Tension: ${formatKg(tensionKg)}`,

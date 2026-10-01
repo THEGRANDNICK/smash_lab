@@ -17,13 +17,6 @@ interface TensionTunerProps {
 export default function TensionTuner({ answers, onChange }: TensionTunerProps) {
   const alreadyTuned = answers.racketGoal != null || answers.currentTensionValue != null || answers.maxTensionValue != null
   const [open, setOpen] = useState(alreadyTuned)
-  const goal = getQuestion('racketGoal')
-  const feel = getQuestion('currentTensionFeel')
-
-  function set(patch: Partial<QuizAnswers>) {
-    onChange({ ...answers, ...patch })
-  }
-
   return (
     <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6" aria-labelledby="tension-tuner-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -43,53 +36,69 @@ export default function TensionTuner({ answers, onChange }: TensionTunerProps) {
         </button>
       </div>
 
-      {open && (
-        <div className="mt-5 grid gap-6 sm:grid-cols-2">
-          {goal && (
-            <fieldset className="sm:col-span-2">
-              <legend className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{goal.title}</legend>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {goal.options.map((o) => (
-                  <Chip key={o.id} selected={answers.racketGoal === o.id} onClick={() => set({ racketGoal: answers.racketGoal === o.id ? undefined : o.id })}>
-                    {o.emoji} {o.label}
-                  </Chip>
-                ))}
-              </div>
-            </fieldset>
-          )}
-
-          <div>
-            <TensionInputStep
-              compact
-              title="Your current tension"
-              subtitle="Leave empty if you don't know it."
-              valueKg={answers.currentTensionValue}
-              onChange={(kg) => set({ currentTensionValue: kg, currentTensionKnown: kg != null ? 'yes' : 'no' })}
-            />
-            {answers.currentTensionValue != null && feel && (
-              <fieldset className="mt-4">
-                <legend className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{feel.title}</legend>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {feel.options.map((o) => (
-                    <Chip key={o.id} selected={answers.currentTensionFeel === o.id} onClick={() => set({ currentTensionFeel: o.id })}>
-                      {o.label}
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-            )}
-          </div>
-
-          <TensionInputStep
-            compact
-            title="Your racket's maximum tension"
-            subtitle="Usually printed on the racket's throat. We'll never recommend more."
-            valueKg={answers.maxTensionValue}
-            onChange={(kg) => set({ maxTensionValue: kg, maxTensionKnown: kg != null ? 'yes' : 'no' })}
-          />
-        </div>
-      )}
+      {open && <TensionFields answers={answers} onChange={onChange} className="mt-5" />}
     </section>
+  )
+}
+
+/**
+ * The tension inputs themselves — racket goal, current tension (+ how it feels) and the racket's
+ * maximum. Shared by the optional quiz step and the "Fine-tune your tension" panel on the results
+ * page, so both always behave the same.
+ */
+export function TensionFields({ answers, onChange, className = '' }: TensionTunerProps & { className?: string }) {
+  const goal = getQuestion('racketGoal')
+  const feel = getQuestion('currentTensionFeel')
+
+  function set(patch: Partial<QuizAnswers>) {
+    onChange({ ...answers, ...patch })
+  }
+
+  return (
+    <div className={`grid gap-6 sm:grid-cols-2 ${className}`}>
+      {goal && (
+        <fieldset className="sm:col-span-2">
+          <legend className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{goal.title}</legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {goal.options.map((o) => (
+              <Chip key={o.id} selected={answers.racketGoal === o.id} onClick={() => set({ racketGoal: answers.racketGoal === o.id ? undefined : o.id })}>
+                {o.emoji} {o.label}
+              </Chip>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      <div>
+        <TensionInputStep
+          compact
+          title="Your current tension"
+          subtitle="Leave empty if you don't know it."
+          valueKg={answers.currentTensionValue}
+          onChange={(kg) => set({ currentTensionValue: kg, currentTensionKnown: kg != null ? 'yes' : 'no' })}
+        />
+        {answers.currentTensionValue != null && feel && (
+          <fieldset className="mt-4">
+            <legend className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{feel.title}</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {feel.options.map((o) => (
+                <Chip key={o.id} selected={answers.currentTensionFeel === o.id} onClick={() => set({ currentTensionFeel: o.id })}>
+                  {o.label}
+                </Chip>
+              ))}
+            </div>
+          </fieldset>
+        )}
+      </div>
+
+      <TensionInputStep
+        compact
+        title="Your racket's maximum tension"
+        subtitle="Usually printed on the racket's throat. We'll never recommend more."
+        valueKg={answers.maxTensionValue}
+        onChange={(kg) => set({ maxTensionValue: kg, maxTensionKnown: kg != null ? 'yes' : 'no' })}
+      />
+    </div>
   )
 }
 
