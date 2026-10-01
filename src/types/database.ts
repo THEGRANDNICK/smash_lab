@@ -67,6 +67,21 @@ export interface SpecialistDimensionsJson {
 /** Per-dimension confidence overrides — same sparse key space as SpecialistDimensionsJson, values are Confidence instead of a number. */
 export type SpecialistDimensionConfidenceJson = Partial<Record<keyof SpecialistDimensionsJson, Confidence>>
 
+/** Provenance of imported packet images (see the image importer). */
+export interface StringImageMetaJson {
+  packId?: string
+  importedAt?: string
+  front?: { sha256: string; source?: string; note?: string }
+  back?: { sha256: string; source?: string; note?: string }
+}
+
+/** Which specialist fields came from an imported external research pack. */
+export interface ResearchImportJson {
+  datasetId: string
+  importedAt: string
+  fields: string[]
+}
+
 /** Feel-map placement of a string (see src/logic/mapPlacement.ts). holdRepulsion/softHard are 0–1, durability 1–5. */
 export interface MapPlacementJson {
   holdRepulsion: number
@@ -96,6 +111,9 @@ export interface Database {
           popularity_rank: number | null
           product_url: string | null
           image_url: string | null
+          /** Optional so the app keeps working before the string-images migration has been run. */
+          image_back_url?: string | null
+          image_meta?: StringImageMetaJson | null
           colors: string[] | null
           is_hybrid: boolean
           main_string_meta: HybridStringMetaJson | null
@@ -120,6 +138,8 @@ export interface Database {
           popularity_rank?: number | null
           product_url?: string | null
           image_url?: string | null
+          image_back_url?: string | null
+          image_meta?: StringImageMetaJson | null
           colors?: string[] | null
           is_hybrid?: boolean
           main_string_meta?: HybridStringMetaJson | null
@@ -144,6 +164,8 @@ export interface Database {
           popularity_rank?: number | null
           product_url?: string | null
           image_url?: string | null
+          image_back_url?: string | null
+          image_meta?: StringImageMetaJson | null
           colors?: string[] | null
           is_hybrid?: boolean
           main_string_meta?: HybridStringMetaJson | null
@@ -210,6 +232,7 @@ export interface Database {
           reviewer: string | null
           /** Optional so the app keeps working before the map_placement migration has been run. */
           map_placement?: MapPlacementJson | null
+          research_import?: ResearchImportJson | null
           updated_at: string
         }
         Insert: {
@@ -227,6 +250,7 @@ export interface Database {
           subjective_notes?: string | null
           reviewer?: string | null
           map_placement?: MapPlacementJson | null
+          research_import?: ResearchImportJson | null
           updated_at?: string
         }
         Update: {
@@ -244,6 +268,7 @@ export interface Database {
           subjective_notes?: string | null
           reviewer?: string | null
           map_placement?: MapPlacementJson | null
+          research_import?: ResearchImportJson | null
           updated_at?: string
         }
         Relationships: [

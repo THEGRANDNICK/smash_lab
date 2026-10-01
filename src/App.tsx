@@ -110,7 +110,8 @@ function viewFromHash(): View {
     hash === 'admin/catalog' ||
     hash === 'admin/specialists' ||
     hash === 'admin/retailers' ||
-    hash === 'admin/retailer-listings'
+    hash === 'admin/retailer-listings' ||
+    hash === 'admin/imports'
   )
     return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced

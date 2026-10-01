@@ -97,6 +97,8 @@ export interface StringItem {
    * the stringer has rights to use) without any other code changes.
    */
   imageUrl?: string
+  /** Back of the retail packet (front is imageUrl). Set by the admin image importer. */
+  imageBackUrl?: string
 }
 
 export const strings: StringItem[] = [
