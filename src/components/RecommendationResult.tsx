@@ -7,7 +7,6 @@ import { formatGauge } from '../logic/formatGauge'
 import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/recommendationExplanation'
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
-import DataSourceSwitch from './DataSourceSwitch'
 import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
@@ -30,8 +29,6 @@ interface RecommendationResultProps {
   onRetake: () => void
   onCompare: () => void
   dataSource: DataSource
-  /** When set, the results page shows a small switch between calibrated and manufacturer-only ranking (formerly a separate quiz step). */
-  onChangeDataSource?: (next: DataSource) => void
   /** Defaults to the full static catalog (recommendStrings' own default) when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. Never affects scoring, only which stock values are attached to each candidate. */
   pool?: StringItem[]
   /** Defaults to the local stringSpecialistProfiles.ts lookup (recommendStrings' own default) when omitted — pass the live, Supabase-merged map from useSpecialistProfiles(). Never affects the scoring math itself, only where the specialist-layer data comes from. */
@@ -40,7 +37,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, onChangeDataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -213,11 +210,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
 
         {/* Podium — top-3 ranked results, replacing the old text-heavy Cross-Brand Alternative / Specialist Choice cards. */}
         <div className="mt-8">
-          {onChangeDataSource ? (
-            <DataSourceSwitch value={dataSource} onChange={onChangeDataSource} />
-          ) : (
-            <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
-          )}
+          <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
           <div role="tablist" aria-label="Result details" className="mt-4 flex justify-center gap-2">
             {(
               [

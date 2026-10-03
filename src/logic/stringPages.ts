@@ -98,7 +98,7 @@ function listHtml(title: string, items: string[] | undefined): string {
 export function renderStringPageBody(item: StringItem, profile: StringSpecialistProfile | undefined, all: StringItem[], base: string): string {
   const fullName = `${item.brand} ${item.name}`
   const gauge = gaugeText(item)
-  const facts = [CATEGORY_LABEL[item.category], gauge, item.stringCost != null ? `€${item.stringCost.toFixed(2).replace(/\.00$/, '')} string price` : undefined].filter(Boolean)
+  const facts = [CATEGORY_LABEL[item.category], gauge].filter(Boolean)
   const handsOn = profile
     ? `<section><h2>Smash Lab hands-on notes</h2>${listHtml('Strengths', profile.strengths)}${listHtml('Trade-offs', profile.weaknesses)}${
         profile.subjectiveNotes ? `<p>${escapeHtml(profile.subjectiveNotes)}</p>` : ''

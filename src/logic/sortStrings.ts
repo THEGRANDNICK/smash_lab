@@ -8,8 +8,6 @@ export type SortOption = 'recommended' | 'priceAsc' | 'priceDesc' | 'popularity'
 
 export const SORT_OPTIONS: { id: SortOption; label: string }[] = [
   { id: 'recommended', label: 'Recommended / Default' },
-  { id: 'priceAsc', label: 'Price per metre: Low to High' },
-  { id: 'priceDesc', label: 'Price per metre: High to Low' },
   { id: 'popularity', label: 'Popularity' },
   { id: 'nameAsc', label: 'Name: A–Z' },
 ]

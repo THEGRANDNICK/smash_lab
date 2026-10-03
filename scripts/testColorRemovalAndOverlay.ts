@@ -96,14 +96,15 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
 ]
 const REC_FIXTURES = [
   { best: 'yonex-bg80', pct: 89, cross: 'lining-no1', spec: 'yonex-aerobite' },
-  { best: 'yonex-skyarc', pct: 87, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
+  { best: 'yonex-skyarc', pct: 87, cross: undefined, spec: 'lining-no7' }, // v2: beginners are steered to ≥0.68 mm (video guidance)
   { best: 'yonex-bg80', pct: 91, cross: undefined, spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 const TENSION_FIXTURES = [
-  { recommendedKg: 11.5, lowerKg: 11, higherKg: 12 },
-  { recommendedKg: 9.5, lowerKg: 9, higherKg: 10 },
-  { recommendedKg: 12, lowerKg: 11.5, higherKg: 12.5 },
+  // v2: tension ranges follow Badminton Insight's video (advanced ≥27 lb, beginners ≤24 lb / 11 kg)
+  { recommendedKg: 13, lowerKg: 12.5, higherKg: 13.5 },
+  { recommendedKg: 10, lowerKg: 9.5, higherKg: 10.5 },
+  { recommendedKg: 13, lowerKg: 12.5, higherKg: 13.5 },
   { recommendedKg: 11, lowerKg: 10.5, higherKg: 11.5 },
 ]
 

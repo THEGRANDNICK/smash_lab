@@ -71,7 +71,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   // A setting, not a scored quiz answer — its only effect is which
   // specialist-profile map the recommendation receives (the real one, or {}
   // for a manufacturer-only run). Switched on the results page.
-  const [dataSource, setDataSource] = useState<DataSource>(initial.dataSource)
+  // v2: always calibrated (manufacturer data + Smash Lab specialist profiles); no switch on the site.
+  const [dataSource] = useState<DataSource>(initial.dataSource)
   const resolvedSpecialistProfiles = resolveSpecialistProfiles(dataSource, specialistProfiles)
 
   // Mark the entry we were opened on as ours, so a reload restores it.
@@ -197,7 +198,6 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
           onRetake={restart}
           onCompare={onCompare}
           dataSource={dataSource}
-          onChangeDataSource={setDataSource}
           pool={pool}
           specialistProfiles={resolvedSpecialistProfiles}
           retailerListingsByStringId={retailerListingsByStringId}

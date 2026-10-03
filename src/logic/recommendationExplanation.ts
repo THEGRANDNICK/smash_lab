@@ -226,8 +226,6 @@ export function buildStructuredExplanation(
 // ---------------------------------------------------------------------------
 
 const RATING_DIFFERENCE_THRESHOLD = 0.5
-/** A price difference below this is not worth mentioning (BG80 vs Exbolt 63 was 25 cents). */
-const MIN_PRICE_DIFFERENCE_EUR = 1
 /** Hands-on (1–5) difference needed before a specialist comparison is stated. */
 const SPECIALIST_DIFFERENCE_THRESHOLD = 1
 
@@ -300,9 +298,6 @@ export function buildAlternativeReasons(
   const specialistReason = specialistTopLabel(alternative.topSpecialistDims[0])
   if (specialistReason) reasons.push(specialistReason)
 
-  if (a.stringCost != null && b.stringCost != null && b.stringCost - a.stringCost >= MIN_PRICE_DIFFERENCE_EUR) {
-    reasons.push('Lower price than the Best Match.')
-  }
 
   if (a.stock === 'in-stock' && b.stock !== 'in-stock') {
     reasons.push('Currently in stock, unlike the Best Match.')

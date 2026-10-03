@@ -20,7 +20,6 @@ import Impressum from './components/legal/Impressum'
 import Datenschutz from './components/legal/Datenschutz'
 import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
-import { useRetailerPrices } from './hooks/useRetailerPrices'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
 import { strings } from './data/strings'
@@ -133,7 +132,6 @@ function App() {
   const [stringId, setStringId] = useState<string>(getStringIdFromLocation)
   const liveStrings = useStringPool()
   const specialistProfiles = useSpecialistProfiles()
-  const retailerListingsByStringId = useRetailerPrices()
 
   useEffect(() => {
     if (redirectLegacyStringLink()) document.title = getPageTitle('')
@@ -204,7 +202,7 @@ function App() {
             <SavedSetupBanner />
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
             <HowItWorks />
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
             <WhyUs />
             <RestringAndCraft />
             <FAQ />
@@ -219,7 +217,6 @@ function App() {
               onCompare={() => goTo('compare')}
               pool={liveStrings}
               specialistProfiles={specialistProfiles}
-              retailerListingsByStringId={retailerListingsByStringId}
             />
           </div>
         )}
@@ -251,7 +248,6 @@ function App() {
                   onCompare={() => goTo('compare')}
                   pool={liveStrings}
                   specialistProfiles={specialistProfiles}
-                  retailerListingsByStringId={retailerListingsByStringId}
                 />
               )
             })()}
@@ -279,7 +275,6 @@ function App() {
             stringId={stringId}
             strings={liveStrings}
             specialistProfiles={specialistProfiles}
-            retailerListingsByStringId={retailerListingsByStringId}
             onBrowse={() => goTo('compare')}
             onCompare={() => goTo('compare')}
             onQuiz={() => goTo('finder')}
@@ -289,7 +284,7 @@ function App() {
         {view === 'compare' && (
           <div className="pt-6">
             <h1 className="sr-only">Compare badminton strings</h1>
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
             <div className="text-center pb-16">
               <button
                 type="button"

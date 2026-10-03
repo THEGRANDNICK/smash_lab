@@ -5,6 +5,9 @@
 
 import {
   LEVEL_BASE_RANGES,
+  BEGINNER_MAX_TENSION,
+  GAUGE_TENSION_ADJUSTMENTS,
+  MISHIT_TENSION_ADJUSTMENT,
   GOAL_ADJUSTMENTS,
   POWER_GENERATION_TENSION_ADJUSTMENTS,
   CURRENT_TENSION_FEEL_ADJUSTMENTS,
@@ -35,6 +38,16 @@ function round(kg: number): number {
 /** Rounds DOWN to the tension increment — used whenever a value must never end up above a racket maximum. */
 function roundDown(kg: number): number {
   return Math.floor(kg / TENSION_ROUNDING_INCREMENT + 1e-9) * TENSION_ROUNDING_INCREMENT
+}
+
+/** The string's gauge for tension purposes; for hybrids the thinner side. */
+function stringGauge(string: StringItem | undefined): number | undefined {
+  if (!string) return undefined
+  if (string.isHybrid) {
+    const sides = [string.mainString?.gauge, string.crossString?.gauge].filter((g): g is number => typeof g === 'number')
+    return sides.length ? Math.min(...sides) : undefined
+  }
+  return string.tension?.gauge
 }
 
 function clamp(kg: number, min: number, max: number): number {
@@ -91,10 +104,23 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
         : ' Since you could use some help generating power, we nudged it down slightly for extra forgiveness.'
   }
 
-  // Small, string-specific nudge (thinner/livelier strings can hold a hair more usable tension).
-  if (string?.tension?.tensionAdjustment) {
-    target += string.tension.tensionAdjustment
-    reasoning += ` ${string.name}'s construction allows a small additional adjustment.`
+  // Thinner strings a little lower (durability), thick strings unchanged — see GAUGE_TENSION_ADJUSTMENTS.
+  const gauge = stringGauge(string)
+  const gaugeRule = gauge == null ? undefined : GAUGE_TENSION_ADJUSTMENTS.find((rule) => gauge <= rule.maxGauge)
+  if (gaugeRule && gaugeRule.adjustKg !== 0) {
+    target += gaugeRule.adjustKg
+    reasoning += ` ${string!.name} is a thin string (${gauge} mm), so we went a little lower to help it last.`
+  }
+
+  // Strings breaking from mishits: lower tension forgives off-centre hits.
+  if (answers.restringReason === 'mishitBreakage') {
+    target += MISHIT_TENSION_ADJUSTMENT
+    reasoning += ' Because your strings often break from mishits, we went a little lower — it forgives off-centre hits.'
+  }
+
+  // Beginners stay at or below 24 lb unless they already play (and like) a higher tension.
+  if (level === 'beginner' && !(answers.currentTensionKnown === 'yes' && typeof answers.currentTensionValue === 'number')) {
+    target = Math.min(target, BEGINNER_MAX_TENSION)
   }
 
   target = clamp(target, ABSOLUTE_MIN_TENSION, ABSOLUTE_MAX_TENSION)

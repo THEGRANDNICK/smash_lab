@@ -348,6 +348,30 @@ function scoreSpecialist(
   return { percent, relevance: 1, confidenceMultiplier, topDims }
 }
 
+/**
+ * Beginners: strings thinner than 0.68 mm move down the ranking (Smash Lab v2).
+ * Source: Badminton Insight (Aug 2026) — beginners around 0.70 mm for durability and forgiveness;
+ * 0.68 mm and thinner for high-intermediate/advanced players. A soft guardrail, not a filter: a
+ * beginner who really wants a thin string still sees it, just not as the default pick.
+ */
+export const BEGINNER_MIN_GAUGE = 0.68
+export const BEGINNER_THIN_STRING_FACTOR = 0.85
+
+function gaugeOf(item: StringItem): number | undefined {
+  if (item.isHybrid) {
+    const sides = [item.mainString?.gauge, item.crossString?.gauge].filter((g): g is number => typeof g === 'number')
+    return sides.length ? Math.min(...sides) : undefined
+  }
+  return item.tension?.gauge
+}
+
+export function applyBeginnerGaugeGuardrail(scored: ScoredString, answers: QuizAnswers): ScoredString {
+  if (answers.level !== 'beginner') return scored
+  const gauge = gaugeOf(scored.string)
+  if (gauge == null || gauge >= BEGINNER_MIN_GAUGE) return scored
+  return { ...scored, matchPercent: Math.round(scored.matchPercent * BEGINNER_THIN_STRING_FACTOR) }
+}
+
 /** Scores a single string by blending manufacturer data with Smash Lab specialist knowledge. `specialistProfiles` defaults to the local data file — pass the live, Supabase-merged map from useSpecialistProfiles() to source it from there instead; the scoring math itself never changes. */
 export function scoreString(
   item: StringItem,
@@ -530,7 +554,7 @@ export function recommendStrings(
   const poolStats = computePoolStats(pool)
   const dominantArchetype = detectDominantArchetype(profile, specialistWeights, answers)
 
-  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles, poolStats))
+  const scored = pool.map((item) => applyBeginnerGaugeGuardrail(scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles, poolStats), answers))
 
   // Ranked purely on how well each string fits this player — stock never
   // enters scoring or eligibility. We can order in strings we don't
