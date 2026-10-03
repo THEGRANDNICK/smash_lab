@@ -154,6 +154,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         <StringingBench
           items={compareItems}
           max={MAX_COMPARE}
+          specialistProfiles={specialistProfiles}
           onAdd={(id) => setCompareIds((prev) => (prev.includes(id) || prev.length >= MAX_COMPARE ? prev : [...prev, id]))}
           onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
           detail={

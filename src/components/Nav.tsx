@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Shuttlecock from './Shuttlecock'
 import SoundToggle from './SoundToggle'
+import ThemeToggle from './ThemeToggle'
 
 interface NavProps {
   onOpenFinder: () => void
@@ -33,6 +34,7 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           </a>
         </nav>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
           <SoundToggle />
           <button
             type="button"

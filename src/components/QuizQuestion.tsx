@@ -13,11 +13,11 @@ interface QuizQuestionProps {
 // class applied later (e.g. for disabled dimming). So the disabled-dimmed
 // opacity is driven through this same variant rather than a CSS class.
 const cardVariants = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 10 },
   visible: ({ i, disabled }: { i: number; disabled: boolean }) => ({
     opacity: disabled ? 0.4 : 1,
     y: 0,
-    transition: { delay: i * 0.05, duration: 0.35, ease: 'easeOut' as const },
+    transition: { delay: i * 0.025, duration: 0.18, ease: 'easeOut' as const },
   }),
 }
 

@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Dark mode follows the page's data-theme (set by public/theme-init.js from the Auto/Light/Dark
+   switch; "Auto" mirrors the device setting) instead of the device setting alone. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /*
  * Self-hosted Space Grotesk (SIL OFL-1.1 — see licenses/space-grotesk/LICENSE)
  * via @fontsource/space-grotesk, which packages the actual Google Fonts
@@ -95,14 +99,12 @@ body {
   background-position: 0 0, 4px 7px;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
+:root[data-theme='dark'] body {
     background-color: #1e201f;
     background-image:
       radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
       radial-gradient(rgba(243, 227, 181, 0.02) 1px, transparent 1px);
     color: #eef4f0;
-  }
 }
 
 .font-display {
@@ -148,11 +150,9 @@ select option {
   background-color: var(--color-shuttle-50);
   color: var(--color-ink-900);
 }
-@media (prefers-color-scheme: dark) {
-  select option {
+:root[data-theme='dark'] select option {
     background-color: #0c1210;
     color: var(--color-shuttle-50);
-  }
 }
 
 ::selection {
@@ -178,15 +178,13 @@ select option {
   border-radius: 14px 20px 12px 18px / 18px 12px 20px 14px;
   box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55), 4px 5px 0 0 var(--paper-edge);
 }
-@media (prefers-color-scheme: dark) {
-  .paper {
+:root[data-theme='dark'] .paper {
     --paper-bg: #18211d;
     --paper-edge: rgba(0, 0, 0, 0.55);
     background-image:
       radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       radial-gradient(rgba(255, 206, 107, 0.025) 1px, transparent 1px);
     box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.06), 4px 5px 0 0 var(--paper-edge);
-  }
 }
 
 /* Physical press: buttons and tappable paper sink a little, like card stock under a finger. */
@@ -296,11 +294,9 @@ body {
   background: #fff9f0;
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7), 6px 7px 0 0 rgba(11, 61, 46, 0.16);
 }
-@media (prefers-color-scheme: dark) {
-  .sheet {
+:root[data-theme='dark'] .sheet {
     background: #0c1210;
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05), 6px 7px 0 0 rgba(0, 0, 0, 0.55);
-  }
 }
 @media (max-width: 640px) {
   .sheet {
@@ -354,8 +350,7 @@ body {
   pointer-events: none;
   background: var(--cut-wall);
 }
-@media (prefers-color-scheme: dark) {
-  .cut-stage {
+:root[data-theme='dark'] .cut-stage {
     --cut-wall: #0f1915;
     --cut-sun: #e9e1c6; /* a paper moon */
     --cut-cloud: #22302a;
@@ -378,7 +373,6 @@ body {
     --cut-feathers: #dfe5e0;
     --cut-cork: #b8a68a;
     --cut-pin: #a8862a;
-  }
 }
 .cut-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
 .cut-edge path, path.cut-edge { stroke: var(--cut-edge); stroke-width: 1.6; stroke-linejoin: round; }
@@ -485,13 +479,11 @@ body {
   background-size: 7px 7px, 11px 11px;
   background-position: 0 0, 3px 5px;
 }
-@media (prefers-color-scheme: dark) {
-  .card-stock {
+:root[data-theme='dark'] .card-stock {
     background-color: #2a2d2b;
     background-image:
       radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
       radial-gradient(rgba(243, 227, 181, 0.02) 1px, transparent 1px);
-  }
 }
 
 /* Masking-tape label for section eyebrows: cream tape, torn (zig-zag) ends, slightly askew. */
@@ -508,11 +500,9 @@ body {
   clip-path: polygon(0 8%, 3% 0, 6% 10%, 9% 0, 91% 0, 94% 10%, 97% 0, 100% 8%, 100% 92%, 97% 100%, 94% 90%, 91% 100%, 9% 100%, 6% 90%, 3% 100%, 0 92%);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
-@media (prefers-color-scheme: dark) {
-  .tape {
+:root[data-theme='dark'] .tape {
     background: #d9c48f;
     color: #3a2a10;
-  }
 }
 
 /* Felt: the green court cloth, with a soft fibre texture. */
@@ -524,8 +514,7 @@ body {
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
 }
-@media (prefers-color-scheme: dark) {
-  .felt { background-color: #17703d; }
+:root[data-theme='dark'] .felt { background-color: #17703d;
 }
 
 /* String reel (the tile picture): a coil of orange string wound around a cream card disc, with
@@ -546,17 +535,15 @@ body {
   background: #fff8ea;
   box-shadow: 0 0 0 3px #f6e7c6;
 }
-@media (prefers-color-scheme: dark) {
-  .reel {
+:root[data-theme='dark'] .reel {
     background:
       radial-gradient(circle, transparent 54%, rgba(0, 0, 0, 0.25) 55%, transparent 57%),
       repeating-radial-gradient(circle, #e9791a 0 2.5px, #c95f0c 2.5px 4.5px);
     box-shadow: inset 0 0 0 3px #d9c48f, 3px 4px 0 0 rgba(0, 0, 0, 0.5);
-  }
-  .reel-core {
+}
+:root[data-theme='dark'] .reel-core {
     background: #f4ead6;
     box-shadow: 0 0 0 3px #d9c48f;
-  }
 }
 
 /* Live feel map (components/QuizFeelMap.tsx): tiny string reels on the felt court. */

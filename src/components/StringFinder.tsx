@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { stopMotion } from '../logic/stopMotion'
 import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
@@ -44,6 +43,19 @@ interface StringFinderProps {
  * Tension used to be three separate questions (too long), then only a panel on the results page
  * (players overlooked it) — now it's a single, skippable screen with all three inputs together.
  */
+/** True while the media query matches (re-renders on change). */
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(query)
+      mq.addEventListener('change', onChange)
+      return () => mq.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  )
+}
+
 function buildSteps(answers: QuizAnswers): string[] {
   const steps = ['level', 'playStyles', 'powerGeneration', 'priorities', 'hittingFeel', 'frequency']
   if (answers.priorities?.includes('durability')) steps.push('restringReason')
@@ -70,6 +82,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   const [stepIndex, setStepIndex] = useState(initial.stepIndex)
   const [phase, setPhase] = useState<Phase>(initial.phase)
   const [direction, setDirection] = useState(1)
+  const isWide = useMediaQuery('(min-width: 1024px)')
   // A setting, not a scored quiz answer — its only effect is which
   // specialist-profile map the recommendation receives (the real one, or {}
   // for a manufacturer-only run). Switched on the results page.
@@ -140,7 +153,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       setAnswers(nextAnswers)
       const nextSteps = buildSteps(nextAnswers)
       const from = stepIndex
-      window.setTimeout(() => advance(from, nextSteps), 220)
+      // just long enough to see your choice light up — controls stay crisp (stop-motion is for the playful bits only)
+      window.setTimeout(() => advance(from, nextSteps), 110)
       return
     }
 
@@ -224,19 +238,21 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       <ProgressBar step={stepIndex} total={displayTotal} />
 
       {/* phones: a compact strip of the live feel map above the question */}
-      <div className="mt-4 lg:hidden">
-        <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} compact />
-      </div>
+      {!isWide && (
+        <div className="mt-4">
+          <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} compact />
+        </div>
+      )}
 
       <div className="mt-8 min-h-[420px]">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStepId}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 40 }}
+            initial={{ opacity: 0, x: direction * 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -40 }}
-            transition={{ duration: 0.3, ease: stopMotion(4) }}
+            exit={{ opacity: 0, x: direction * -24, transition: { duration: 0.09, ease: 'easeIn' } }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
           >
             <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} onPatch={setAnswers} />
           </motion.div>
@@ -245,11 +261,13 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       </div>
 
       {/* desktop: the full live feel map beside the quiz */}
-      <aside className="hidden lg:block">
-        <div className="sticky top-24">
-          <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} />
-        </div>
-      </aside>
+      {isWide && (
+        <aside>
+          <div className="sticky top-24">
+            <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} />
+          </div>
+        </aside>
+      )}
     </div>
   )
 }
