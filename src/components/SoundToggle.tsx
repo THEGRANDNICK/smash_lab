@@ -15,7 +15,7 @@ export default function SoundToggle() {
       aria-label={on ? 'Sounds on — turn off' : 'Sounds off — turn on'}
       title={on ? 'Turn sounds off' : 'Turn sounds on'}
       data-sound="none"
-      className="focus-ring shrink-0 rounded-full border-2 border-court-900/15 dark:border-white/20 p-2 text-ink-700/80 dark:text-shuttle-100/80 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
+      className="focus-ring shrink-0 inline-flex items-center gap-1.5 rounded-full border-2 border-court-900/15 dark:border-white/20 p-2 lg:px-3 text-ink-700/80 dark:text-shuttle-100/80 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
     >
       {on ? (
         <svg {...icon}>
@@ -28,6 +28,8 @@ export default function SoundToggle() {
           <path d="M16 9.5l5 5M21 9.5l-5 5" />
         </svg>
       )}
+      {/* the word makes the button's purpose obvious where there's room */}
+      <span className="hidden lg:inline text-xs font-semibold">{on ? 'Sound on' : 'Sound off'}</span>
     </button>
   )
 }

@@ -1,6 +1,6 @@
 // UI sounds, synthesized live with the Web Audio API — no audio files to download.
 //
-// Badminton + paper, in the spirit of Carnivinion's wood clicks:
+// Badminton + paper, in the spirit of Carnivinion's wood clicks — pitched low and warm (v2):
 //   tap     — a light "tock" of a shuttle on strings: noise transient through a band-pass + a short, falling tone
 //   pluck   — a brighter string "ping" for primary actions (start quiz, send, choose this one)
 //   flick   — a paper flick for tabs, cards, toggles and opening/closing panels
@@ -14,6 +14,7 @@ export type SoundKind = 'tap' | 'pluck' | 'flick' | 'tick' | 'reveal'
 const STORAGE_KEY = 'smashlab.sound'
 let ctx: AudioContext | null = null
 let noise: AudioBuffer | null = null
+let bus: AudioNode | null = null
 let enabled: boolean | null = null
 const listeners = new Set<(on: boolean) => void>()
 
@@ -37,7 +38,7 @@ export function setSoundEnabled(on: boolean): void {
     // private mode — the setting just won't survive a reload
   }
   listeners.forEach((l) => l(on))
-  if (on) play('tick')
+  if (on) play('pluck')
 }
 
 export function onSoundSettingChange(listener: (on: boolean) => void): () => void {
@@ -49,7 +50,21 @@ function audio(): AudioContext | null {
   if (typeof window === 'undefined') return null
   const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctor) return null
-  ctx ??= new Ctor()
+  if (!ctx) {
+    ctx = new Ctor()
+    // Master bus: boost (the first version was far too quiet to notice) through a limiter so
+    // several voices at once never clip.
+    const boost = ctx.createGain()
+    boost.gain.value = 2.2
+    const limiter = ctx.createDynamicsCompressor()
+    limiter.threshold.value = -6
+    limiter.knee.value = 0
+    limiter.ratio.value = 20
+    limiter.attack.value = 0.002
+    limiter.release.value = 0.08
+    boost.connect(limiter).connect(ctx.destination)
+    bus = boost
+  }
   if (ctx.state === 'suspended') void ctx.resume()
   if (!noise) {
     const length = Math.floor(ctx.sampleRate * 0.09)
@@ -73,7 +88,7 @@ function noiseBurst(ac: AudioContext, t0: number, opts: { type: BiquadFilterType
   filter.Q.value = opts.q
   gain.gain.setValueAtTime(opts.gain, t0)
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + opts.decay)
-  src.connect(filter).connect(gain).connect(ac.destination)
+  src.connect(filter).connect(gain).connect(bus ?? ac.destination)
   src.start(t0)
   src.stop(t0 + opts.decay + 0.02)
 }
@@ -89,7 +104,7 @@ function tone(ac: AudioContext, t0: number, opts: { type: OscillatorType; from: 
   lp.frequency.value = opts.lowpass ?? 3000
   gain.gain.setValueAtTime(opts.gain, t0)
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + opts.decay)
-  osc.connect(lp).connect(gain).connect(ac.destination)
+  osc.connect(lp).connect(gain).connect(bus ?? ac.destination)
   osc.start(t0)
   osc.stop(t0 + opts.decay + 0.02)
 }
@@ -103,23 +118,23 @@ export function play(kind: SoundKind): void {
     const j = jitter()
     switch (kind) {
       case 'tap':
-        noiseBurst(ac, t0, { type: 'bandpass', freq: 2600 * j, q: 3, gain: 0.35, decay: 0.045 })
-        tone(ac, t0, { type: 'triangle', from: 760 * j, to: 480 * j, gain: 0.12, decay: 0.07, lowpass: 2200 })
+        noiseBurst(ac, t0, { type: 'bandpass', freq: 1500 * j, q: 2.5, gain: 0.35, decay: 0.05 })
+        tone(ac, t0, { type: 'triangle', from: 480 * j, to: 300 * j, gain: 0.16, decay: 0.09, lowpass: 1600 })
         break
       case 'pluck':
-        noiseBurst(ac, t0, { type: 'bandpass', freq: 3400 * j, q: 4, gain: 0.3, decay: 0.035 })
-        tone(ac, t0, { type: 'triangle', from: 1180 * j, to: 980 * j, gain: 0.16, decay: 0.22, lowpass: 4200 })
-        tone(ac, t0, { type: 'sine', from: 2360 * j, to: 1960 * j, gain: 0.04, decay: 0.12 })
+        noiseBurst(ac, t0, { type: 'bandpass', freq: 2000 * j, q: 3, gain: 0.3, decay: 0.04 })
+        tone(ac, t0, { type: 'triangle', from: 740 * j, to: 620 * j, gain: 0.2, decay: 0.26, lowpass: 2800 })
+        tone(ac, t0, { type: 'sine', from: 1480 * j, to: 1240 * j, gain: 0.04, decay: 0.14 })
         break
       case 'flick':
-        noiseBurst(ac, t0, { type: 'highpass', freq: 1800 * j, q: 0.7, gain: 0.22, decay: 0.06, rate: 0.6 })
+        noiseBurst(ac, t0, { type: 'bandpass', freq: 1100 * j, q: 0.8, gain: 0.3, decay: 0.07, rate: 0.5 })
         break
       case 'tick':
-        noiseBurst(ac, t0, { type: 'bandpass', freq: 4200 * j, q: 6, gain: 0.18, decay: 0.025 })
+        noiseBurst(ac, t0, { type: 'bandpass', freq: 2600 * j, q: 5, gain: 0.22, decay: 0.03 })
         break
       case 'reveal':
-        tone(ac, t0, { type: 'triangle', from: 880 * j, to: 860 * j, gain: 0.14, decay: 0.25, lowpass: 4000 })
-        tone(ac, t0 + 0.11, { type: 'triangle', from: 1318 * j, to: 1290 * j, gain: 0.14, decay: 0.35, lowpass: 4000 })
+        tone(ac, t0, { type: 'triangle', from: 587 * j, to: 575 * j, gain: 0.18, decay: 0.28, lowpass: 2800 })
+        tone(ac, t0 + 0.11, { type: 'triangle', from: 880 * j, to: 862 * j, gain: 0.18, decay: 0.4, lowpass: 2800 })
         noiseBurst(ac, t0, { type: 'bandpass', freq: 3000, q: 3, gain: 0.2, decay: 0.03 })
         break
     }

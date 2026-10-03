@@ -558,3 +558,63 @@ body {
     box-shadow: 0 0 0 3px #d9c48f;
   }
 }
+
+/* Live feel map (components/QuizFeelMap.tsx): tiny string reels on the felt court. */
+.map-reel {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, #fff8ea 0 34%, transparent 36%),
+    repeating-radial-gradient(circle, #ff8a1f 0 1.5px, #ef7410 1.5px 3px);
+  box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.3);
+  /* stop-motion: drops and returns happen in 3 frames, not a glide */
+  transition: transform 360ms steps(3, end), opacity 360ms steps(3, end);
+}
+.map-reel-out {
+  transform: translate(-50%, -50%) translateY(16px) rotate(40deg) scale(0.7);
+  opacity: 0.18;
+}
+.map-reel-leader {
+  z-index: 2;
+  transform: translate(-50%, -50%) scale(1.7);
+  box-shadow: 0 0 0 2px #fff8ea, 2px 3px 0 rgba(0, 0, 0, 0.35);
+}
+.map-reel-label {
+  position: absolute;
+  left: 130%;
+  top: 50%;
+  transform: translateY(-50%) scale(0.59);
+  transform-origin: left center;
+  white-space: nowrap;
+  background: #f3e3b5;
+  color: #3a2a10;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-reel { transition: none; }
+}
+.map-reel-label-left {
+  left: auto;
+  right: 130%;
+  transform-origin: right center;
+}
+.map-axis {
+  position: absolute;
+  left: 0.75rem;
+  z-index: 3;
+  padding: 0 0.35rem;
+  border-radius: 2px;
+  background: rgba(11, 61, 46, 0.75);
+  color: #f3e3b5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tape { white-space: nowrap; }

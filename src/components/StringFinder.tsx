@@ -11,6 +11,7 @@ import QuizQuestion from './QuizQuestion'
 import ProgressBar from './ProgressBar'
 import CalculatingAnimation from './CalculatingAnimation'
 import RecommendationResult from './RecommendationResult'
+import QuizFeelMap from './QuizFeelMap'
 import { TensionFields } from './TensionTuner'
 import { type QuizHistoryState, clearStoredQuiz, loadStoredQuiz, newRunId, readHistoryState, safeSessionStorage, saveStoredQuiz } from '../logic/quizSession'
 
@@ -208,7 +209,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
+    <div className="max-w-5xl mx-auto px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
+      <div className="min-w-0">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
@@ -220,6 +222,11 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       </div>
 
       <ProgressBar step={stepIndex} total={displayTotal} />
+
+      {/* phones: a compact strip of the live feel map above the question */}
+      <div className="mt-4 lg:hidden">
+        <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} compact />
+      </div>
 
       <div className="mt-8 min-h-[420px]">
         <AnimatePresence mode="wait" custom={direction}>
@@ -235,6 +242,14 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
           </motion.div>
         </AnimatePresence>
       </div>
+      </div>
+
+      {/* desktop: the full live feel map beside the quiz */}
+      <aside className="hidden lg:block">
+        <div className="sticky top-24">
+          <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} />
+        </div>
+      </aside>
     </div>
   )
 }

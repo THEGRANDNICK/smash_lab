@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { buildEnquiryWhatsAppUrl } from '../logic/contactMessage'
+import { encodeResultShareState } from '../logic/resultShareState'
+import { play } from '../logic/sound'
 import { recommendStrings } from '../logic/recommendationEngine'
 import { recommendTension } from '../logic/tensionRecommendation'
 import { formatKg, formatLbs } from '../logic/units'
@@ -7,18 +9,16 @@ import { formatGauge } from '../logic/formatGauge'
 import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/recommendationExplanation'
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
+import ImageSwiper from './ImageSwiper'
 import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
 import type { RetailerListing } from '../services/retailerPriceService'
-import StockBadge from './StockBadge'
-import Shuttlecock from './Shuttlecock'
 import DisclaimerBox from './DisclaimerBox'
 import StringMap from './StringMap'
 import RecommendationPodium, { PODIUM_COMPARE_LIMIT } from './RecommendationPodium'
 import StringingEnquiry from './StringingEnquiry'
-import TensionTuner from './TensionTuner'
 import StringBasics from './StringBasics'
 import AnswerTree from './AnswerTree'
 
@@ -37,7 +37,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -61,12 +61,32 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
   const bestReason = useMemo(() => buildPodiumBestReason(rec.best, bestProfile), [rec.best, bestProfile])
   const heroReason = isRecommended ? bestReason : buildPodiumAlternativeReason(featured, rec.best, featuredProfile, bestProfile)
 
-  const [tab, setTab] = useState<'matches' | 'answers'>('matches')
-
   function feature(id: string) {
     setFeaturedId(id === rec.best.string.id ? null : id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+  // A short two-note pluck when a result is revealed.
+  const encodedResult = useMemo(() => encodeResultShareState(answers, dataSource), [answers, dataSource])
+  useEffect(() => {
+    play('reveal')
+  }, [rec.best.string.id])
+
+  const [shareState, setShareState] = useState<'idle' | 'copied'>('idle')
+  async function shareResult() {
+    const url = `${window.location.origin}${window.location.pathname}#result/${encodedResult}`
+    const text = `My Smash Lab string: ${featured.string.brand} ${featured.string.name} at ${formatKg(tension.recommendedKg)}`
+    try {
+      if (navigator.share) await navigator.share({ title: 'Smash Lab', text, url })
+      else {
+        await navigator.clipboard.writeText(url)
+        setShareState('copied')
+        window.setTimeout(() => setShareState('idle'), 2000)
+      }
+    } catch {
+      // Share sheet dismissed or clipboard blocked — nothing to do.
+    }
+  }
+
 
   const [selectedForCompare, setSelectedForCompare] = useState<Set<string>>(new Set())
 
@@ -118,133 +138,119 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
     )
   }
 
-  return (
-    <div className="max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
-        {/* Hero result card, styled like a match result / player card */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-court-900 via-court-800 to-court-700 text-white px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 shadow-2xl">
-          <div className="absolute inset-0 court-lines opacity-30" aria-hidden="true" />
-          <div className="absolute inset-0 string-grid opacity-[0.07]" aria-hidden="true" />
-          <motion.div
-            className="absolute top-6 right-6 text-shuttle-400/40"
-            animate={{ rotate: [0, 10, -10, 0], y: [0, -8, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            aria-hidden="true"
-          >
-            <Shuttlecock className="w-20 h-20" />
-          </motion.div>
+  const whatsAppUrl = buildEnquiryWhatsAppUrl({
+    stringName: `${featured.string.brand} ${featured.string.name}`,
+    tensionKg: tension.recommendedKg,
+    matchPercent: featured.matchPercent,
+    dataSourceLabel: DATA_SOURCE_NOTE[dataSource],
+    rank: featuredRank,
+  })
+  const others = rec.topThree.filter((s) => s.string.id !== featured.string.id)
 
-          <div className="relative max-w-2xl">
+  return (
+    <div className="max-w-2xl mx-auto pb-16">
+      {/* 1 — the result itself: string + tension, nothing else */}
+      <section className="paper deal relative overflow-hidden rounded-3xl px-5 py-6 sm:px-8 sm:py-8">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             {isRecommended ? (
-              <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase flex items-center gap-2">🏸 Your Perfect Setup</p>
+              <span className="stamp rounded-md border-2 border-shuttle-700 dark:border-shuttle-400 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-shuttle-700 dark:text-shuttle-400">
+                Best match · {featured.matchPercent}%
+              </span>
             ) : (
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-shuttle-400 font-semibold text-sm tracking-widest uppercase">
-                  👀 Your #{featuredRank} match · {featured.matchPercent}%
-                </p>
-                <button
-                  type="button"
-                  onClick={() => feature(rec.best.string.id)}
-                  className="focus-ring rounded-full border-2 border-white/30 hover:border-white/70 px-3 py-1 text-xs font-semibold cursor-pointer"
-                >
-                  ↩ Back to recommended ({rec.best.string.name})
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="pop-in rounded-md border-2 border-court-800/40 dark:border-white/30 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-ink-700 dark:text-shuttle-100">
+                  Your #{featuredRank} · {featured.matchPercent}%
+                </span>
+                <button type="button" onClick={() => feature(rec.best.string.id)} className="focus-ring text-xs font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer">
+                  ↩ Back to recommended
                 </button>
               </div>
             )}
-
-            <p className="mt-5 text-sm uppercase tracking-wide text-white/50 font-semibold">{featured.string.brand}</p>
-            <h1 className="mt-1 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">{featured.string.brand}</p>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold leading-none text-ink-900 dark:text-shuttle-50">
               {featured.string.name}
-              {featuredGauge != null && <span className="text-base font-normal text-white/50 ml-2">{featuredGauge}</span>}
+              {featuredGauge != null && <span className="ml-2 align-middle text-base font-normal text-ink-700/70 dark:text-shuttle-100/70">{featuredGauge}</span>}
             </h1>
-            <p className="mt-3 text-white/80 max-w-lg">{heroReason}</p>
-            {isRecommended && rec.bestAvailable && (
-              <p className="mt-2 text-xs font-semibold text-shuttle-400/90 uppercase tracking-wide">Best overall match — may need to be ordered</p>
-            )}
-
-            {/* Tension */}
-            <div className="mt-8 rounded-2xl bg-white/10 backdrop-blur-sm p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-white/60">Your Recommended Tension</p>
-              <div className="mt-1 flex items-baseline gap-3">
-                <span className="font-display text-3xl font-bold">{formatKg(tension.recommendedKg)}</span>
-                <span className="text-white/60">≈ {formatLbs(tension.recommendedKg)}</span>
-              </div>
-              {/* How a stringer actually strings it: mains a little lower, crosses a little higher. */}
-              <p className="mt-1 text-sm text-white/80">
-                Mains {formatKg(tension.mainsKg)} · Crosses {formatKg(tension.crossKg)}
-              </p>
-
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
-                <TensionOption kg={tension.lowerKg} label="More forgiving / easier power" />
-                <TensionOption kg={tension.recommendedKg} label="Recommended" highlight />
-                {tension.higherKg != null ? (
-                  <TensionOption kg={tension.higherKg} label="More direct / control" />
-                ) : (
-                  <div className="rounded-xl p-3 bg-white/5 text-white/40 border border-dashed border-white/15">
-                    <p className="font-display font-bold">—</p>
-                    <p className="mt-1 leading-tight">Firmer would exceed your racket's max</p>
-                  </div>
-                )}
-              </div>
-
-              {tension.wasCappedByRacketMax && (
-                <p className="mt-4 text-xs text-shuttle-400 font-semibold">
-                  ⚠️ Capped to stay within your racket's maximum recommended tension ({tension.racketMaxKg} kg).
-                </p>
-              )}
-              <p className="mt-3 text-xs text-white/50">Always stay within the tension range specified by your racket manufacturer — never exceed its maximum, whichever string you choose.</p>
-            </div>
+          </div>
+          <div className="w-24 sm:w-28 shrink-0 rotate-3">
+            <ImageSwiper front={featured.string.imageUrl} back={featured.string.imageBackUrl} label={`${featured.string.brand} ${featured.string.name}`} placeholderText={featured.string.name} />
           </div>
         </div>
+        <p className="mt-3 text-ink-700/90 dark:text-shuttle-100/90">{heroReason}</p>
 
-        {onChangeAnswers && <TensionTuner answers={answers} onChange={onChangeAnswers} />}
-
-        {/* Best available now, shown separately when the best overall match isn't in stock */}
-        {rec.bestAvailable && (
-          <div className="mt-6 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-court-800 dark:text-shuttle-400">
-                ✅ Best Available Alternative — {rec.bestAvailable.string.name} ({rec.bestAvailable.matchPercent}% Match)
-              </p>
-              <StockBadge stock={rec.bestAvailable.string.stock} />
-            </div>
-            <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">{rec.explanations.bestAvailable}</p>
-          </div>
+        <div className="mt-5 flex items-baseline gap-3 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">Tension</span>
+          <span className="font-display text-3xl font-bold text-ink-900 dark:text-shuttle-50">{formatKg(tension.recommendedKg)}</span>
+          <span className="text-ink-700/70 dark:text-shuttle-100/70">≈ {formatLbs(tension.recommendedKg)}</span>
+        </div>
+        <p className="mt-1 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
+          Mains {formatKg(tension.mainsKg)} · Crosses {formatKg(tension.crossKg)}
+        </p>
+        <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
+          {formatKg(tension.lowerKg)} for easier power{tension.higherKg != null ? ` · ${formatKg(tension.higherKg)} for more control` : ''}
+          {tension.wasCappedByRacketMax ? ` · capped at your racket's max (${tension.racketMaxKg} kg)` : ''}
+        </p>
+        {isRecommended && rec.bestAvailable && (
+          <p className="mt-3 text-xs font-semibold text-shuttle-700 dark:text-shuttle-400">Not in stock right now — best available: {rec.bestAvailable.string.name} ({rec.bestAvailable.matchPercent}%)</p>
         )}
 
-        {/* Podium — top-3 ranked results, replacing the old text-heavy Cross-Brand Alternative / Specialist Choice cards. */}
-        <div className="mt-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/50">{DATA_SOURCE_NOTE[dataSource]}</p>
-          <div role="tablist" aria-label="Result details" className="mt-4 flex justify-center gap-2">
-            {(
-              [
-                ['matches', 'Your top 3'],
-                ['answers', 'Your answers'],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`result-tab-${id}`}
-                aria-selected={tab === id}
-                aria-controls={`result-panel-${id}`}
-                onClick={() => setTab(id)}
-                className={`focus-ring rounded-full border-2 px-5 py-2 text-sm font-bold transition-colors cursor-pointer ${
-                  tab === id ? 'border-court-800 bg-court-800 text-white dark:border-shuttle-500 dark:bg-shuttle-500 dark:text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <h2 className="sr-only">{tab === 'matches' ? 'Your top 3 matches' : 'Your answers'}</h2>
-          {tab === 'answers' ? (
-            <div role="tabpanel" id="result-panel-answers" aria-labelledby="result-tab-answers" className="mt-6">
-              <AnswerTree answers={answers} pool={pool} specialistProfiles={specialistProfiles} featuredId={featured.string.id} onFeature={feature} />
-            </div>
-          ) : (
-          <div role="tabpanel" id="result-panel-matches" aria-labelledby="result-tab-matches">
+        {/* The action that matters sits in the card itself — visible as soon as the result appears, no scrolling. */}
+        <div className="mt-5 flex gap-2">
+          {whatsAppUrl && (
+            <a href={whatsAppUrl} target="_blank" rel="noopener noreferrer" data-sound="pluck" className="press focus-ring flex-1 rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-center font-bold py-3">
+              💬 Send via WhatsApp
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={shareResult}
+            className="press focus-ring rounded-full border-2 border-court-900/20 dark:border-white/25 px-4 font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+          >
+            {shareState === 'copied' ? '✓ Link copied' : '↗ Share'}
+          </button>
+        </div>
+      </section>
+
+      {/* 2 — the alternatives, one line each, one tap to show them at the top */}
+      <section aria-labelledby="alternatives-heading" className="mt-6">
+        <h2 id="alternatives-heading" className="px-1 text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
+          {isRecommended ? 'Also a good fit' : 'Your other matches'}
+        </h2>
+        <ul className="mt-2 space-y-2.5">
+          {others.map((s, i) => {
+            const isBest = s.string.id === rec.best.string.id
+            const why = isBest ? 'Your best match overall.' : buildPodiumAlternativeReason(s, rec.best, profileOf(s.string.id), bestProfile)
+            return (
+              <li key={s.string.id} className="deal" style={{ ['--deal-i' as string]: i + 2 }}>
+                <button
+                  type="button"
+                  onClick={() => feature(s.string.id)}
+                  data-sound="flick"
+                  className="paper press focus-ring w-full rounded-2xl px-4 py-3 text-left flex items-center gap-3 cursor-pointer"
+                >
+                  <span className="reel block h-12 w-12 shrink-0 !p-[10px]" aria-hidden="true">
+                    <span className="reel-core grid place-items-center overflow-hidden">
+                      {s.string.imageUrl ? <img src={s.string.imageUrl} alt="" className="h-full w-full object-contain p-[12%]" loading="lazy" /> : <span className="font-display text-[9px] font-bold text-ink-900 whitespace-nowrap">{s.string.name.split(' ')[0]}</span>}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="font-display font-bold text-ink-900 dark:text-shuttle-50">{s.string.name}</span>
+                      <span className="text-sm tabular-nums text-ink-700/70 dark:text-shuttle-100/70">{s.matchPercent}%</span>
+                    </span>
+                    <span className="block text-sm text-ink-700/80 dark:text-shuttle-100/80 truncate">{why}</span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
+
+      {/* 3 — everything else, closed until asked for */}
+      <div className="mt-6 space-y-2.5">
+        <Fold title={isRecommended ? `Why ${featured.string.name}` : 'Details and comparison'}>
           <RecommendationPodium
             topThree={rec.topThree}
             specialistProfiles={specialistProfiles}
@@ -255,71 +261,67 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
             featuredId={featured.string.id}
             onFeature={feature}
           />
+          <div className="mt-4 text-center">
+            <button type="button" onClick={handleCompareClick} className="focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 px-5 py-2 text-sm font-semibold cursor-pointer">
+              {selectedForCompare.size > 0 ? `Compare ${selectedForCompare.size} selected` : 'Compare strings'}
+            </button>
           </div>
-          )}
-        </div>
-
-        {bestAvailableOutsidePodium && (
-          <p className="mt-4 text-center text-sm text-ink-700/70 dark:text-shuttle-100/70">
-            Best available right now: <span className="font-semibold text-ink-900 dark:text-shuttle-50">{bestAvailableOutsidePodium.string.name}</span> ({bestAvailableOutsidePodium.matchPercent}
-            % match) — {rec.explanations.bestAvailable}
-          </p>
-        )}
-
-        <StringBasics className="mt-6" />
-
-        <DisclaimerBox className="mt-6" />
-
-        {/* String map — a sibling visualization to the podium, not a replacement; shows where the top 3 sit relative to the rest of the pool. */}
+        </Fold>
+        <Fold title="How your answers led here">
+          <AnswerTree answers={answers} pool={pool} specialistProfiles={specialistProfiles} featuredId={featured.string.id} onFeature={feature} />
+        </Fold>
         {mapPool.length > 1 && (
-          <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-6 sm:p-7">
-            <p className="text-center text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">Where they sit</p>
-            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70 text-center mb-4 max-w-md mx-auto">Your top 3 matches, placed on the feel map against the rest of the lineup.</p>
+          <Fold title="Where they sit on the feel map">
             <div className="max-w-md mx-auto">
               <StringMap items={mapPool} specialistProfiles={specialistProfiles} useSpecialistData={dataSource === 'manufacturer-specialist'} rankedIds={topThreeIds} />
             </div>
-          </section>
+          </Fold>
         )}
+        <Fold title="Ask a question or add your racket">
+          <StringingEnquiry
+            stringBrand={featured.string.brand}
+            stringName={featured.string.name}
+            tensionKg={tension.recommendedKg}
+            matchPercent={featured.matchPercent}
+            rank={featuredRank}
+            dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
+            answers={answers}
+            dataSource={dataSource}
+          />
+        </Fold>
+        <Fold title="About this result">
+          <p className="text-sm">{DATA_SOURCE_NOTE[dataSource]}</p>
+          {bestAvailableOutsidePodium && (
+            <p className="mt-3 text-sm text-ink-700/80 dark:text-shuttle-100/80">
+              Best available right now: <strong>{bestAvailableOutsidePodium.string.name}</strong> ({bestAvailableOutsidePodium.matchPercent}% match) — {rec.explanations.bestAvailable}
+            </p>
+          )}
+          <StringBasics className="mt-4" />
+          <DisclaimerBox className="mt-4" />
+        </Fold>
+      </div>
 
-        {/* Conversion — the primary action, framed as the natural next step after seeing a recommendation. */}
-        <StringingEnquiry
-          stringBrand={featured.string.brand}
-          stringName={featured.string.name}
-          tensionKg={tension.recommendedKg}
-          matchPercent={featured.matchPercent}
-          rank={featuredRank}
-          dataSourceLabel={DATA_SOURCE_NOTE[dataSource]}
-          answers={answers}
-          dataSource={dataSource}
-        />
+      <div className="mt-8 text-center">
+        <button type="button" onClick={onRetake} className="focus-ring text-sm font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer">
+          Retake the quiz
+        </button>
+      </div>
 
-        {/* Secondary actions */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            type="button"
-            onClick={handleCompareClick}
-            className="focus-ring text-center rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 hover:bg-court-900/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            {selectedForCompare.size > 0 ? `Compare ${selectedForCompare.size} selected` : 'Compare Strings'}
-          </button>
-          <button
-            type="button"
-            onClick={onRetake}
-            className="focus-ring text-center rounded-full border-2 border-court-900/15 dark:border-white/20 font-semibold px-6 py-3 hover:bg-court-900/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            Retake Quiz
-          </button>
-        </div>
-      </motion.div>
     </div>
   )
 }
 
-function TensionOption({ kg, label, highlight }: { kg: number; label: string; highlight?: boolean }) {
+/** A closed-by-default paper fold for everything that isn't the result itself. */
+function Fold({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className={`rounded-xl p-3 ${highlight ? 'bg-shuttle-500 text-court-900' : 'bg-white/10 text-white'}`}>
-      <p className="font-display font-bold">{formatKg(kg)}</p>
-      <p className={`mt-1 leading-tight ${highlight ? 'text-court-900/80' : 'text-white/60'}`}>{label}</p>
-    </div>
+    <details className="paper group rounded-2xl">
+      <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3.5 font-semibold text-ink-900 dark:text-shuttle-50 [&::-webkit-details-marker]:hidden">
+        {title}
+        <span aria-hidden="true" className="text-shuttle-700 dark:text-shuttle-400 transition-transform duration-200 group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+      <div className="px-4 pb-4">{children}</div>
+    </details>
   )
 }
