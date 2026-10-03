@@ -14,7 +14,8 @@ import {
   UNSURE_BLEND_TOWARD_BASELINE,
   ABSOLUTE_MIN_TENSION,
   ABSOLUTE_MAX_TENSION,
-  RACKET_MAX_SAFETY_MARGIN,
+  CROSS_OFFSET_KG,
+  DEFAULT_RACKET_MAX_KG,
   TENSION_ROUNDING_INCREMENT,
   COMPARISON_STEP,
 } from '../config/tensionRules.js'
@@ -26,7 +27,12 @@ export interface TensionRecommendation {
   lowerKg: number
   /** null when one step firmer would exceed the racket's stated maximum — the UI then shows that option as unavailable. */
   higherKg: number | null
+  /** Mains and crosses: the stated tension is their average (crosses CROSS_OFFSET_KG higher). */
+  mainsKg: number
+  crossKg: number
   wasCappedByRacketMax: boolean
+  /** Capped by the typical Yonex maximum because the player didn't give their racket's. */
+  cappedByTypicalRacketMax: boolean
   racketMaxKg?: number
   explanation: string
 }
@@ -129,41 +135,47 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
   if (string?.tension?.recommendedMax != null) target = Math.min(target, string.tension.recommendedMax)
 
   let wasCappedByRacketMax = false
+  let cappedByTypicalRacketMax = false
   const racketMaxKg = answers.maxTensionKnown === 'yes' ? answers.maxTensionValue : undefined
-
-  if (typeof racketMaxKg === 'number') {
-    const alreadyNearMax = knowsCurrent && (answers.currentTensionValue as number) >= racketMaxKg - RACKET_MAX_SAFETY_MARGIN
-    const cap = alreadyNearMax ? racketMaxKg : racketMaxKg - RACKET_MAX_SAFETY_MARGIN
-    if (target > cap) {
-      target = cap
-      wasCappedByRacketMax = true
-    }
+  // The crosses are strung CROSS_OFFSET_KG above the stated tension and must stay within the
+  // racket's maximum. Unknown maximum → what most Yonex rackets allow (DEFAULT_RACKET_MAX_KG).
+  const effectiveMaxKg = typeof racketMaxKg === 'number' ? racketMaxKg : DEFAULT_RACKET_MAX_KG
+  const statedCap = effectiveMaxKg - CROSS_OFFSET_KG
+  if (target > statedCap) {
+    target = statedCap
+    if (typeof racketMaxKg === 'number') wasCappedByRacketMax = true
+    else cappedByTypicalRacketMax = true
   }
 
   let recommendedKg = round(target)
-  // Rounding must never push the recommendation above the racket's maximum (e.g. 12.25 kg max would round up to 12.5).
-  if (typeof racketMaxKg === 'number' && recommendedKg > racketMaxKg) {
-    recommendedKg = roundDown(racketMaxKg)
-    wasCappedByRacketMax = true
+  // Rounding must never push the crosses above the maximum (e.g. a 12.25 kg cap would round up to 12.5).
+  if (recommendedKg > statedCap) {
+    recommendedKg = roundDown(statedCap)
+    if (typeof racketMaxKg === 'number') wasCappedByRacketMax = true
+    else cappedByTypicalRacketMax = true
   }
 
-  // The "firmer" comparison option obeys the racket maximum too — it used to be recommended + 0.5 kg unconditionally,
-  // which could show e.g. 12.5 kg for a racket rated to 12.25 kg (Arcsaber 11 Pro 4U, 27 lbs).
+  // The "firmer" comparison option obeys the same limit.
   let higherKg: number | null = round(recommendedKg + COMPARISON_STEP)
-  if (typeof racketMaxKg === 'number' && higherKg > racketMaxKg) {
-    const firmestAllowed = roundDown(racketMaxKg)
+  if (higherKg > statedCap) {
+    const firmestAllowed = roundDown(statedCap)
     higherKg = firmestAllowed > recommendedKg ? firmestAllowed : null
   }
 
   if (wasCappedByRacketMax) {
-    reasoning += ` We've kept this within your racket's maximum recommended tension of ${racketMaxKg} kg, with a safety margin.`
+    reasoning += ` We've kept this within your racket's maximum of ${racketMaxKg} kg — the crosses are strung ${CROSS_OFFSET_KG} kg higher than this.`
+  } else if (cappedByTypicalRacketMax) {
+    reasoning += ` Most Yonex rackets allow up to ${DEFAULT_RACKET_MAX_KG} kg, and the crosses are strung ${CROSS_OFFSET_KG} kg higher, so we stopped at ${roundDown(statedCap)} kg. If your racket allows more, add its maximum.`
   }
 
   return {
     recommendedKg,
     lowerKg: round(recommendedKg - COMPARISON_STEP),
     higherKg,
+    mainsKg: recommendedKg - CROSS_OFFSET_KG,
+    crossKg: recommendedKg + CROSS_OFFSET_KG,
     wasCappedByRacketMax,
+    cappedByTypicalRacketMax,
     racketMaxKg,
     explanation: reasoning,
   }

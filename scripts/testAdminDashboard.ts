@@ -180,10 +180,10 @@ const REC_FIXTURES = [
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
 const TENSION_FIXTURES = [
-  // v2: tension ranges follow Badminton Insight's video (advanced ≥27 lb, beginners ≤24 lb / 11 kg)
-  { recommendedKg: 13, lowerKg: 12.5, higherKg: 13.5 },
+  // v2: beginners ≤11 kg (video); club players 11.5, at most 12 kg — crosses +0.5 kg must stay ≤12.5 kg (typical Yonex max)
+  { recommendedKg: 12, lowerKg: 11.5, higherKg: null },
   { recommendedKg: 10, lowerKg: 9.5, higherKg: 10.5 },
-  { recommendedKg: 13, lowerKg: 12.5, higherKg: 13.5 },
+  { recommendedKg: 12, lowerKg: 11.5, higherKg: null },
   { recommendedKg: 11, lowerKg: 10.5, higherKg: 11.5 },
 ]
 for (const [i, answers] of SAMPLE_ANSWERS.entries()) {

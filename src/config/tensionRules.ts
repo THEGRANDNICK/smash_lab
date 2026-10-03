@@ -11,19 +11,29 @@ export interface TensionRange {
 /**
  * Base ranges in kg by self-reported level, before any personalization (Smash Lab v2).
  *
- * Source: Badminton Insight, "What Badminton String & Tension Should You Use?" (Aug 2026):
- *   beginners at most 24 lb (≈10.9 kg), intermediate players around 24–27 lb (≈10.9–12.25 kg),
- *   advanced 27 lb and up (≈12.25 kg+). The video has no separate tournament band and no upper
- *   bound for advanced players; 28–30 lb (≈12.7–13.6 kg) is used for "tournament" here.
+ * Beginners follow Badminton Insight's video (Aug 2026): at most 24 lb, stated there as 11 kg.
+ * Club players follow the stringer's own practice instead of the video's 24–27+ lb: 11.5 kg,
+ * at most 12 kg — because the crosses are strung 1 kg above the mains (see CROSS_OFFSET_KG), and
+ * at 12 kg the crosses already sit at the 12.5 kg most Yonex rackets allow.
  * A known current tension the player is happy with always takes priority over these baselines
  * (see recommendTension in tensionRecommendation.ts).
  */
 export const LEVEL_BASE_RANGES: Record<string, TensionRange> = {
   beginner: { min: 9, max: 11, target: 10 },
-  intermediate: { min: 10.9, max: 12.25, target: 11.5 },
-  advanced: { min: 12.25, max: 13.2, target: 12.5 },
-  tournament: { min: 12.7, max: 13.6, target: 13 },
+  intermediate: { min: 10.5, max: 12, target: 11.5 },
+  advanced: { min: 11, max: 12, target: 11.5 },
+  tournament: { min: 11.5, max: 12.5, target: 12 },
 }
+
+/**
+ * The stated tension is the average: mains are strung CROSS_OFFSET_KG below it, crosses the same
+ * amount above (e.g. 12 kg → mains 11.5 kg, crosses 12.5 kg). The crosses must never exceed the
+ * racket's maximum.
+ */
+export const CROSS_OFFSET_KG = 0.5
+
+/** Maximum assumed when the player doesn't know theirs: what most Yonex rackets allow. */
+export const DEFAULT_RACKET_MAX_KG = 12.5
 
 /** Beginners: never above 24 lb — the video states this as 11 kg — unless they already play a known, higher tension. */
 export const BEGINNER_MAX_TENSION = 11

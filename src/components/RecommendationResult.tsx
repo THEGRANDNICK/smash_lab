@@ -169,6 +169,10 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
                 <span className="font-display text-3xl font-bold">{formatKg(tension.recommendedKg)}</span>
                 <span className="text-white/60">≈ {formatLbs(tension.recommendedKg)}</span>
               </div>
+              {/* How a stringer actually strings it: mains a little lower, crosses a little higher. */}
+              <p className="mt-1 text-sm text-white/80">
+                Mains {formatKg(tension.mainsKg)} · Crosses {formatKg(tension.crossKg)}
+              </p>
 
               <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
                 <TensionOption kg={tension.lowerKg} label="More forgiving / easier power" />

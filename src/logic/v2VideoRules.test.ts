@@ -7,21 +7,22 @@ import { strings } from '../data/strings'
 import { SORT_OPTIONS } from './sortStrings'
 import { LEVEL_BASE_RANGES } from '../config/tensionRules'
 
-const LB = 0.45359237
 const byId = (id: string) => strings.find((s) => s.id === id)!
 const bg80 = byId('yonex-bg80') // 0.68 mm
 const exbolt63 = byId('yonex-exbolt-63') // 0.63 mm
 const bg65 = byId('yonex-bg65') // 0.70 mm
 
-describe('tension ranges by level follow the video', () => {
-  it('beginner at most 24 lb, intermediate 24–27 lb, advanced from 27 lb', () => {
-    expect(LEVEL_BASE_RANGES.beginner.max).toBe(11) // the video: "maximum 24 lb, also stated as 11 kg"
-    expect(LEVEL_BASE_RANGES.intermediate.min).toBeCloseTo(24 * LB, 1)
-    expect(LEVEL_BASE_RANGES.intermediate.max).toBeCloseTo(27 * LB, 1)
-    expect(LEVEL_BASE_RANGES.advanced.min).toBeCloseTo(27 * LB, 1)
+describe('tension ranges: beginners per the video, club players per the stringer', () => {
+  it('beginners at most 24 lb (stated as 11 kg in the video)', () => {
+    expect(LEVEL_BASE_RANGES.beginner.max).toBe(11)
+  })
+  it('club players: 11.5 kg, at most 12 kg', () => {
+    expect(LEVEL_BASE_RANGES.intermediate.target).toBe(11.5)
+    expect(LEVEL_BASE_RANGES.intermediate.max).toBe(12)
+    expect(LEVEL_BASE_RANGES.advanced.max).toBe(12)
   })
 
-  it('a beginner never gets more than 24 lb unless they already play a higher, known tension', () => {
+  it('a beginner never gets more than 11 kg unless they already play a higher, known tension', () => {
     for (const goal of ['easyPower', 'balancedGoal', 'precision']) {
       for (const power of ['needsHelp', 'balanced', 'ownPower']) {
         expect(recommendTension({ level: 'beginner', racketGoal: goal, powerGeneration: power }, bg65).recommendedKg).toBeLessThanOrEqual(11)
@@ -29,6 +30,29 @@ describe('tension ranges by level follow the video', () => {
     }
     const known = recommendTension({ level: 'beginner', currentTensionKnown: 'yes', currentTensionValue: 11.5, currentTensionFeel: 'aboutRight' }, bg65)
     expect(known.recommendedKg).toBeGreaterThan(11)
+  })
+})
+
+describe('mains, crosses and the racket maximum', () => {
+  it('crosses are 1 kg above the mains; the stated tension is their average', () => {
+    const t = recommendTension({ level: 'intermediate' }, bg80)
+    expect(t.crossKg - t.mainsKg).toBe(1)
+    expect((t.crossKg + t.mainsKg) / 2).toBe(t.recommendedKg)
+  })
+  it('without a known racket max, nothing above 12 kg — the crosses would pass the 12.5 kg most Yonex rackets allow', () => {
+    for (const level of ['beginner', 'intermediate', 'advanced', 'tournament']) {
+      for (const goal of ['easyPower', 'balancedGoal', 'precision']) {
+        const t = recommendTension({ level, racketGoal: goal, powerGeneration: 'ownPower' }, bg80)
+        expect(t.recommendedKg).toBeLessThanOrEqual(12)
+        expect(t.crossKg).toBeLessThanOrEqual(12.5)
+        expect(t.higherKg ?? 0).toBeLessThanOrEqual(12)
+      }
+    }
+  })
+  it('a racket rated higher allows more; the crosses still never pass its maximum', () => {
+    const t = recommendTension({ level: 'tournament', racketGoal: 'precision', powerGeneration: 'ownPower', maxTensionKnown: 'yes', maxTensionValue: 13.5 }, bg80)
+    expect(t.recommendedKg).toBeGreaterThan(12)
+    expect(t.crossKg).toBeLessThanOrEqual(13.5)
   })
 })
 
