@@ -618,3 +618,14 @@ body {
   text-transform: uppercase;
 }
 .tape { white-space: nowrap; }
+
+/* Stringing bench: the racket gets strung in 4 stop-motion frames when a reel lands on it. */
+@keyframes bench-string {
+  from { stroke-dasharray: 80; stroke-dashoffset: 80; }
+  to { stroke-dasharray: 80; stroke-dashoffset: 0; }
+}
+.bench-strings path { animation: bench-string 480ms steps(4, end) both; }
+.bench-strings path:nth-child(n + 7) { animation-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .bench-strings path { animation: none; }
+}

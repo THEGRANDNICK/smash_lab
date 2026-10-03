@@ -4,14 +4,12 @@ import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
 import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
-import { readStoredComparisonView, writeStoredComparisonView, type ComparisonView } from '../logic/comparisonViewPreference'
 import { consumePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import { type PerformanceView } from './StringCard'
 import StringTile from './StringTile'
 import RadarChart from './RadarChart'
 import ComparisonTable from './ComparisonTable'
-import ComparisonOverlayBars from './ComparisonOverlayBars'
-import StringMap from './StringMap'
+import StringingBench from './StringingBench'
 import StringBasics from './StringBasics'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
@@ -35,13 +33,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   const [sortBy, setSortBy] = useState<SortOption>('recommended')
   const [view, setView] = useState<PerformanceView>('bars')
   const [compareIds, setCompareIds] = useState<string[]>(() => consumePendingComparisonSelection(typeof window === 'undefined' ? null : window.sessionStorage))
-  const [compareView, setCompareView] = useState<ComparisonView>(() => readStoredComparisonView(typeof window === 'undefined' ? null : window.sessionStorage))
-  const [radarShowMore, setRadarShowMore] = useState(false)
 
-  function chooseCompareView(next: ComparisonView) {
-    setCompareView(next)
-    writeStoredComparisonView(typeof window === 'undefined' ? null : window.sessionStorage, next)
-  }
 
   const brands = useMemo(() => Array.from(new Set(strings.map((s) => s.brand))).sort(), [strings])
 
@@ -157,111 +149,34 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         {sortBy === 'popularity' && <p className="text-center text-xs text-ink-700/70 dark:text-shuttle-100/70">★ Popular among players at my club — not a global sales ranking.</p>}
       </div>
 
-      {compareItems.length > 0 && (
-        <div ref={panelRef} className="mb-8 scroll-mt-24 rounded-2xl border-2 border-shuttle-500/40 bg-shuttle-100/60 dark:bg-shuttle-500/10 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h3 tabIndex={-1} className="font-display text-lg font-bold text-court-800 dark:text-shuttle-400 outline-none">
-              Comparing {compareItems.length} string{compareItems.length > 1 ? 's' : ''}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setCompareIds([])}
-              className="focus-ring shrink-0 rounded-full border-2 border-court-900/10 dark:border-white/15 px-3 py-1.5 text-xs font-semibold text-ink-700/70 dark:text-shuttle-100/70 hover:border-shuttle-400 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer transition-colors"
-            >
-              Clear comparison
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-2 mb-5">
-            {compareItems.map((item, i) => (
-              <span
-                key={item.id}
-                className="inline-flex items-center gap-2 rounded-full card-stock border border-court-900/10 dark:border-white/15 pl-1.5 pr-1 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50"
-              >
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color — identifies this string in the radar/table" />
-                <span className="truncate max-w-[10rem]">{item.name}</span>
-                <button
-                  type="button"
-                  onClick={() => toggleCompare(item.id)}
-                  aria-label={`Remove ${item.name} from comparison`}
-                  className="focus-ring shrink-0 rounded-full w-5 h-5 flex items-center justify-center text-ink-700/70 dark:text-shuttle-100/50 hover:bg-court-900/10 dark:hover:bg-white/15 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
-                >
-                  <span aria-hidden="true">✕</span>
-                </button>
-              </span>
-            ))}
-          </div>
-
-          {compareItems.length === 1 ? (
-            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Pick one more string (up to {MAX_COMPARE}) to see them side by side.</p>
-          ) : (
-            <div>
-              <div className="flex items-center justify-center mb-5">
-                <div className="flex rounded-full border-2 border-court-900/10 dark:border-white/15 overflow-hidden" role="group" aria-label="Comparison view">
-                  {(['radar', 'map', 'table'] as ComparisonView[]).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => chooseCompareView(v)}
-                      aria-pressed={compareView === v}
-                      className={`focus-ring px-5 py-2 text-sm font-semibold capitalize cursor-pointer transition-colors ${
-                        compareView === v
-                          ? 'bg-court-800 text-white'
-                          : 'card-stock text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
-                      }`}
-                    >
-                      {v === 'radar' ? 'Radar' : v === 'map' ? 'Feel map' : 'Table'}
-                    </button>
-                  ))}
-                </div>
+      {/* The comparison is a stringing bench now — same size and material as the rest of the page. */}
+      <div ref={panelRef} className="mb-6 scroll-mt-24">
+        <StringingBench
+          items={compareItems}
+          max={MAX_COMPARE}
+          onAdd={(id) => setCompareIds((prev) => (prev.includes(id) || prev.length >= MAX_COMPARE ? prev : [...prev, id]))}
+          onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
+          detail={
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <RadarChart
+                  size={300}
+                  showValues
+                  maxWidthClassName="max-w-[420px]"
+                  series={compareItems.map((item, i) => ({
+                    id: item.id,
+                    label: item.name,
+                    values: getPerformanceValues(item),
+                    strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
+                    fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
+                  }))}
+                />
               </div>
-
-              {compareView === 'radar' && (
-                <div className="space-y-6">
-                  <div className="flex justify-center -mx-4 sm:-mx-5">
-                    <RadarChart
-                      size={360}
-                      showValues
-                      maxWidthClassName="max-w-[440px] sm:max-w-[620px] lg:max-w-[760px] xl:max-w-[840px]"
-                      series={compareItems.map((item, i) => ({
-                        id: item.id,
-                        label: item.name,
-                        values: getPerformanceValues(item),
-                        strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
-                        fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
-                      }))}
-                    />
-                  </div>
-                  <ComparisonOverlayBars items={compareItems} />
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setRadarShowMore((s) => !s)}
-                      aria-expanded={radarShowMore}
-                      className="focus-ring text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline cursor-pointer"
-                    >
-                      {radarShowMore ? 'Show fewer details' : 'Show more details'}
-                    </button>
-                    {radarShowMore && (
-                      <div className="mt-4">
-                        <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {compareView === 'map' && (
-                <div className="max-w-md mx-auto">
-                  <StringMap items={compareItems} specialistProfiles={specialistProfiles} selectedIds={compareIds} selectionFull={compareIds.length >= MAX_COMPARE} onToggleSelect={toggleCompare} />
-                </div>
-              )}
-
-              {compareView === 'table' && <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />}
+              <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} />
             </div>
-          )}
-        </div>
-      )}
+          }
+        />
+      </div>
 
       <StringBasics className="mb-5 max-w-3xl mx-auto" />
 
@@ -292,7 +207,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
           >
             <p className="min-w-0 flex-1 text-sm">
               <span className="font-bold">
-                {compareItems.length} of {MAX_COMPARE} selected
+                {compareItems.length} of {MAX_COMPARE} on the bench
               </span>
               <span className="block truncate text-white/70">{compareItems.map((i) => i.name).join(', ')}</span>
             </p>

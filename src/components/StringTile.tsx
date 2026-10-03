@@ -2,6 +2,7 @@ import type { StringItem } from '../data/strings'
 import { formatGauge } from '../logic/formatGauge'
 import { stringPagePath } from '../logic/stringPages'
 import ImageSwiper from './ImageSwiper'
+import { REEL_DRAG_TYPE } from './StringingBench'
 import RadarChart from './RadarChart'
 import { AXIS_EXPLANATION, PERFORMANCE_AXES, PERFORMANCE_MAX, RADAR_COMPARE_COLORS, getPerformanceValues } from './performanceAxes'
 import type { PerformanceView } from './StringCard'
@@ -40,7 +41,15 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
         compareSelected ? 'border-shuttle-500' : 'border-transparent'
       }`}
     >
-      <div className="relative">
+      {/* drag the reel onto a racket on the stringing bench (desktop); "+ Racket" does the same anywhere */}
+      <div
+        className="relative cursor-grab active:cursor-grabbing"
+        draggable={onToggleCompare != null && !compareSelected}
+        onDragStart={(e) => {
+          e.dataTransfer.setData(REEL_DRAG_TYPE, item.id)
+          e.dataTransfer.effectAllowed = 'copy'
+        }}
+      >
         <ImageSwiper front={item.imageUrl} back={item.imageBackUrl} label={`${item.brand} ${item.name}`} placeholderText={item.name} />
         {item.popularityRank != null && (
           <span
@@ -104,7 +113,7 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
               compareSelected ? 'border-shuttle-500 bg-shuttle-500 text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
             }`}
           >
-            {compareSelected ? '✓ Compare' : '+ Compare'}
+            {compareSelected ? '✓ On racket' : '+ Racket'}
           </button>
         ) : (
           <span />
