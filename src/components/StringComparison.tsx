@@ -85,7 +85,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   return (
     <section id="strings" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
       <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-8">
-        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">The lineup</p>
+        <p className="tape">The lineup</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Browse every string</h2>
         <p className="hidden sm:block text-ink-700/70 dark:text-shuttle-100/70 mt-3">
           Not into quizzes? Compare the full lineup directly — repulsion, control, durability, sound and comfort, side by side.
@@ -106,7 +106,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               { id: 'durability', label: '🧵 Durability' },
             ]}
           />
-          <label className="shrink-0 whitespace-nowrap flex items-center gap-2 rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer">
+          <label className="shrink-0 whitespace-nowrap flex items-center gap-2 rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer">
             <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="focus-ring w-4 h-4 accent-shuttle-500" />
             Available now
           </label>
@@ -116,7 +116,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
           <select
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
             aria-label="Filter by brand"
           >
             <option value="all">All brands</option>
@@ -129,7 +129,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="focus-ring max-w-[11rem] rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/80 dark:bg-white/5 px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            className="focus-ring max-w-[11rem] rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-1.5 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer"
             aria-label="Sort strings"
           >
             {SORT_OPTIONS.map((opt) => (
@@ -146,7 +146,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                 onClick={() => setView(v)}
                 aria-pressed={view === v}
                 className={`focus-ring px-3 py-1.5 text-sm font-semibold capitalize cursor-pointer transition-colors ${
-                  view === v ? 'bg-court-800 text-white' : 'bg-white/80 dark:bg-white/5 text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
+                  view === v ? 'bg-court-800 text-white' : 'card-stock text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
                 }`}
               >
                 {v}
@@ -176,7 +176,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
             {compareItems.map((item, i) => (
               <span
                 key={item.id}
-                className="inline-flex items-center gap-2 rounded-full bg-white/80 dark:bg-white/5 border border-court-900/10 dark:border-white/15 pl-1.5 pr-1 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50"
+                className="inline-flex items-center gap-2 rounded-full card-stock border border-court-900/10 dark:border-white/15 pl-1.5 pr-1 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50"
               >
                 <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${RADAR_COMPARE_COLORS[i].dotClassName}`} aria-hidden="true" title="Chart series color — identifies this string in the radar/table" />
                 <span className="truncate max-w-[10rem]">{item.name}</span>
@@ -207,7 +207,7 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
                       className={`focus-ring px-5 py-2 text-sm font-semibold capitalize cursor-pointer transition-colors ${
                         compareView === v
                           ? 'bg-court-800 text-white'
-                          : 'bg-white/80 dark:bg-white/5 text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
+                          : 'card-stock text-ink-900 dark:text-shuttle-50 hover:bg-shuttle-50 dark:hover:bg-white/10'
                       }`}
                     >
                       {v === 'radar' ? 'Radar' : v === 'map' ? 'Feel map' : 'Table'}
@@ -269,9 +269,10 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         <p className="text-center text-ink-700/70 dark:text-shuttle-100/70 py-12">No strings match these filters. Try another category or turn off “Available now”.</p>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
-          {sorted.map((item) => (
+          {sorted.map((item, index) => (
             <StringTile
               key={item.id}
+              index={index}
               item={item}
               view={view}
               compareSelected={compareIds.includes(item.id)}
@@ -332,7 +333,7 @@ function FilterPills<T extends string>({
           className={`focus-ring shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
             value === opt.id
               ? 'bg-court-800 text-white'
-              : 'bg-white/80 dark:bg-white/5 border-2 border-court-900/10 dark:border-white/15 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
+              : 'card-stock border-2 border-court-900/10 dark:border-white/15 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
           }`}
         >
           {opt.label}

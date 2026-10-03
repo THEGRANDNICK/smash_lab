@@ -97,7 +97,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
             value={racketModel}
             onChange={(e) => setRacketModel(e.target.value)}
             placeholder="e.g. Yonex Astrox 88D"
-            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
           />
         </label>
         <label className="block">
@@ -107,7 +107,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="What would you like to know?"
-            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
           />
         </label>
       </div>

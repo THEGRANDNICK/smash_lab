@@ -22,8 +22,10 @@ export default function ImageSwiper({ front, back, label, placeholderText, class
 
   if (images.length === 0) {
     return (
-      <div className={`aspect-square rounded-xl bg-gradient-to-br from-court-800 to-court-700 flex items-center justify-center p-4 ${className}`} aria-hidden="true">
-        <span className="font-display text-2xl sm:text-3xl font-bold text-white/90 text-center leading-tight">{placeholderText}</span>
+      <div className={`reel ${className}`} aria-hidden="true">
+        <div className="reel-core flex items-center justify-center p-3">
+          <span className="font-display text-base sm:text-lg font-bold text-ink-900 text-center leading-tight">{placeholderText}</span>
+        </div>
       </div>
     )
   }
@@ -35,10 +37,10 @@ export default function ImageSwiper({ front, back, label, placeholderText, class
   }
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`reel relative ${className}`}>
       <div
         ref={scroller}
-        className="aspect-square rounded-xl bg-white flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="reel-core flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onScroll={(e) => {
           const el = e.currentTarget
           setIndex(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)))
@@ -58,7 +60,7 @@ export default function ImageSwiper({ front, back, label, placeholderText, class
             alt={`${label} — packet, ${img.side}`}
             loading="lazy"
             decoding="async"
-            className="h-full w-full shrink-0 snap-center object-contain p-2"
+            className="h-full w-full shrink-0 snap-center object-contain p-[16%]"
             draggable={false}
           />
         ))}

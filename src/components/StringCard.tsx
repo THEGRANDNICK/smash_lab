@@ -47,7 +47,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
 
   return (
     <div
-      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 bg-white/90 dark:bg-white/5 transition-[box-shadow,transform] duration-200 ${
+      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 card-stock transition-[box-shadow,transform] duration-200 ${
         compareSelected
           ? 'border-shuttle-500 ring-2 ring-shuttle-500/30'
           : orderable

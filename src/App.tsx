@@ -2,12 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import Nav from './components/Nav'
 import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
-import HowItWorks from './components/HowItWorks'
 import StringComparison from './components/StringComparison'
-import WhyUs from './components/WhyUs'
-import RestringAndCraft from './components/RestringAndCraft'
-import FAQ from './components/FAQ'
-import Contact from './components/Contact'
 import Footer from './components/Footer'
 import StringFinder from './components/StringFinder'
 import SavedSetupBanner from './components/SavedSetupBanner'
@@ -22,6 +17,8 @@ import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
+import StringKnowledge from './components/StringKnowledge'
+import { play, soundForElement } from './logic/sound'
 import { strings } from './data/strings'
 import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
 import { buildStringPageMeta, buildStringsIndexMeta, stringPagePath } from './logic/stringPages'
@@ -29,7 +26,7 @@ import { STRING_SPECIALIST_PROFILES } from './data/stringSpecialistProfiles'
 
 const BASE = import.meta.env.BASE_URL
 
-type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
+type View = 'home' | 'finder' | 'compare' | 'knowledge' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
 
 /** The string shown on a real string page (…/strings/<id>/), or from an old "#string/<id>" link. */
 function getStringIdFromLocation(): string {
@@ -64,6 +61,7 @@ function getPageTitle(hash: string): string {
   }
   if (clean === 'finder') return 'Find Your String — Smash Lab'
   if (clean === 'compare') return 'Compare Strings — Smash Lab'
+  if (clean === 'knowledge' || clean === 'knowledge-contact') return 'String knowledge — Smash Lab'
   if (clean === 'faq') return 'FAQ — Smash Lab'
   if (clean === 'contact') return 'Contact — Smash Lab'
   if (clean === 'impressum') return 'Impressum — Smash Lab'
@@ -96,7 +94,9 @@ function viewFromHash(): View {
   if (route.kind === 'notFound') return 'notFound'
   if (route.kind === 'string' && !hash) return 'string'
   if (route.kind === 'stringsIndex' && !hash) return 'compare'
-  if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
+  if (hash === 'finder' || hash === 'compare' || hash === 'knowledge' || hash === 'impressum' || hash === 'datenschutz') return hash
+  // v2: FAQ and contact live on the Knowledge page (old links keep working).
+  if (hash === 'faq' || hash === 'contact' || hash === 'knowledge-contact') return 'knowledge'
   if (hash.startsWith('result/')) return 'result'
   if (hash.startsWith('string/')) return 'string'
   // Not linked from the public nav — a direct URL is the entry point.
@@ -140,6 +140,8 @@ function App() {
       setView(viewFromHash())
       setSharedResultEncoded(getSharedResultEncoded())
       const nextStringId = getStringIdFromLocation()
+      // A new view starts at the top (in-page anchors like #knowledge-contact scroll themselves below).
+      if (!window.location.hash.startsWith('#knowledge-contact')) window.scrollTo({ top: 0, behavior: 'auto' })
       setStringId(nextStringId)
       if (nextStringId) window.scrollTo({ top: 0, behavior: 'auto' })
       document.title = getPageTitle(window.location.hash)
@@ -153,9 +155,19 @@ function App() {
   // first; scroll to them once it has rendered, since the browser's own jump happened too early.
   useEffect(() => {
     const anchor = window.location.hash.replace('#', '')
-    if (anchor && view === 'home') document.getElementById(anchor)?.scrollIntoView()
+    if (anchor === 'knowledge-contact' || anchor === 'contact') document.getElementById('knowledge-contact')?.scrollIntoView()
     // Only on first load — later clicks on these anchors are handled by the browser as usual.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Tap sounds (off until switched on in the header): one listener for the whole app.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const kind = soundForElement(e.target as Element | null)
+      if (kind) play(kind)
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
   }, [])
 
   function goTo(next: View) {
@@ -201,14 +213,11 @@ function App() {
           <>
             <SavedSetupBanner />
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
-            <HowItWorks />
             <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
-            <WhyUs />
-            <RestringAndCraft />
-            <FAQ />
-            <Contact />
           </>
         )}
+
+        {view === 'knowledge' && <StringKnowledge />}
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">

@@ -81,16 +81,26 @@ html {
   }
 }
 
+/* v2 "workbench": light kraft paper by day, charcoal by night — both with a faint paper grain
+   (pure CSS gradients; the CSP doesn't allow data: images). */
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--color-shuttle-50);
   color: var(--color-ink-900);
+  background-color: #efe6d3;
+  background-image:
+    radial-gradient(rgba(92, 64, 30, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(11, 61, 46, 0.035) 1px, transparent 1px);
+  background-size: 6px 6px, 13px 13px;
+  background-position: 0 0, 4px 7px;
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background: #0c1210;
+    background-color: #1e201f;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+      radial-gradient(rgba(243, 227, 181, 0.02) 1px, transparent 1px);
     color: #eef4f0;
   }
 }
@@ -148,4 +158,403 @@ select option {
 ::selection {
   background: var(--color-shuttle-400);
   color: var(--color-court-900);
+}
+
+/* ------------------------------------------------------------------ paper
+ * "Paper" look: sheets with a faint grain and a hard, slightly offset shadow,
+ * like cut-out card stock lying on the court. The grain is pure CSS (two tiny
+ * dot gradients) — the site's CSP doesn't allow data: images.
+ */
+.paper {
+  --paper-bg: #fffdf8;
+  --paper-edge: rgba(11, 61, 46, 0.16);
+  background-color: var(--paper-bg);
+  background-image:
+    radial-gradient(rgba(11, 61, 46, 0.035) 1px, transparent 1px),
+    radial-gradient(rgba(156, 92, 0, 0.03) 1px, transparent 1px);
+  background-size: 7px 7px, 11px 11px;
+  background-position: 0 0, 3px 5px;
+  /* hand-cut: no two corners alike, a light cut edge, and a hard shadow on the layer below */
+  border-radius: 14px 20px 12px 18px / 18px 12px 20px 14px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55), 4px 5px 0 0 var(--paper-edge);
+}
+@media (prefers-color-scheme: dark) {
+  .paper {
+    --paper-bg: #18211d;
+    --paper-edge: rgba(0, 0, 0, 0.55);
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      radial-gradient(rgba(255, 206, 107, 0.025) 1px, transparent 1px);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.06), 4px 5px 0 0 var(--paper-edge);
+  }
+}
+
+/* Physical press: buttons and tappable paper sink a little, like card stock under a finger. */
+.press {
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.press:active {
+  transform: translate(2px, 2px) scale(0.985);
+  box-shadow: 1px 1px 0 0 var(--paper-edge, rgba(11, 61, 46, 0.16));
+}
+
+/* Cards dealt onto the table (stagger with --deal-i). */
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) rotate(-6deg) scale(0.92);
+  }
+}
+.deal {
+  animation: deal 400ms steps(4, end) both; /* laid down in 4 frames, stop-motion style */
+  animation-delay: calc(var(--deal-i, 0) * 55ms);
+}
+
+/* A sheet turning over — used when switching tabs. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-14deg) translateX(18px);
+    transform-origin: left center;
+  }
+}
+/* fill-mode "backwards", never "both": a transform that stays applied after the animation would
+   make this element the containing block for every position:fixed child inside it (the WhatsApp
+   bar, the compare bar, the quiz's Continue button) and pin them to the page instead of the screen. */
+.sheet-in {
+  animation: sheet-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* A rubber stamp landing — the "best match" badge. */
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.8) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-7deg);
+  }
+  100% {
+    transform: scale(1) rotate(-6deg);
+  }
+}
+.stamp {
+  display: inline-block;
+  animation: stamp 480ms steps(4, end) 250ms both;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+.pop-in {
+  animation: pop-in 300ms steps(3, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deal,
+  .sheet-in,
+  .stamp,
+  .pop-in {
+    animation: none;
+  }
+  .press:active {
+    transform: none;
+  }
+}
+
+/* Gentle hover of the shuttlecock on the Finder screen. */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Nothing may widen the page sideways — not even mid-animation (e.g. the sheet turning in from
+   the right). On phones a momentarily wider page makes the browser zoom out slightly, which
+   pushed the fixed tab bar partly off-screen. `clip` (unlike `hidden`) keeps sticky headers working. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* The big sheet of paper all content lies on, above the court scene — fully opaque, so no court
+   line ever shows through text. No backdrop blur on purpose: on a full-page surface it costs
+   phones a lot of battery. */
+.sheet {
+  position: relative;
+  max-width: 72rem;
+  margin: 0 auto 3rem;
+  border-radius: 26px 34px 22px 30px / 30px 22px 34px 26px;
+  background: #fff9f0;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7), 6px 7px 0 0 rgba(11, 61, 46, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  .sheet {
+    background: #0c1210;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.05), 6px 7px 0 0 rgba(0, 0, 0, 0.55);
+  }
+}
+@media (max-width: 640px) {
+  .sheet {
+    margin: 0 0.5rem 2rem;
+    border-radius: 20px 26px 18px 24px / 24px 18px 26px 20px;
+  }
+}
+.sheet-page {
+  margin-top: 1rem;
+  padding: 1.5rem 0 1rem;
+}
+@media (min-width: 640px) {
+  .sheet-page {
+    margin-top: 2rem;
+    padding: 2.5rem 0 1.5rem;
+  }
+}
+
+/* ------------------------------------------------------------- cut-out stage
+ * components/PaperScene.tsx — a stop-motion stage of hand-cut card. Everything moves in STEPS
+ * (≈10 frames a second), never glides; jointed parts turn around their split pins; every layer
+ * "boils" a hair between frames like card re-laid by hand. Colours swap for dark mode.
+ */
+.cut-stage {
+  --cut-wall: #f1e9da;
+  --cut-sun: #ffcf5a;
+  --cut-cloud: #fbf7ee;
+  --cut-hill-far: #b9d1bf;
+  --cut-hill-near: #8db69a;
+  --cut-court: #3f8a5a;
+  --cut-line: #fbf7ee;
+  --cut-post: #6e4a36;
+  --cut-net: #f6f1e6;
+  --cut-edge: rgba(255, 255, 255, 0.6);
+  --cut-skin: #f1c7a0;
+  --cut-hair: #4a2e22;
+  --cut-shirt-a: #2f7f86;
+  --cut-shirt-b: #8a5aa8;
+  --cut-shorts: #26324a;
+  --cut-shoe: #fbf7ee;
+  --cut-handle: #26324a;
+  --cut-frame: #d5523b;
+  --cut-strings: rgba(255, 252, 244, 0.75);
+  --cut-feathers: #fffdf8;
+  --cut-cork: #e2cfae;
+  --cut-pin: #c9a227;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--cut-wall);
+}
+@media (prefers-color-scheme: dark) {
+  .cut-stage {
+    --cut-wall: #0f1915;
+    --cut-sun: #e9e1c6; /* a paper moon */
+    --cut-cloud: #22302a;
+    --cut-hill-far: #16261e;
+    --cut-hill-near: #1c3326;
+    --cut-court: #1e5538;
+    --cut-line: #c9d3cc;
+    --cut-post: #4a3226;
+    --cut-net: #9fada5;
+    --cut-edge: rgba(255, 255, 255, 0.1);
+    --cut-skin: #d9ad87;
+    --cut-hair: #2c1b14;
+    --cut-shirt-a: #2a6b71;
+    --cut-shirt-b: #6c4885;
+    --cut-shorts: #141c2c;
+    --cut-shoe: #c9d3cc;
+    --cut-handle: #141c2c;
+    --cut-frame: #b5473a;
+    --cut-strings: rgba(220, 228, 222, 0.4);
+    --cut-feathers: #dfe5e0;
+    --cut-cork: #b8a68a;
+    --cut-pin: #a8862a;
+  }
+}
+.cut-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cut-edge path, path.cut-edge { stroke: var(--cut-edge); stroke-width: 1.6; stroke-linejoin: round; }
+.cut-wall { fill: var(--cut-wall); }
+.cut-sun { fill: var(--cut-sun); }
+.cut-cloud { fill: var(--cut-cloud); }
+.cut-hill-far { fill: var(--cut-hill-far); }
+.cut-hill-near { fill: var(--cut-hill-near); }
+.cut-court { fill: var(--cut-court); }
+.cut-line path { fill: var(--cut-line); }
+.cut-post { fill: var(--cut-post); }
+.cut-net-mesh { stroke: var(--cut-net); stroke-width: 1; opacity: 0.7; }
+.cut-net-tape { fill: var(--cut-net); }
+.cut-skin { fill: var(--cut-skin); }
+.cut-hair { fill: var(--cut-hair); }
+.cut-eye { fill: var(--cut-hair); }
+.cut-shirt-a { fill: var(--cut-shirt-a); }
+.cut-shirt-b { fill: var(--cut-shirt-b); }
+.cut-shorts { fill: var(--cut-shorts); }
+.cut-shoe { fill: var(--cut-shoe); }
+.cut-handle { fill: var(--cut-handle); }
+.cut-frame { fill: var(--cut-frame); }
+.cut-strings { fill: var(--cut-strings); }
+.cut-feathers { fill: var(--cut-feathers); }
+.cut-feather-line { stroke: rgba(80, 70, 60, 0.35); stroke-width: 1; fill: none; }
+.cut-cork { fill: var(--cut-cork); }
+.cut-pin { fill: var(--cut-pin); stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; }
+
+/* boil: each layer re-laid by hand a few times a second */
+@keyframes cut-boil {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(0.7px, -0.5px) rotate(0.06deg); }
+  66% { transform: translate(-0.5px, 0.6px) rotate(-0.05deg); }
+}
+.cut-boil { animation: cut-boil 0.75s steps(1, end) infinite; will-change: transform; }
+.cut-boil-a { animation-delay: -0.2s; }
+.cut-boil-b { animation-delay: -0.45s; }
+.cut-boil-c { animation-delay: -0.1s; animation-duration: 0.6s; }
+
+/* the rally — 4.2 s: near smash (0%), far return (15%), high clear back to the near player */
+.cut-arm-near,
+.cut-arm-far { transform-box: view-box; transform-origin: 25px -171px; animation: cut-arm 4.2s steps(3, end) infinite; }
+.cut-fore-near,
+.cut-fore-far { transform-box: view-box; transform-origin: 23px -120px; animation: cut-fore 4.2s steps(3, end) infinite; }
+/* the far player's racket meets the shuttle at 15% of the rally */
+.cut-arm-far,
+.cut-fore-far { animation-delay: -3.57s; }
+@keyframes cut-arm {
+  0% { transform: rotate(200deg); }   /* contact, overhead */
+  5% { transform: rotate(255deg); }   /* follow-through */
+  12% { transform: rotate(300deg); }
+  20% { transform: rotate(360deg); }  /* ready */
+  68% { transform: rotate(360deg); }
+  68.01% { transform: rotate(0deg); } /* same pose — just unwinds the angle */
+  78% { transform: rotate(70deg); }   /* backswing */
+  90% { transform: rotate(150deg); }
+  100% { transform: rotate(200deg); }
+}
+@keyframes cut-fore {
+  0% { transform: rotate(-10deg); }
+  8% { transform: rotate(20deg); }
+  20% { transform: rotate(15deg); }
+  78% { transform: rotate(40deg); }
+  90% { transform: rotate(75deg); }  /* racket cocked behind the head */
+  100% { transform: rotate(-10deg); }
+}
+@keyframes cut-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.cut-bob { animation: cut-bob 0.9s steps(2, end) infinite; }
+@keyframes cut-shuttle {
+  0% { transform: translate(730px, 480px) rotate(-80deg); }
+  4% { transform: translate(765px, 470px) rotate(-82deg); }
+  8% { transform: translate(800px, 458px) rotate(-84deg); }
+  12% { transform: translate(840px, 442px) rotate(-86deg); }
+  15% { transform: translate(870px, 430px) rotate(-88deg); }
+  22% { transform: translate(845px, 360px) rotate(150deg); }
+  32% { transform: translate(805px, 300px) rotate(125deg); }
+  42% { transform: translate(770px, 280px) rotate(95deg); }
+  52% { transform: translate(745px, 300px) rotate(60deg); }
+  62% { transform: translate(730px, 340px) rotate(35deg); }
+  72% { transform: translate(722px, 390px) rotate(15deg); }
+  82% { transform: translate(722px, 430px) rotate(5deg); }
+  90% { transform: translate(726px, 460px) rotate(0deg); }
+  100% { transform: translate(730px, 480px) rotate(-80deg); }
+}
+.cut-shuttle { animation: cut-shuttle 4.2s steps(3, end) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cut-boil, .cut-arm-near, .cut-arm-far, .cut-fore-near, .cut-fore-far, .cut-bob, .cut-shuttle { animation: none; }
+  .cut-shuttle { transform: translate(780px, 300px) rotate(110deg); }
+}
+
+/* ------------------------------------------------------------- v2 materials */
+
+/* Card stock: the surface of every content card (colour + grain only — corners and shadow stay
+   with each component, so pills and inputs keep their shape). */
+.card-stock {
+  background-color: #fffaf0;
+  background-image:
+    radial-gradient(rgba(11, 61, 46, 0.03) 1px, transparent 1px),
+    radial-gradient(rgba(156, 92, 0, 0.025) 1px, transparent 1px);
+  background-size: 7px 7px, 11px 11px;
+  background-position: 0 0, 3px 5px;
+}
+@media (prefers-color-scheme: dark) {
+  .card-stock {
+    background-color: #2a2d2b;
+    background-image:
+      radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      radial-gradient(rgba(243, 227, 181, 0.02) 1px, transparent 1px);
+  }
+}
+
+/* Masking-tape label for section eyebrows: cream tape, torn (zig-zag) ends, slightly askew. */
+.tape {
+  display: inline-block;
+  padding: 0.3rem 0.9rem;
+  background: #f3e3b5;
+  color: #6b4a1f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+  clip-path: polygon(0 8%, 3% 0, 6% 10%, 9% 0, 91% 0, 94% 10%, 97% 0, 100% 8%, 100% 92%, 97% 100%, 94% 90%, 91% 100%, 9% 100%, 6% 90%, 3% 100%, 0 92%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+@media (prefers-color-scheme: dark) {
+  .tape {
+    background: #d9c48f;
+    color: #3a2a10;
+  }
+}
+
+/* Felt: the green court cloth, with a soft fibre texture. */
+.felt {
+  background-color: #1f8f4e;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+  background-size: 4px 4px, 7px 7px;
+  background-position: 0 0, 2px 3px;
+}
+@media (prefers-color-scheme: dark) {
+  .felt { background-color: #17703d; }
+}
+
+/* String reel (the tile picture): a coil of orange string wound around a cream card disc, with
+   the packet photo in the middle — as in the v2 Figma board. */
+.reel {
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  padding: 11%;
+  background:
+    radial-gradient(circle, transparent 54%, rgba(0, 0, 0, 0.12) 55%, transparent 57%),
+    repeating-radial-gradient(circle, #ff8a1f 0 2.5px, #ef7410 2.5px 4.5px);
+  box-shadow: inset 0 0 0 3px #f6e7c6, 3px 4px 0 0 rgba(11, 61, 46, 0.18);
+}
+.reel-core {
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+  background: #fff8ea;
+  box-shadow: 0 0 0 3px #f6e7c6;
+}
+@media (prefers-color-scheme: dark) {
+  .reel {
+    background:
+      radial-gradient(circle, transparent 54%, rgba(0, 0, 0, 0.25) 55%, transparent 57%),
+      repeating-radial-gradient(circle, #e9791a 0 2.5px, #c95f0c 2.5px 4.5px);
+    box-shadow: inset 0 0 0 3px #d9c48f, 3px 4px 0 0 rgba(0, 0, 0, 0.5);
+  }
+  .reel-core {
+    background: #f4ead6;
+    box-shadow: 0 0 0 3px #d9c48f;
+  }
 }

@@ -88,12 +88,12 @@ export default function SpecialistAdminPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search brand or name…"
-          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         />
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as FilterOption)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All strings</option>
           <option value="withProfile">Has a profile</option>

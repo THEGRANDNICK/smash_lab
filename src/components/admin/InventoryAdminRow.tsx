@@ -99,7 +99,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
   const isEditing = state === 'editing' || state === 'saving'
 
   return (
-    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{row.brand}</p>
@@ -145,7 +145,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                 value={stockStatus}
                 onChange={(e) => setStockStatus(e.target.value as StockLevel)}
                 disabled={state === 'saving'}
-                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               >
                 {STOCK_STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -164,7 +164,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                 onChange={(e) => setQuantityText(e.target.value)}
                 disabled={state === 'saving'}
                 placeholder="e.g. 3"
-                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               />
             </label>
 
@@ -174,7 +174,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                 value={packageType}
                 onChange={(e) => setPackageType(e.target.value as PackageType)}
                 disabled={state === 'saving'}
-                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               >
                 {PACKAGE_TYPE_OPTIONS.map((p) => (
                   <option key={p} value={p}>
@@ -210,7 +210,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
                   onChange={(e) => setColor(e.target.value)}
                   disabled={state === 'saving'}
                   placeholder="e.g. Yellow — optional"
-                  className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                  className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
                 />
                 <span className="block text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">
                   Enter one physical color for this inventory item, e.g. White or Sky Blue. To list more than one currently-available color, separate them with commas (e.g. "White, Red") — each shows as its own swatch.
@@ -233,7 +233,7 @@ export default function InventoryAdminRow({ row, onSaved }: InventoryAdminRowPro
               disabled={state === 'saving'}
               rows={2}
               placeholder="optional"
-              className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+              className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
             />
           </label>
 
@@ -283,7 +283,7 @@ function ColorNameField({ label, value, onChange, disabled, hint }: { label: str
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         placeholder="optional"
-        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
       <span className="block text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</span>
     </label>

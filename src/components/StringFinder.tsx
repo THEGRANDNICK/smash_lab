@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { stopMotion } from '../logic/stopMotion'
 import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
@@ -228,7 +229,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
             initial={{ opacity: 0, x: direction * 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: direction * -40 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.3, ease: stopMotion(4) }}
           >
             <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} onPatch={setAnswers} />
           </motion.div>
@@ -278,7 +279,7 @@ function StepContent({ stepId, answers, onToggle, onContinue, onPatch }: StepCon
 /** Sticks to the bottom of the screen on phones, where long multi-select lists pushed it below the fold. */
 function ContinueButton({ onClick, disabled, selectedCount, label }: { onClick: () => void; disabled?: boolean; selectedCount?: number; label?: string }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-3 bg-gradient-to-t from-shuttle-50 via-shuttle-50/95 to-shuttle-50/0 dark:from-[#0c1210] dark:via-[#0c1210]/95 dark:to-[#0c1210]/0 sm:static sm:mx-0 sm:p-0 sm:bg-none">
+    <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-3 bg-gradient-to-t from-shuttle-50 via-shuttle-50/95 to-shuttle-50/0 dark:from-[#1e201f] dark:via-[#1e201f]/95 dark:to-[#1e201f]/0 sm:static sm:mx-0 sm:p-0 sm:bg-none">
       <button
         type="button"
         onClick={onClick}

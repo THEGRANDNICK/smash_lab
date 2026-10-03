@@ -1,0 +1,145 @@
+import type { ReactNode } from 'react'
+import FAQ from './FAQ'
+import Contact from './Contact'
+import { cutEllipse, cutPolygon } from '../logic/scissors'
+import { CROSS_OFFSET_KG, DEFAULT_RACKET_MAX_KG, LEVEL_BASE_RANGES } from '../config/tensionRules'
+import { formatKg } from '../logic/units'
+
+/**
+ * "Knowledge": what actually matters when choosing a string and a tension, in five cut-paper
+ * cards. Replaces the old marketing sections (How it works, Why Smash Lab, restring tip).
+ * Content: Badminton Insight, "What Badminton String & Tension Should You Use?" (Aug 2026), plus
+ * the stringer's own practice for club players (tension cap, mains/crosses). Numbers come from
+ * config/tensionRules.ts, so this page can't drift from what the recommendation actually does.
+ */
+export default function StringKnowledge() {
+  const club = LEVEL_BASE_RANGES.intermediate
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-10 sm:py-14">
+      <header className="text-center max-w-2xl mx-auto">
+        <span className="tape">String knowledge</span>
+        <h1 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-ink-900 dark:text-shuttle-50">What actually matters</h1>
+        <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">Five things worth knowing before your next restring — short, practical, no marketing.</p>
+      </header>
+
+      <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        <KnowledgeCard title="Gauge — the thickness" art={<GaugeArt />} index={0}>
+          <p>Most strings are 0.58–0.70 mm. Thicker lasts longer; thinner feels livelier, sounds crisper and breaks sooner.</p>
+          <p>
+            <strong>Beginners:</strong> around 0.70 mm. <strong>Improving players:</strong> 0.68 mm or thinner. Hard hitters who often mishit are better off thicker.
+          </p>
+        </KnowledgeCard>
+
+        <KnowledgeCard title="Feel — hard, medium, soft" art={<FeelArt />} index={1}>
+          <p>A hard string gives sharp, direct feedback on impact; a soft one feels cushioned; medium sits in between. Two strings of the same gauge can feel very different — the core and coating matter too.</p>
+        </KnowledgeCard>
+
+        <KnowledgeCard title="Texture — smooth or rough" art={<TextureArt />} index={2}>
+          <p>A rougher surface grips the cork more: slices, spinning net shots and touch play feel more controlled. The extra friction wears the string a little faster.</p>
+        </KnowledgeCard>
+
+        <KnowledgeCard title="Tension — tighter isn't better" art={<TensionArt />} index={3}>
+          <p>Lower tension gives a bigger sweet spot and easier power and forgives off-centre hits. Higher tension gives more control — if you hit the centre consistently.</p>
+          <p>
+            <strong>Club players:</strong> around {formatKg(club.target)}, at most {formatKg(club.max)}. Mains are strung {formatKg(CROSS_OFFSET_KG)} lower and crosses {formatKg(CROSS_OFFSET_KG)} higher
+            — at {formatKg(club.max)} that's {formatKg(club.max - CROSS_OFFSET_KG)} / {formatKg(club.max + CROSS_OFFSET_KG)}, and most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}. A thinner string goes a little lower. Not sure? Start lower and add 0.5 kg per restring.
+          </p>
+        </KnowledgeCard>
+
+        <KnowledgeCard title="Ageing — when to restring" art={<AgeingArt />} index={4} wide>
+          <p>
+            Strings lose tension and their coating wears off: the sound gets duller, the bed softer and the strings start to shift. A simple rule: <strong>restrings per year ≈ sessions per week</strong> — play three
+            times a week, restring about three times a year. Thin strings and tensions above 11 kg tend to break sooner.
+          </p>
+        </KnowledgeCard>
+      </div>
+
+      <p className="mt-6 text-center text-xs text-ink-700/70 dark:text-shuttle-100/70">
+        Based on Badminton Insight's “What Badminton String &amp; Tension Should You Use?” (2026) and hands-on stringing for club players. Guidance, not lab measurements.
+      </p>
+
+      <FAQ />
+      <div id="knowledge-contact">
+        <Contact />
+      </div>
+    </div>
+  )
+}
+
+function KnowledgeCard({ title, art, children, index, wide = false }: { title: string; art: ReactNode; children: ReactNode; index: number; wide?: boolean }) {
+  return (
+    <article className={`paper deal p-5 sm:p-6 flex gap-4 ${wide ? 'sm:col-span-2' : ''}`} style={{ ['--deal-i' as string]: index }}>
+      <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20" aria-hidden="true">
+        {art}
+      </div>
+      <div className="min-w-0 space-y-2 text-sm text-ink-700/90 dark:text-shuttle-100/90">
+        <h2 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{title}</h2>
+        {children}
+      </div>
+    </article>
+  )
+}
+
+/* Small cut-paper illustrations — same scissor helper as the stage, so they share its hand. */
+const svg = { viewBox: '0 0 80 80', width: '100%', height: '100%' }
+
+function GaugeArt() {
+  return (
+    <svg {...svg}>
+      <path d={cutEllipse(40, 40, 36, 36, 901, 14, 0.04)} className="fill-[#f3e3b5]" />
+      <path d={cutPolygon([[18, 14], [21, 14], [21, 66], [18, 66]], 902, 0.4)} className="fill-court-700" />
+      <path d={cutPolygon([[36, 14], [44, 14], [44, 66], [36, 66]], 903, 0.6)} className="fill-court-700" />
+      <path d={cutPolygon([[56, 14], [66, 14], [66, 66], [56, 66]], 904, 0.8)} className="fill-court-700" />
+    </svg>
+  )
+}
+
+function FeelArt() {
+  return (
+    <svg {...svg}>
+      <path d={cutEllipse(40, 40, 36, 36, 911, 14, 0.04)} className="fill-[#f3e3b5]" />
+      <path d={cutPolygon([[14, 52], [30, 52], [30, 58], [14, 58]], 912, 0.6)} className="fill-[#d5523b]" />
+      <path d={cutPolygon([[32, 50], [48, 50], [48, 58], [32, 58]], 913, 0.6)} className="fill-[#ffb830]" />
+      <path d={cutEllipse(58, 50, 9, 6, 914, 9, 0.05)} className="fill-court-600" />
+      <path d={cutPolygon([[20, 22], [24, 22], [24, 46], [20, 46]], 915, 0.5)} className="fill-ink-700" />
+    </svg>
+  )
+}
+
+function TextureArt() {
+  return (
+    <svg {...svg}>
+      <path d={cutEllipse(40, 40, 36, 36, 921, 14, 0.04)} className="fill-[#f3e3b5]" />
+      <path d={cutPolygon([[10, 30], [70, 30], [70, 36], [10, 36]], 922, 0.4)} className="fill-court-700" />
+      <path d="M10 48 l5 -4 l5 4 l5 -4 l5 4 l5 -4 l5 4 l5 -4 l5 4 l5 -4 l5 4 l5 -4 l5 4" className="stroke-court-700 fill-none" strokeWidth="5" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function TensionArt() {
+  return (
+    <svg {...svg}>
+      <path d={cutEllipse(40, 34, 24, 30, 931, 14, 0.04)} className="fill-[#d5523b]" />
+      <path d={cutEllipse(40, 34, 18, 24, 932, 12, 0.03)} className="fill-[#fffaf0]" />
+      {[30, 36, 42, 48].map((x) => (
+        <path key={x} d={`M${x} 12 L${x} 56`} className="stroke-ink-700/60" strokeWidth="1.4" />
+      ))}
+      {[22, 28, 34, 40, 46].map((y) => (
+        <path key={y} d={`M24 ${y} L56 ${y}`} className="stroke-ink-700/60" strokeWidth="1.4" />
+      ))}
+      <path d={cutPolygon([[37, 62], [43, 62], [43, 78], [37, 78]], 933, 0.5)} className="fill-ink-700" />
+    </svg>
+  )
+}
+
+function AgeingArt() {
+  return (
+    <svg {...svg}>
+      <path d={cutPolygon([[12, 16], [68, 16], [68, 70], [12, 70]], 941, 1.2)} className="fill-[#fffaf0] stroke-ink-700/30" strokeWidth="1.5" />
+      <path d={cutPolygon([[12, 16], [68, 16], [68, 28], [12, 28]], 942, 0.8)} className="fill-[#d5523b]" />
+      {[0, 1, 2].map((r) =>
+        [0, 1, 2, 3].map((c) => <rect key={`${r}${c}`} x={18 + c * 12} y={34 + r * 11} width="8" height="7" rx="1.5" className={r * 4 + c < 3 ? 'fill-court-600' : 'fill-ink-700/15'} />),
+      )}
+    </svg>
+  )
+}

@@ -76,7 +76,7 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
             placeholder={unit === 'kg' ? 'e.g. 10' : 'e.g. 22'}
             aria-label={`Tension in ${unit}`}
             aria-invalid={outOfRange}
-            className={`focus-ring flex-1 min-w-0 rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 font-semibold text-ink-900 dark:text-shuttle-50 ${compact ? 'py-2 text-base' : 'py-3 text-lg'}`}
+            className={`focus-ring flex-1 min-w-0 rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-4 font-semibold text-ink-900 dark:text-shuttle-50 ${compact ? 'py-2 text-base' : 'py-3 text-lg'}`}
           />
           <div className="flex rounded-xl border-2 border-court-900/10 dark:border-white/15 overflow-hidden shrink-0" role="group" aria-label="Unit">
             {(['kg', 'lbs'] as TensionUnit[]).map((u) => (
@@ -85,7 +85,7 @@ export default function TensionInputStep({ title, subtitle, valueKg, onChange, m
                 type="button"
                 onClick={() => handleUnitChange(u)}
                 className={`focus-ring px-4 py-2 font-semibold text-sm cursor-pointer transition-colors ${
-                  unit === u ? 'bg-court-800 text-white' : 'bg-white/80 dark:bg-white/5 text-ink-900 dark:text-shuttle-50'
+                  unit === u ? 'bg-court-800 text-white' : 'card-stock text-ink-900 dark:text-shuttle-50'
                 }`}
                 aria-pressed={unit === u}
               >

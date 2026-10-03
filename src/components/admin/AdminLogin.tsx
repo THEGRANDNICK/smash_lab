@@ -39,7 +39,7 @@ export default function AdminLogin({ onSignIn }: AdminLoginProps) {
         <p className="text-ink-700/70 dark:text-shuttle-100/60 text-sm mt-2">Sign in to manage inventory.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-6 space-y-4">
         <div>
           <label htmlFor="admin-email" className="block text-sm font-semibold text-ink-900 dark:text-shuttle-50 mb-1.5">
             Email
@@ -52,7 +52,7 @@ export default function AdminLogin({ onSignIn }: AdminLoginProps) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={state === 'submitting'}
-            className="focus-ring w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-2.5 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-4 py-2.5 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function AdminLogin({ onSignIn }: AdminLoginProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={state === 'submitting'}
-            className="focus-ring w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-2.5 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-4 py-2.5 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
         </div>
 

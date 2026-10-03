@@ -18,7 +18,7 @@ export default function TensionTuner({ answers, onChange }: TensionTunerProps) {
   const alreadyTuned = answers.racketGoal != null || answers.currentTensionValue != null || answers.maxTensionValue != null
   const [open, setOpen] = useState(alreadyTuned)
   return (
-    <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6" aria-labelledby="tension-tuner-heading">
+    <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5 sm:p-6" aria-labelledby="tension-tuner-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="tension-tuner-heading" className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">

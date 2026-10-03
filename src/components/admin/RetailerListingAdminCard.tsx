@@ -51,7 +51,7 @@ export default function RetailerListingAdminCard({ row, context, catalogOptions,
 
   if (state === 'editing' || state === 'saving') {
     return (
-      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">
           {row.brand} {row.name}
         </p>
@@ -76,7 +76,7 @@ export default function RetailerListingAdminCard({ row, context, catalogOptions,
   const price = formatRetailerPrice(row.price, row.currency)
 
   return (
-    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">

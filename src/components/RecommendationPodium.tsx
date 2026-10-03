@@ -113,7 +113,7 @@ function PodiumCard({ rank, scored, best, prominent, specialistProfiles, retaile
 
   return (
     <li
-      className={`list-none rounded-2xl border-2 ${featured && onFeature ? 'border-shuttle-500 ring-2 ring-shuttle-500/30' : 'border-court-900/10 dark:border-white/10'} bg-white/80 dark:bg-white/5 p-5 sm:p-6 ${className}`}
+      className={`list-none rounded-2xl border-2 ${featured && onFeature ? 'border-shuttle-500 ring-2 ring-shuttle-500/30' : 'border-court-900/10 dark:border-white/10'} card-stock p-5 sm:p-6 ${className}`}
       aria-label={`Rank ${rank} of 3: ${item.brand} ${item.name}, ${matchPercent} percent match, ${matchLabel}`}
     >
       {isBest ? (

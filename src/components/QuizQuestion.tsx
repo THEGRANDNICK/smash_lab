@@ -60,8 +60,8 @@ export default function QuizQuestion({ question, selected, onToggle }: QuizQuest
                 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
                 ${
                   isSelected
-                    ? 'border-shuttle-500 bg-shuttle-100 dark:bg-shuttle-500/10'
-                    : `border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 ${disabled ? '' : 'hover:border-shuttle-400 hover:bg-shuttle-50 dark:hover:bg-white/10'}`
+                    ? 'border-shuttle-500 bg-shuttle-100 dark:bg-shuttle-500/10 shadow-[3px_3px_0_0_rgba(156,92,0,0.35)] -rotate-[0.6deg]'
+                    : `paper border-transparent ${disabled ? '' : 'hover:border-shuttle-400'}`
                 }`}
             >
               <span className="text-3xl leading-none shrink-0" aria-hidden="true">

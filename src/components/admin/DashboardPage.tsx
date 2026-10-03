@@ -210,7 +210,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
 function Panel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+    <section className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
       <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="font-display text-base font-bold text-ink-900 dark:text-shuttle-50">{title}</h3>
         {action}
@@ -234,7 +234,7 @@ function SummaryCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-4 flex flex-col gap-2">
+    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-4 flex flex-col gap-2">
       <h4 className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{title}</h4>
       <div className="flex-1">
         {unavailable ? <p className="text-sm text-ink-700/70 dark:text-shuttle-100/50">Unavailable right now</p> : children}

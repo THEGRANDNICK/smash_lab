@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Shuttlecock from './Shuttlecock'
+import SoundToggle from './SoundToggle'
 
 interface NavProps {
   onOpenFinder: () => void
@@ -11,7 +12,7 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-shuttle-50/80 dark:bg-[#0c1210]/80 border-b border-court-900/10 dark:border-white/10">
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-shuttle-50/80 dark:bg-[#1e201f]/80 border-b border-court-900/10 dark:border-white/10">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         <button type="button" onClick={onHome} className="focus-ring flex items-center gap-1.5 sm:gap-2 font-display font-bold text-base sm:text-lg text-court-800 dark:text-shuttle-50 cursor-pointer whitespace-nowrap shrink-0">
           <Shuttlecock className="w-6 h-6 sm:w-7 sm:h-7 text-shuttle-500" />
@@ -21,14 +22,15 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           <button type="button" onClick={onOpenCompare} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50 cursor-pointer">
             Strings
           </button>
-          <a href={`${import.meta.env.BASE_URL}#faq`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
-            FAQ
+          <a href={`${import.meta.env.BASE_URL}#knowledge`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
+            Knowledge
           </a>
-          <a href={`${import.meta.env.BASE_URL}#contact`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
+          <a href={`${import.meta.env.BASE_URL}#knowledge-contact`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
             Contact
           </a>
         </nav>
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <SoundToggle />
           <button
             type="button"
             onClick={onOpenFinder}
@@ -62,10 +64,10 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           >
             Strings
           </button>
-          <a href={`${import.meta.env.BASE_URL}#faq`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
+          <a href={`${import.meta.env.BASE_URL}#knowledge`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             FAQ
           </a>
-          <a href={`${import.meta.env.BASE_URL}#contact`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
+          <a href={`${import.meta.env.BASE_URL}#knowledge-contact`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             Contact
           </a>
         </nav>

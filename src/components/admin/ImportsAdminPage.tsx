@@ -557,7 +557,7 @@ function ErrorList({ errors }: { errors: string[] }) {
 
 function ImportBar({ count, busy, blocked, progress, onImport, noun, extra }: { count: number; busy: boolean; blocked: boolean; progress: string | null; onImport: () => void; noun: string; extra?: string }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 px-4 py-3 bg-shuttle-50/95 dark:bg-[#0c1210]/95 border-t border-court-900/10 dark:border-white/10 flex flex-wrap items-center gap-3">
+    <div className="sticky bottom-0 z-10 -mx-4 px-4 py-3 bg-shuttle-50/95 dark:bg-[#1e201f]/95 border-t border-court-900/10 dark:border-white/10 flex flex-wrap items-center gap-3">
       <button
         type="button"
         onClick={onImport}
