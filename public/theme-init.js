@@ -8,7 +8,7 @@
     try {
       var v = localStorage.getItem(KEY)
       return v === 'light' || v === 'dark' ? v : 'auto'
-    } catch (e) {
+    } catch {
       return 'auto'
     }
   }

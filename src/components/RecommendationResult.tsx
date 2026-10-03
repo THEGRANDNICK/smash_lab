@@ -10,6 +10,8 @@ import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/re
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import ImageSwiper from './ImageSwiper'
+import { getQuestion } from '../data/quizQuestions'
+import { TensionFields } from './TensionTuner'
 import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
@@ -37,7 +39,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -250,6 +252,11 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
 
       {/* 3 — everything else, closed until asked for */}
       <div className="mt-6 space-y-2.5">
+        {onChangeAnswers && (
+          <Fold title="Fine-tune: your power, mishits & racket">
+            <FineTune answers={answers} onChange={onChangeAnswers} />
+          </Fold>
+        )}
         <Fold title={isRecommended ? `Why ${featured.string.name}` : 'Details and comparison'}>
           <RecommendationPodium
             topThree={rec.topThree}
@@ -307,6 +314,48 @@ export default function RecommendationResult({ answers, onRetake, onCompare, dat
         </button>
       </div>
 
+    </div>
+  )
+}
+
+/**
+ * The questions the 4-round quiz leaves out — optional, here on the result, updating it live:
+ * own power, mishit breakage, and the racket/tension details.
+ */
+function FineTune({ answers, onChange }: { answers: QuizAnswers; onChange: (next: QuizAnswers) => void }) {
+  const power = getQuestion('powerGeneration')
+  return (
+    <div className="space-y-5">
+      {power && (
+        <fieldset>
+          <legend className="text-sm font-semibold text-ink-900 dark:text-shuttle-50">{power.title}</legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {power.options.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                aria-pressed={answers.powerGeneration === o.id}
+                onClick={() => onChange({ ...answers, powerGeneration: answers.powerGeneration === o.id ? undefined : o.id })}
+                className={`press focus-ring rounded-full border-2 px-3 py-1.5 text-sm font-semibold cursor-pointer ${
+                  answers.powerGeneration === o.id ? 'border-shuttle-500 bg-shuttle-500 text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      <label className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={answers.restringReason === 'mishitBreakage'}
+          onChange={(e) => onChange({ ...answers, restringReason: e.target.checked ? 'mishitBreakage' : undefined })}
+          className="h-4 w-4 accent-shuttle-500"
+        />
+        My strings often break from mishits
+      </label>
+      <TensionFields answers={answers} onChange={onChange} />
     </div>
   )
 }

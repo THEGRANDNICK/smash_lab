@@ -24,7 +24,7 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
       >
         <p className="text-xs sm:text-sm font-semibold tracking-widest uppercase text-shuttle-700 dark:text-shuttle-400">The independent badminton string finder</p>
         <h1 className="font-display text-[1.9rem] sm:text-5xl font-bold mt-2 sm:mt-3 leading-[1.05] text-ink-900 dark:text-shuttle-50">Not sure which string fits your game?</h1>
-        <p className="hidden sm:block mt-4 text-ink-700/80 dark:text-shuttle-100/80">A 60-second quiz for a string and tension built around how you actually play.</p>
+        <p className="hidden sm:block mt-4 text-ink-700/80 dark:text-shuttle-100/80">Four quick questions for a string and tension built around how you actually play.</p>
 
         <div className="mt-4 sm:mt-7 flex flex-row gap-2 sm:gap-3 justify-center items-center">
           <button
