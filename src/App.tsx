@@ -64,6 +64,7 @@ function getPageTitle(hash: string): string {
   if (clean === 'compare') return 'Compare Strings — Smash Lab'
   if (clean === 'knowledge' || clean === 'knowledge-contact') return 'String knowledge — Smash Lab'
   if (clean === 'tension') return 'Tension picker — Smash Lab'
+  if (clean === 'finder-detailed') return 'Detailed string quiz — Smash Lab'
   if (clean === 'faq') return 'FAQ — Smash Lab'
   if (clean === 'contact') return 'Contact — Smash Lab'
   if (clean === 'impressum') return 'Impressum — Smash Lab'
@@ -96,6 +97,8 @@ function viewFromHash(): View {
   if (route.kind === 'notFound') return 'notFound'
   if (route.kind === 'string' && !hash) return 'string'
   if (route.kind === 'stringsIndex' && !hash) return 'compare'
+  // #finder-detailed opens the same quiz view in detailed mode (8 rounds instead of 4)
+  if (hash === 'finder-detailed') return 'finder'
   if (hash === 'finder' || hash === 'compare' || hash === 'knowledge' || hash === 'tension' || hash === 'impressum' || hash === 'datenschutz') return hash
   // v2: FAQ and contact live on the Knowledge page (old links keep working).
   if (hash === 'faq' || hash === 'contact' || hash === 'knowledge-contact') return 'knowledge'
@@ -172,6 +175,8 @@ function App() {
     return () => document.removeEventListener('click', onClick, true)
   }, [])
 
+  const detailedQuiz = typeof window !== 'undefined' && window.location.hash === '#finder-detailed'
+
   function goTo(next: View) {
     // On a static string page, other views live on the root page: navigate there.
     if (routeFromPath(window.location.pathname, BASE).kind !== 'root') {
@@ -214,7 +219,7 @@ function App() {
         {view === 'home' && (
           <>
             <SavedSetupBanner />
-            <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
+            <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onOpenDetailed={() => (window.location.hash = 'finder-detailed')} />
             <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
           </>
         )}
@@ -226,6 +231,8 @@ function App() {
         {view === 'finder' && (
           <div className="py-10 sm:py-16">
             <StringFinder
+              key={detailedQuiz ? 'detailed' : 'quick'}
+              initialMode={detailedQuiz ? 'detailed' : 'quick'}
               onExit={() => goTo('home')}
               onCompare={() => goTo('compare')}
               pool={liveStrings}

@@ -28,6 +28,8 @@ interface RecommendationResultProps {
   answers: QuizAnswers
   /** Lets the optional tension panel update racket details; omitted → the panel isn't shown (e.g. opened from a share link). */
   onChangeAnswers?: (next: QuizAnswers) => void
+  /** Set after the quick quiz: offers the four extra questions of the detailed quiz. */
+  onGoDetailed?: () => void
   onRetake: () => void
   onCompare: () => void
   dataSource: DataSource
@@ -39,7 +41,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onChangeAnswers, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onChangeAnswers, onGoDetailed, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -251,6 +253,20 @@ export default function RecommendationResult({ answers, onChangeAnswers, onRetak
       </section>
 
       {/* 3 — everything else, closed until asked for */}
+      {onGoDetailed && (
+        <button
+          type="button"
+          onClick={onGoDetailed}
+          className="paper press focus-ring mt-6 w-full px-4 py-3 text-left flex items-center justify-between gap-3 cursor-pointer"
+        >
+          <span>
+            <span className="block font-semibold text-ink-900 dark:text-shuttle-50">Want it more precise?</span>
+            <span className="block text-sm text-ink-700/80 dark:text-shuttle-100/80">4 more questions — your answers so far are kept.</span>
+          </span>
+          <span aria-hidden="true" className="text-xl text-shuttle-700 dark:text-shuttle-400">→</span>
+        </button>
+      )}
+
       <div className="mt-6 space-y-2.5">
         {onChangeAnswers && (
           <Fold title="Fine-tune: your power, mishits & racket">

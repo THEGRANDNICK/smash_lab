@@ -11,6 +11,7 @@ import ProgressBar from './ProgressBar'
 import CalculatingAnimation from './CalculatingAnimation'
 import RecommendationResult from './RecommendationResult'
 import QuizFeelMap from './QuizFeelMap'
+import { TensionFields } from './TensionTuner'
 import { type QuizHistoryState, clearStoredQuiz, loadStoredQuiz, newRunId, readHistoryState, safeSessionStorage, saveStoredQuiz } from '../logic/quizSession'
 
 type Phase = 'quiz' | 'calculating' | 'result'
@@ -27,6 +28,8 @@ type Phase = 'quiz' | 'calculating' | 'result'
 
 
 interface StringFinderProps {
+  /** Which quiz to start with when there's nothing to restore (#finder = quick, #finder-detailed = detailed). */
+  initialMode?: QuizMode
   onExit: () => void
   onCompare: () => void
   /** Defaults to the full static catalog when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
@@ -50,18 +53,28 @@ function useMediaQuery(query: string): boolean {
   )
 }
 
+export type QuizMode = 'quick' | 'detailed'
+
 /**
- * Four rounds: level, playing style, priorities, feel — the questions that matter most for WHICH
- * string fits. Measured over all 118,800 answer combinations, these four alone give the same best
- * string as the old 7–8 question quiz 80% of the time, a top-3 pick 98% of the time, and a tension
- * within 0.5 kg 99% of the time. The rest (own power, mishits, racket details) lives in the
- * optional "Fine-tune" fold on the results page. Every question can be skipped (= no preference).
+ * Quick quiz (the default): four rounds — level, playing style, priorities, feel. Measured over all
+ * 118,800 answer combinations, these four alone give the same best string as the full quiz 80% of
+ * the time, a top-3 pick 98% of the time, and a tension within 0.5 kg 99% of the time.
+ * Detailed quiz: the same four FIRST, then own power, how often you play, why you restring (only
+ * if durability matters to you) and the tension details — so "be more precise" on the result can
+ * simply continue at question 5 without repeating anything. Every question can be skipped.
  */
-function buildSteps(_answers: QuizAnswers): string[] {
-  return ['level', 'playStyles', 'priorities', 'hittingFeel']
+const QUICK_STEPS = ['level', 'playStyles', 'priorities', 'hittingFeel']
+const TENSION_STEP = 'tension'
+
+function buildSteps(answers: QuizAnswers, mode: QuizMode): string[] {
+  if (mode === 'quick') return QUICK_STEPS
+  const steps = [...QUICK_STEPS, 'powerGeneration', 'frequency']
+  if (answers.priorities?.includes('durability')) steps.push('restringReason')
+  steps.push(TENSION_STEP)
+  return steps
 }
 
-export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId }: StringFinderProps) {
+export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId, initialMode = 'quick' }: StringFinderProps) {
   // Restore only when this history entry is one of ours (reload, or Back-then-Forward into the quiz).
   // A fresh visit from the home page carries no marker and always starts clean.
   const [initial] = useState(() => {
@@ -69,9 +82,9 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     const stored = entry ? loadStoredQuiz(safeSessionStorage()) : undefined
     if (!entry || !stored || stored.runId !== entry.runId) {
       clearStoredQuiz(safeSessionStorage())
-      return { runId: newRunId(), answers: {} as QuizAnswers, stepIndex: 0, phase: 'quiz' as Phase, dataSource: DEFAULT_DATA_SOURCE }
+      return { runId: newRunId(), answers: {} as QuizAnswers, stepIndex: 0, phase: 'quiz' as Phase, dataSource: DEFAULT_DATA_SOURCE, mode: initialMode }
     }
-    return { runId: stored.runId, answers: stored.answers, stepIndex: entry.stepIndex, phase: entry.phase as Phase, dataSource: stored.dataSource ?? DEFAULT_DATA_SOURCE }
+    return { runId: stored.runId, answers: stored.answers, stepIndex: entry.stepIndex, phase: entry.phase as Phase, dataSource: stored.dataSource ?? DEFAULT_DATA_SOURCE, mode: stored.mode ?? initialMode }
   })
   const [runId, setRunId] = useState(initial.runId)
   const [answers, setAnswers] = useState<QuizAnswers>(initial.answers)
@@ -84,6 +97,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   // for a manufacturer-only run). Switched on the results page.
   // v2: always calibrated (manufacturer data + Smash Lab specialist profiles); no switch on the site.
   const [dataSource] = useState<DataSource>(initial.dataSource)
+  const [mode, setMode] = useState<QuizMode>(initial.mode)
   const resolvedSpecialistProfiles = resolveSpecialistProfiles(dataSource, specialistProfiles)
 
   // Mark the entry we were opened on as ours, so a reload restores it.
@@ -93,8 +107,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   }, [initial])
 
   useEffect(() => {
-    saveStoredQuiz(safeSessionStorage(), { runId, answers, dataSource })
-  }, [runId, answers, dataSource])
+    saveStoredQuiz(safeSessionStorage(), { runId, answers, dataSource, mode })
+  }, [runId, answers, dataSource, mode])
 
   // Browser Back / Forward (incl. the Android back gesture) move between questions.
   useEffect(() => {
@@ -117,10 +131,10 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     return () => window.removeEventListener('popstate', onPopState)
   }, [stepIndex, runId])
 
-  const steps = useMemo(() => buildSteps(answers), [answers])
+  const steps = useMemo(() => buildSteps(answers, mode), [answers, mode])
   // For the progress bar only: count the conditional follow-up as long as it's still possible,
   // so the total can only shrink ("7" -> "6") instead of growing mid-quiz.
-  const displayTotal = useMemo(() => buildSteps({ ...answers, priorities: answers.priorities ?? ['durability'] }).length, [answers])
+  const displayTotal = useMemo(() => buildSteps({ ...answers, priorities: answers.priorities ?? ['durability'] }, mode).length, [answers, mode])
   const currentStepId = steps[Math.min(stepIndex, steps.length - 1)]
 
   function pushEntry(next: Omit<QuizHistoryState['smashQuiz'], 'runId'>, forRun: string = runId) {
@@ -147,7 +161,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     if (maxSelect == null) {
       const nextAnswers: QuizAnswers = { ...answers, [questionId]: optionId }
       setAnswers(nextAnswers)
-      const nextSteps = buildSteps(nextAnswers)
+      const nextSteps = buildSteps(nextAnswers, mode)
       const from = stepIndex
       // just long enough to see your choice light up — controls stay crisp (stop-motion is for the playful bits only)
       window.setTimeout(() => advance(from, nextSteps), 110)
@@ -172,7 +186,17 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   function handleSkip(questionId: string) {
     const next: QuizAnswers = { ...answers, [questionId]: undefined }
     setAnswers(next)
-    advance(stepIndex, buildSteps(next))
+    advance(stepIndex, buildSteps(next, mode))
+  }
+
+  /** From a quick result: switch to the detailed quiz and continue right after the four quick questions. */
+  function goDetailed() {
+    setMode('detailed')
+    setDirection(1)
+    pushEntry({ stepIndex: QUICK_STEPS.length, phase: 'quiz' })
+    setStepIndex(QUICK_STEPS.length)
+    setPhase('quiz')
+    window.scrollTo({ top: 0 })
   }
 
   function handleContinue() {
@@ -212,6 +236,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     return (
       <div className="px-4">
         <RecommendationResult
+          onGoDetailed={mode === 'quick' ? goDetailed : undefined}
           answers={answers}
           onChangeAnswers={setAnswers}
           onRetake={restart}
@@ -265,7 +290,7 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
             exit={{ opacity: 0, x: direction * -24, transition: { duration: 0.09, ease: 'easeIn' } }}
             transition={{ duration: 0.16, ease: 'easeOut' }}
           >
-            <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} />
+            <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} onPatch={setAnswers} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -288,9 +313,21 @@ interface StepContentProps {
   answers: QuizAnswers
   onToggle: (questionId: string, optionId: string) => void
   onContinue: () => void
+  onPatch: (next: QuizAnswers) => void
 }
 
-function StepContent({ stepId, answers, onToggle, onContinue }: StepContentProps) {
+function StepContent({ stepId, answers, onToggle, onContinue, onPatch }: StepContentProps) {
+  if (stepId === TENSION_STEP) {
+    const hasInput = answers.racketGoal != null || answers.currentTensionValue != null || answers.maxTensionValue != null
+    return (
+      <div>
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Let's dial in your tension</h1>
+        <p className="text-ink-700/70 dark:text-shuttle-100/70">Optional. Don't know these? Skip — you'll still get a solid starting tension.</p>
+        <TensionFields answers={answers} onChange={onPatch} className="mt-6" />
+        <ContinueButton onClick={onContinue} label={hasInput ? 'See my result' : 'Skip — see my result'} />
+      </div>
+    )
+  }
   const question = getQuestion(stepId)
   if (!question) return null
 

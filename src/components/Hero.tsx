@@ -5,13 +5,15 @@ import PaperScene from './PaperScene'
 interface HeroProps {
   onOpenFinder: () => void
   onOpenCompare: () => void
+  /** The detailed quiz (8 rounds) — the quick one is the default. */
+  onOpenDetailed?: () => void
 }
 
 /**
  * The opening card, lying on the paper court (PaperScene) instead of covering it. One question,
  * two actions, and the three things that make Smash Lab different in a single line.
  */
-export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
+export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: HeroProps) {
   return (
     <section className="relative overflow-hidden px-4 pt-5 pb-6 sm:pt-16 sm:pb-36 min-h-[calc(100svh-4rem)] sm:min-h-[78svh] flex items-start sm:items-center justify-center lg:justify-start lg:pl-[7vw]">
       {/* the cut-out stage: a paper rally on a paper court — only here, on the opening screen */}
@@ -43,6 +45,16 @@ export default function Hero({ onOpenFinder, onOpenCompare }: HeroProps) {
             Browse strings
           </button>
         </div>
+
+        {onOpenDetailed && (
+          <button
+            type="button"
+            onClick={onOpenDetailed}
+            className="focus-ring mt-3 text-sm font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer"
+          >
+            Want it more precise? Take the detailed quiz (8 questions)
+          </button>
+        )}
 
         <ul className="mt-4 sm:mt-7 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-semibold text-ink-700/80 dark:text-shuttle-100/80">
           <li>✓ Independent</li>
