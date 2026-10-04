@@ -262,6 +262,7 @@ function App() {
               }
               return (
                 <RecommendationResult
+                  initialFeaturedId={decoded.featuredId}
                   answers={decoded.answers}
                   dataSource={decoded.dataSource}
                   onRetake={() => goTo('finder')}

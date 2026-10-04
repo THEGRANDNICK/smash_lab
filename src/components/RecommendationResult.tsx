@@ -10,6 +10,8 @@ import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/re
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import ImageSwiper from './ImageSwiper'
+import { CONTACT } from '../data/contact'
+import { hasScoringAnswer } from '../logic/inTheRunning'
 import { getQuestion } from '../data/quizQuestions'
 import { TensionFields } from './TensionTuner'
 import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
@@ -30,6 +32,8 @@ interface RecommendationResultProps {
   onChangeAnswers?: (next: QuizAnswers) => void
   /** Set after the quick quiz: offers the four extra questions of the detailed quiz. */
   onGoDetailed?: () => void
+  /** From a shared link: the string the sender had chosen to show. */
+  initialFeaturedId?: string
   onRetake: () => void
   onCompare: () => void
   dataSource: DataSource
@@ -41,7 +45,7 @@ interface RecommendationResultProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function RecommendationResult({ answers, onChangeAnswers, onGoDetailed, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
+export default function RecommendationResult({ answers, onChangeAnswers, onGoDetailed, initialFeaturedId, onRetake, onCompare, dataSource, pool, specialistProfiles, retailerListingsByStringId }: RecommendationResultProps) {
   // useMemo avoids recomputing the (pure, but non-trivial) recommendation
   // whenever this component re-renders for an unrelated reason (e.g. the
   // retailer listings map updating after the initial paint) — the inputs
@@ -52,7 +56,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
   // The string shown at the top. Defaults to the recommendation; tapping another match (podium or
   // answer tree) "features" it instead — its tension, reasoning and the WhatsApp/email message all
   // follow — until "Back to recommended". Scored against the player's OWN answers via rec.ranked.
-  const [featuredId, setFeaturedId] = useState<string | null>(null)
+  const [featuredId, setFeaturedId] = useState<string | null>(initialFeaturedId ?? null)
   const featured = (featuredId ? rec.ranked.find((s) => s.string.id === featuredId) : undefined) ?? rec.best
   const isRecommended = featured.string.id === rec.best.string.id
   const featuredRank = rec.ranked.findIndex((s) => s.string.id === featured.string.id) + 1
@@ -70,7 +74,10 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   // A short two-note pluck when a result is revealed.
-  const encodedResult = useMemo(() => encodeResultShareState(answers, dataSource), [answers, dataSource])
+  const encodedResult = useMemo(
+    () => encodeResultShareState(answers, dataSource, featuredId && featuredId !== rec.best.string.id ? featuredId : undefined),
+    [answers, dataSource, featuredId, rec.best.string.id],
+  )
   useEffect(() => {
     play('reveal')
   }, [rec.best.string.id])
@@ -142,13 +149,34 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
     )
   }
 
+  const racketMaxKg = answers.maxTensionKnown === 'yes' && typeof answers.maxTensionValue === 'number' ? answers.maxTensionValue : undefined
+  const tensionIsProvisional = racketMaxKg == null
   const whatsAppUrl = buildEnquiryWhatsAppUrl({
     stringName: `${featured.string.brand} ${featured.string.name}`,
     tensionKg: tension.recommendedKg,
+    mainsKg: tension.mainsKg,
+    crossKg: tension.crossKg,
+    racketMaxKg,
     matchPercent: featured.matchPercent,
     dataSourceLabel: DATA_SOURCE_NOTE[dataSource],
     rank: featuredRank,
   })
+
+  // Honest ranking language: a score gap, not a probability (gap thresholds from scripts/analysis/robustness.mts).
+  const lead = rec.ranked.length > 1 ? rec.ranked[0].matchPercent - rec.ranked[1].matchPercent : 99
+  const rankingLabel = !hasScoringAnswer(answers)
+    ? 'General preselection'
+    : lead >= 6
+      ? 'Clear lead in the ranking'
+      : lead >= 3
+        ? 'Ahead in the ranking'
+        : 'Close call in the ranking'
+
+  function applyRacketMax(raw: string) {
+    const lbs = Number(raw)
+    if (!onChangeAnswers || !Number.isFinite(lbs) || lbs < 14 || lbs > 40) return
+    onChangeAnswers({ ...answers, maxTensionKnown: 'yes', maxTensionValue: Math.round(lbs * 0.45359237 * 10) / 10 })
+  }
   const others = rec.topThree.filter((s) => s.string.id !== featured.string.id)
 
   return (
@@ -158,13 +186,16 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             {isRecommended ? (
-              <span className="stamp rounded-md border-2 border-shuttle-700 dark:border-shuttle-400 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-shuttle-700 dark:text-shuttle-400">
-                Best match · {featured.matchPercent}%
+              <span
+                className="stamp rounded-md border-2 border-shuttle-700 dark:border-shuttle-400 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-shuttle-700 dark:text-shuttle-400"
+                title={`Model score ${featured.matchPercent} — a ranking score, not a probability`}
+              >
+                {rankingLabel}
               </span>
             ) : (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="pop-in rounded-md border-2 border-court-800/40 dark:border-white/30 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-ink-700 dark:text-shuttle-100">
-                  Your #{featuredRank} · {featured.matchPercent}%
+                  Your #{featuredRank} pick
                 </span>
                 <button type="button" onClick={() => feature(rec.best.string.id)} className="focus-ring text-xs font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer">
                   ↩ Back to recommended
@@ -183,14 +214,51 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         </div>
         <p className="mt-3 text-ink-700/90 dark:text-shuttle-100/90">{heroReason}</p>
 
-        <div className="mt-5 flex items-baseline gap-3 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">Tension</span>
-          <span className="font-display text-3xl font-bold text-ink-900 dark:text-shuttle-50">{formatKg(tension.recommendedKg)}</span>
-          <span className="text-ink-700/70 dark:text-shuttle-100/70">≈ {formatLbs(tension.recommendedKg)}</span>
+        {/* What to tell the stringer — both numbers, never one ambiguous value (review finding, Oct 2026). */}
+        <div className="mt-5 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
+            For your stringer{tensionIsProvisional ? ' · provisional' : ''}
+          </p>
+          <p className="font-display text-2xl sm:text-3xl font-bold text-ink-900 dark:text-shuttle-50">
+            {formatKg(tension.mainsKg)} mains / {formatKg(tension.crossKg)} crosses
+          </p>
+          <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">
+            Average {formatKg(tension.recommendedKg)} (≈ {formatLbs(tension.recommendedKg)}) · crosses {formatKg(tension.crossKg - tension.mainsKg)} higher than mains
+          </p>
         </div>
-        <p className="mt-1 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
-          Mains {formatKg(tension.mainsKg)} · Crosses {formatKg(tension.crossKg)}
-        </p>
+        {!answers.level && <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">You skipped your level, so this is the tension for a typical club player.</p>}
+
+        {/* Racket maximum: checked right here, not hidden in a fold — the default is only an assumption. */}
+        {answers.maxTensionKnown === 'yes' && typeof answers.maxTensionValue === 'number' ? (
+          <p className="mt-3 text-sm font-semibold text-court-700 dark:text-shuttle-400">
+            ✓ Within your racket's maximum of {answers.maxTensionValue.toFixed(1)} kg ({Math.round(answers.maxTensionValue / 0.45359237)} lbs) — crosses included.
+          </p>
+        ) : (
+          <div role="note" className="mt-3 rounded-xl border-2 border-amber-500/70 bg-amber-500/10 p-3 text-sm">
+            <p className="font-semibold text-ink-900 dark:text-shuttle-50">Check your racket's maximum before stringing.</p>
+            <p className="mt-0.5 text-ink-700/90 dark:text-shuttle-100/90">
+              It's printed on the shaft or near the T-joint, e.g. “20–28 lbs”. We assumed 12.5 kg (common for Yonex) — some beginner rackets allow only 9–10 kg.
+            </p>
+            {onChangeAnswers && (
+              <label className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-ink-900 dark:text-shuttle-50">My racket's max:</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={14}
+                  max={40}
+                  placeholder="e.g. 28"
+                  className="focus-ring w-24 rounded-lg border-2 border-court-900/20 dark:border-white/25 card-stock px-2 py-1 text-ink-900 dark:text-shuttle-50"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') applyRacketMax((e.target as HTMLInputElement).value)
+                  }}
+                  onBlur={(e) => applyRacketMax(e.target.value)}
+                />
+                <span className="text-ink-700/80 dark:text-shuttle-100/80">lbs (the higher number)</span>
+              </label>
+            )}
+          </div>
+        )}
         <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
           {formatKg(tension.lowerKg)} for easier power{tension.higherKg != null ? ` · ${formatKg(tension.higherKg)} for more control` : ''}
           {tension.wasCappedByRacketMax ? ` · capped at your racket's max (${tension.racketMaxKg} kg)` : ''}
@@ -203,7 +271,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         <div className="mt-5 flex gap-2">
           {whatsAppUrl && (
             <a href={whatsAppUrl} target="_blank" rel="noopener noreferrer" data-sound="pluck" className="press focus-ring flex-1 rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-center font-bold py-3">
-              💬 Send via WhatsApp
+              💬 Ask {CONTACT.name} to string it · WhatsApp
             </a>
           )}
           <button
@@ -241,7 +309,9 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
                       <span className="font-display font-bold text-ink-900 dark:text-shuttle-50">{s.string.name}</span>
-                      <span className="text-sm tabular-nums text-ink-700/70 dark:text-shuttle-100/70">{s.matchPercent}%</span>
+                      <span className="text-xs tabular-nums text-ink-700/70 dark:text-shuttle-100/70" title="Model score — a ranking score, not a probability">
+                        {rec.ranked[0].matchPercent - s.matchPercent <= 2 ? 'close · ' : ''}score {s.matchPercent}
+                      </span>
                     </span>
                     <span className="block text-sm text-ink-700/80 dark:text-shuttle-100/80 truncate">{why}</span>
                   </span>
@@ -302,6 +372,9 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         )}
         <Fold title="Ask a question or add your racket">
           <StringingEnquiry
+            mainsKg={tension.mainsKg}
+            crossKg={tension.crossKg}
+            racketMaxKg={racketMaxKg}
             stringBrand={featured.string.brand}
             stringName={featured.string.name}
             tensionKg={tension.recommendedKg}

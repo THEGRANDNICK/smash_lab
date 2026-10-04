@@ -114,19 +114,31 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
   const gauge = stringGauge(string)
   const gaugeRule = gauge == null ? undefined : GAUGE_TENSION_ADJUSTMENTS.find((rule) => gauge <= rule.maxGauge)
   if (gaugeRule && gaugeRule.adjustKg !== 0) {
+    const before = target
     target += gaugeRule.adjustKg
-    reasoning += ` ${string!.name} is a thin string (${gauge} mm), so we went a little lower to help it last.`
+    // Only say so when it actually changes the (rounded) number you'll see.
+    if (round(target) !== round(before)) reasoning += ` ${string!.name} is a thin string (${gauge} mm), so we went a little lower to help it last.`
   }
 
   // Strings breaking from mishits: lower tension forgives off-centre hits.
   if (answers.restringReason === 'mishitBreakage') {
+    const before = target
     target += MISHIT_TENSION_ADJUSTMENT
-    reasoning += ' Because your strings often break from mishits, we went a little lower — it forgives off-centre hits.'
+    if (round(target) !== round(before)) reasoning += ' Because your strings often break from mishits, we went a little lower — it forgives off-centre hits.'
   }
 
-  // Beginners stay at or below 24 lb unless they already play (and like) a higher tension.
-  if (level === 'beginner' && !(answers.currentTensionKnown === 'yes' && typeof answers.currentTensionValue === 'number')) {
-    target = Math.min(target, BEGINNER_MAX_TENSION)
+  // The level's maximum is a real limit. The one exception: you already play a known tension, you're
+  // happy with it, AND you've checked your racket's maximum — then we don't push you below it.
+  const levelMax = Math.min(LEVEL_BASE_RANGES[level]?.max ?? ABSOLUTE_MAX_TENSION, level === 'beginner' ? BEGINNER_MAX_TENSION : Infinity)
+  const keepsProvenTension =
+    answers.currentTensionKnown === 'yes' &&
+    typeof answers.currentTensionValue === 'number' &&
+    answers.currentTensionFeel === 'aboutRight' &&
+    answers.maxTensionKnown === 'yes' &&
+    typeof answers.maxTensionValue === 'number'
+  if (!keepsProvenTension && target > levelMax) {
+    target = levelMax
+    reasoning += ` We kept it within the usual maximum for your level (${levelMax} kg).`
   }
 
   target = clamp(target, ABSOLUTE_MIN_TENSION, ABSOLUTE_MAX_TENSION)

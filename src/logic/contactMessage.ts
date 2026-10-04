@@ -23,6 +23,11 @@ export interface EnquiryDetails {
   note?: string
   /** Position in the player's ranking; > 1 when they chose another match than the recommendation. */
   rank?: number
+  /** Mains and crosses as strung (the stated tension is their average). */
+  mainsKg?: number
+  crossKg?: number
+  /** The racket's maximum if the player entered it; undefined = not checked. */
+  racketMaxKg?: number
 }
 
 /**
@@ -34,17 +39,22 @@ export interface EnquiryDetails {
  * what still needs an answer.
  */
 export function buildResultSummaryText(details: EnquiryDetails): string {
-  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note, rank } = details
+  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note, rank, mainsKg, crossKg, racketMaxKg } = details
   const lines = [
     `Hello ${CONTACT.name},`,
     // Says so when the player picked one of their other matches instead of the recommendation.
     rank != null && rank > 1 ? `I picked my #${rank} match from Smash Lab:` : 'Smash Lab recommended the following setup:',
     '',
     `String: ${stringName}`,
-    `Tension: ${formatKg(tensionKg)}`,
+    // Mains and crosses spelled out, so no one has to guess what a single number means.
+    ...(mainsKg != null && crossKg != null
+      ? [`Tension: mains ${formatKg(mainsKg)} / crosses ${formatKg(crossKg)} (average ${formatKg(tensionKg)})`]
+      : [`Tension: ${formatKg(tensionKg)}`]),
+    // the maximum is shown exactly (never rounded to half kilos — 12.7 must not become 12.5)
+    racketMaxKg != null ? `Racket max: ${racketMaxKg.toFixed(1)} kg / ${Math.round(racketMaxKg / 0.45359237)} lbs (checked)` : 'Racket max: NOT CHECKED — please check before stringing',
   ]
   if (alternativeTensions) lines.push(`Alternative tensions: ${alternativeTensions}`)
-  lines.push(`Match: ${matchPercent}%`, `Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, `My question: ${note ?? ''}`)
+  lines.push(`Model score: ${matchPercent} (a ranking score, not a probability)`, `Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, `My question: ${note ?? ''}`)
   return lines.join('\n')
 }
 

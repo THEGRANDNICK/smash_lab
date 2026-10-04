@@ -28,8 +28,22 @@ describe('tension ranges: beginners per the video, club players per the stringer
         expect(recommendTension({ level: 'beginner', racketGoal: goal, powerGeneration: power }, bg65).recommendedKg).toBeLessThanOrEqual(11)
       }
     }
-    const known = recommendTension({ level: 'beginner', currentTensionKnown: 'yes', currentTensionValue: 11.5, currentTensionFeel: 'aboutRight' }, bg65)
-    expect(known.recommendedKg).toBeGreaterThan(11)
+    // the one exception: a known tension you're happy with AND a checked racket maximum
+    const proven = recommendTension({ level: 'beginner', currentTensionKnown: 'yes', currentTensionValue: 11.5, currentTensionFeel: 'aboutRight', maxTensionKnown: 'yes', maxTensionValue: 13 }, bg65)
+    expect(proven.recommendedKg).toBeGreaterThan(11)
+    // not happy with it, or racket max unchecked → the level limit applies
+    expect(recommendTension({ level: 'beginner', currentTensionKnown: 'yes', currentTensionValue: 12, currentTensionFeel: 'wantControl', maxTensionKnown: 'yes', maxTensionValue: 14 }, bg65).recommendedKg).toBeLessThanOrEqual(11)
+    expect(recommendTension({ level: 'beginner', currentTensionKnown: 'yes', currentTensionValue: 11.5, currentTensionFeel: 'aboutRight' }, bg65).recommendedKg).toBeLessThanOrEqual(11)
+  })
+})
+
+describe('level limits are real limits (review findings, Oct 2026)', () => {
+  it('a club player with a precision goal, own power and a 14 kg racket still stays at 12 kg', () => {
+    expect(recommendTension({ level: 'intermediate', racketGoal: 'precision', powerGeneration: 'ownPower', maxTensionKnown: 'yes', maxTensionValue: 14 }, bg80).recommendedKg).toBeLessThanOrEqual(12)
+  })
+  it('an adjustment is only explained when it changes the number you see', () => {
+    const t = recommendTension({ level: 'intermediate' }, byId('yonex-exbolt-65'))
+    if (t.recommendedKg === recommendTension({ level: 'intermediate' }, bg65).recommendedKg) expect(t.explanation).not.toMatch(/thin string/)
   })
 })
 
