@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import QuizIcon from './QuizIcon'
 import type { QuizQuestionDef } from '../data/quizQuestions'
 
 interface QuizQuestionProps {
@@ -64,8 +65,8 @@ export default function QuizQuestion({ question, selected, onToggle }: QuizQuest
                     : `paper border-transparent ${disabled ? '' : 'hover:border-shuttle-400'}`
                 }`}
             >
-              <span className="text-3xl leading-none shrink-0" aria-hidden="true">
-                {option.emoji}
+              <span className="shrink-0" aria-hidden="true">
+                <QuizIcon questionId={question.id} optionId={option.id} fallback={<span className="text-3xl leading-none">{option.emoji}</span>} />
               </span>
               <span className="flex-1">
                 <span className="block font-semibold text-ink-900 dark:text-shuttle-50">{option.label}</span>

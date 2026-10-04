@@ -113,6 +113,15 @@ export function parseResearchPack(raw: unknown): ParseResult<ResearchPack> {
 }
 
 /** The current database state of one profile — only what the merge needs. */
+/** The owner's own values that a "replace" import overwrote — kept so they can be restored. */
+export interface ReplacedValues {
+  dimensions?: Partial<Record<SpecialistDimensionKey, number>>
+  feel?: SpecialistFeel | null
+}
+
+/** fillGaps (default): only empty values are filled. replace: research values win everywhere (the owner's are backed up). */
+export type MergeMode = 'fillGaps' | 'replace'
+
 export interface ExistingProfile {
   experienceSource: ExperienceSource
   confidence: Confidence
@@ -122,7 +131,7 @@ export interface ExistingProfile {
   strengths: string[]
   weaknesses: string[]
   specialistTags: string[]
-  researchImport: { datasetId: string; fields: string[] } | null
+  researchImport: { datasetId: string; fields: string[]; replaced?: ReplacedValues } | null
 }
 
 export interface DimensionChoice {
@@ -145,21 +154,21 @@ export interface ProfilePlan {
   addTexts: boolean
 }
 
-export function planResearchMerge(pack: ResearchPack, catalogIds: Set<string>, existing: Record<string, ExistingProfile>): ProfilePlan[] {
+export function planResearchMerge(pack: ResearchPack, catalogIds: Set<string>, existing: Record<string, ExistingProfile>, mode: MergeMode = 'fillGaps'): ProfilePlan[] {
   return Object.entries(pack.profiles)
     .map(([stringId, proposed]) => {
       const current = existing[stringId]
       const isNew = current == null
       const dimensions: DimensionChoice[] = SPECIALIST_KEYS.filter((k) => proposed.dimensions[k] != null).map((key) => {
         const cur = current?.dimensions[key]
-        return { key, current: cur, proposed: proposed.dimensions[key]!, proposedConfidence: proposed.dimensionConfidence[key], take: cur == null }
+        return { key, current: cur, proposed: proposed.dimensions[key]!, proposedConfidence: proposed.dimensionConfidence[key], take: mode === 'replace' || cur == null }
       })
       return {
         stringId,
         known: catalogIds.has(stringId),
         isNew,
         dimensions,
-        feel: { current: current?.feel ?? null, proposed: proposed.feel, take: proposed.feel != null && (current?.feel ?? null) == null },
+        feel: { current: current?.feel ?? null, proposed: proposed.feel, take: proposed.feel != null && (mode === 'replace' || (current?.feel ?? null) == null) },
         addTexts: isNew,
       }
     })
@@ -195,7 +204,17 @@ export function buildProfileRow(plan: ProfilePlan, pack: ResearchPack, existing:
   }
 
   const previous = existing?.researchImport?.datasetId === pack.datasetId ? existing.researchImport.fields : []
-  const researchImport = { datasetId: pack.datasetId, importedAt, fields: mergeList(previous, fields) }
+  // Back up every value of the owner's that this import overwrites. The EARLIEST backup wins, so
+  // repeated imports never lose the original hands-on value.
+  const before = existing?.researchImport?.replaced ?? {}
+  const replacedDims: Partial<Record<SpecialistDimensionKey, number>> = { ...(before.dimensions ?? {}) }
+  for (const d of plan.dimensions) {
+    if (d.take && d.current != null && d.current !== d.proposed && !(d.key in replacedDims)) replacedDims[d.key] = d.current
+  }
+  const replaced: ReplacedValues = { ...(Object.keys(replacedDims).length ? { dimensions: replacedDims } : {}) }
+  if ('feel' in before) replaced.feel = before.feel
+  else if (plan.feel.take && plan.feel.proposed && existing?.feel != null && existing.feel !== plan.feel.proposed) replaced.feel = existing.feel
+  const researchImport = { datasetId: pack.datasetId, importedAt, fields: mergeList(previous, fields), ...(Object.keys(replaced).length ? { replaced } : {}) }
 
   if (!existing) {
     return {
@@ -226,5 +245,26 @@ export function buildProfileRow(plan: ProfilePlan, pack: ResearchPack, existing:
         }
       : {}),
     research_import: researchImport,
+  }
+}
+
+/**
+ * Undo "replace": put the owner's backed-up values back, drop the research confidence for those
+ * dimensions, and forget the backup. Returns null when there's nothing to restore.
+ */
+export function buildRestoreRow(stringId: string, existing: ExistingProfile): Record<string, unknown> | null {
+  const replaced = existing.researchImport?.replaced
+  if (!replaced || (!replaced.dimensions && !('feel' in replaced))) return null
+  const dimensions = { ...existing.dimensions, ...(replaced.dimensions ?? {}) }
+  const dimensionConfidence = { ...existing.dimensionConfidence }
+  for (const k of Object.keys(replaced.dimensions ?? {})) delete dimensionConfidence[k as SpecialistDimensionKey]
+  const restoredFields = [...Object.keys(replaced.dimensions ?? {}).map((k) => `dimensions.${k}`), ...('feel' in replaced ? ['feel'] : [])]
+  const fields = (existing.researchImport?.fields ?? []).filter((f) => !restoredFields.includes(f))
+  return {
+    string_id: stringId,
+    dimensions,
+    dimension_confidence: Object.keys(dimensionConfidence).length ? dimensionConfidence : null,
+    ...('feel' in replaced ? { feel: replaced.feel ?? null } : {}),
+    research_import: existing.researchImport ? { datasetId: existing.researchImport.datasetId, importedAt: new Date().toISOString(), fields } : null,
   }
 }

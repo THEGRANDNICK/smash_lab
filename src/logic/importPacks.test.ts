@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { fitWithin, isSafeImageName, parseImagePackManifest, planImageImport, sniffImageType, storagePath } from './imagePack'
-import { buildProfileRow, parseResearchPack, planResearchMerge, takenFields, type ExistingProfile } from './researchPack'
+import { buildProfileRow, buildRestoreRow, parseResearchPack, planResearchMerge, takenFields, type ExistingProfile } from './researchPack'
 
 const SHA_A = 'a'.repeat(64)
 const SHA_B = 'b'.repeat(64)
@@ -154,5 +154,46 @@ describe('research pack', () => {
     const again = planResearchMerge(parsed.value, new Set(['yonex-bg80']), { 'yonex-bg80': afterFirst }).find((p) => p.stringId === 'yonex-bg80')!
     expect(takenFields(again)).toEqual([]) // nothing left to fill → nothing written
     expect(buildProfileRow(again, parsed.value, afterFirst, 'T')).toBeNull()
+  })
+})
+
+describe('research pack — replace mode with backup and restore', () => {
+  const parsed = parseResearchPack(pack)
+  if (!parsed.ok) throw new Error('parse failed')
+  const plans = planResearchMerge(parsed.value, new Set(['yonex-bg80']), { 'yonex-bg80': nickBg80 }, 'replace')
+  const bg80 = plans.find((p) => p.stringId === 'yonex-bg80')!
+
+  it('replace mode takes every research value, including ones Nick already set', () => {
+    expect(bg80.dimensions.every((d) => d.take)).toBe(true)
+    const row = buildProfileRow(bg80, parsed.value, nickBg80, 'T')!
+    expect(row.dimensions).toEqual({ controlPrecision: 4.5, easyPower: 3.5, tensionRetention: 4 })
+  })
+
+  it("backs up exactly Nick's overwritten values, and restore brings them back", () => {
+    const row = buildProfileRow(bg80, parsed.value, nickBg80, 'T')!
+    const ri = row.research_import as { replaced?: { dimensions?: Record<string, number> } }
+    expect(ri.replaced?.dimensions).toEqual({ controlPrecision: 5, easyPower: 4 })
+    const afterImport: ExistingProfile = {
+      ...nickBg80,
+      dimensions: row.dimensions as ExistingProfile['dimensions'],
+      dimensionConfidence: (row.dimension_confidence ?? {}) as ExistingProfile['dimensionConfidence'],
+      researchImport: row.research_import as ExistingProfile['researchImport'],
+    }
+    const restored = buildRestoreRow('yonex-bg80', afterImport)!
+    expect(restored.dimensions).toEqual({ controlPrecision: 5, easyPower: 4, tensionRetention: 4 })
+    expect((restored.research_import as { replaced?: unknown }).replaced).toBeUndefined()
+  })
+
+  it('a second replace import never loses the original backup', () => {
+    const first = buildProfileRow(bg80, parsed.value, nickBg80, 'T')!
+    const afterFirst: ExistingProfile = {
+      ...nickBg80,
+      dimensions: first.dimensions as ExistingProfile['dimensions'],
+      dimensionConfidence: (first.dimension_confidence ?? {}) as ExistingProfile['dimensionConfidence'],
+      researchImport: first.research_import as ExistingProfile['researchImport'],
+    }
+    const again = planResearchMerge(parsed.value, new Set(['yonex-bg80']), { 'yonex-bg80': afterFirst }, 'replace').find((p) => p.stringId === 'yonex-bg80')!
+    const second = buildProfileRow(again, parsed.value, afterFirst, 'T2')!
+    expect((second.research_import as { replaced?: { dimensions?: Record<string, number> } }).replaced?.dimensions).toEqual({ controlPrecision: 5, easyPower: 4 })
   })
 })
