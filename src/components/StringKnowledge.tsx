@@ -12,6 +12,8 @@ import { formatKg } from '../logic/units'
  * the stringer's own practice for club players (tension cap, mains/crosses). Numbers come from
  * config/tensionRules.ts, so this page can't drift from what the recommendation actually does.
  */
+const VIDEO = 'https://www.youtube.com/watch?v=Z09cXPwU-n0'
+
 export default function StringKnowledge() {
   const club = LEVEL_BASE_RANGES.intermediate
   return (
@@ -23,40 +25,69 @@ export default function StringKnowledge() {
       </header>
 
       <div className="mt-10 grid gap-5 sm:grid-cols-2">
-        <KnowledgeCard title="Gauge — the thickness" art={<GaugeArt />} index={0}>
-          <p>Most strings are 0.58–0.70 mm. Thicker lasts longer; thinner feels livelier, sounds crisper and breaks sooner.</p>
+        <KnowledgeCard title="Gauge — the thickness" art={<GaugeArt />} index={0} source={{ href: `${VIDEO}&t=42s`, at: '0:42' }}>
+          <p>Most strings are 0.58–0.70 mm. Thicker usually lasts longer; thinner feels livelier, sounds crisper and tends to break sooner. Usually — the material matters too: some 0.68 mm strings are built specifically for durability.</p>
           <p>
             <strong>Beginners:</strong> around 0.70 mm. <strong>Improving players:</strong> 0.68 mm or thinner. Hard hitters who often mishit are better off thicker.
           </p>
         </KnowledgeCard>
 
-        <KnowledgeCard title="Feel — hard, medium, soft" art={<FeelArt />} index={1}>
+        <KnowledgeCard title="Feel — hard, medium, soft" art={<FeelArt />} index={1} source={{ href: `${VIDEO}&t=166s`, at: '2:46' }}>
           <p>A hard string gives sharp, direct feedback on impact; a soft one feels cushioned; medium sits in between. Two strings of the same gauge can feel very different — the core and coating matter too.</p>
         </KnowledgeCard>
 
-        <KnowledgeCard title="Texture — smooth or rough" art={<TextureArt />} index={2}>
+        <KnowledgeCard title="Texture — smooth or rough" art={<TextureArt />} index={2} source={{ href: `${VIDEO}&t=201s`, at: '3:21' }}>
           <p>A rougher surface grips the cork more: slices, spinning net shots and touch play feel more controlled. The extra friction wears the string a little faster.</p>
         </KnowledgeCard>
 
-        <KnowledgeCard title="Tension — tighter isn't better" art={<TensionArt />} index={3}>
+        <KnowledgeCard title="Tension — tighter isn't better" art={<TensionArt />} index={3} source={{ href: `${VIDEO}&t=371s`, at: '6:11' }}>
           <p>Lower tension gives a bigger sweet spot and easier power and forgives off-centre hits. Higher tension gives more control — if you hit the centre consistently.</p>
           <p>
-            <strong>Club players:</strong> around {formatKg(club.target)}, at most {formatKg(club.max)}. Mains are strung {formatKg(CROSS_OFFSET_KG)} lower and crosses {formatKg(CROSS_OFFSET_KG)} higher
+            <strong>Club players (Smash Lab's stringing practice):</strong> around {formatKg(club.target)}, at most {formatKg(club.max)}. Mains are strung {formatKg(CROSS_OFFSET_KG)} lower and crosses {formatKg(CROSS_OFFSET_KG)} higher
             — at {formatKg(club.max)} that's {formatKg(club.max - CROSS_OFFSET_KG)} / {formatKg(club.max + CROSS_OFFSET_KG)}, and most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}. A thinner string goes a little lower. Not sure? Start lower and add 0.5 kg per restring.
           </p>
         </KnowledgeCard>
 
-        <KnowledgeCard title="Ageing — when to restring" art={<AgeingArt />} index={4} wide>
+        <KnowledgeCard title="Ageing — when to restring" art={<AgeingArt />} index={4} wide source={{ href: `${VIDEO}&t=616s`, at: '10:16' }}>
           <p>
-            Strings lose tension and their coating wears off: the sound gets duller, the bed softer and the strings start to shift. A simple rule: <strong>restrings per year ≈ sessions per week</strong> — play three
-            times a week, restring about three times a year. Thin strings and tensions above 11 kg tend to break sooner.
+            Strings lose tension and their coating wears off: the sound gets duller, the bed softer and the strings start to shift — that's your real signal. As a <strong>rough guide, not a schedule</strong>:
+            restrings per year ≈ sessions per week (three times a week → about three restrings a year). Thin strings and tensions above about 11 kg (24 lb) tend to break sooner.
           </p>
         </KnowledgeCard>
       </div>
 
       <p className="mt-6 text-center text-xs text-ink-700/70 dark:text-shuttle-100/70">
-        Based on Badminton Insight's “What Badminton String &amp; Tension Should You Use?” (2026) and hands-on stringing for club players. Guidance, not lab measurements.
+        Based on{' '}
+        <a href={VIDEO} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink-900 dark:hover:text-shuttle-50">
+          Badminton Insight — “What Badminton String &amp; Tension Should You Use?” (YouTube, 2026)
+        </a>{' '}
+        (timestamps on each card) and hands-on stringing for club players. Rules of thumb, not lab measurements.
       </p>
+
+      <section className="paper mt-10 p-5 sm:p-6 text-sm text-ink-700/90 dark:text-shuttle-100/90" aria-labelledby="how-we-rate">
+        <span className="tape">Transparency</span>
+        <h2 id="how-we-rate" className="mt-3 font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">How Smash Lab rates strings</h2>
+        <ul className="mt-3 space-y-2 list-disc pl-5">
+          <li>
+            Two kinds of ratings: the <strong>manufacturer's</strong> (0–11, from the packet) and <strong>hands-on</strong> ratings (1–5) — mostly from one stringer, plus imported community research where available. Each string's page and the
+            stringing bench show how many of its 15 properties are rated and by whom.
+          </li>
+          <li>
+            Hands-on ratings may shift a result by up to 80% — set deliberately high, because packet ratings are inflated (most strings score 8–11 of 11). The flip side: one person's experience matters a lot. The value was raised
+            from 65% when the rater's own long-time main string, BG80, could not win for attacking players — so read BG80 results with that in mind.
+          </li>
+          <li>Strings nobody has rated by hand are ranked <strong>cautiously</strong>: their unknown properties count as an unproven 3/5, because hands-on ratings usually come in below the packet's.</li>
+          <li>Scores are <strong>ranking scores, not probabilities</strong>. Small gaps (0–2 points) are called a close call: they flip easily when ratings change slightly.</li>
+          <li>Smash Lab can put you in touch with its stringer — that's a personal interest, so the ranking never looks at stock or who strings your racket.</li>
+          <li>
+            Method and measurements are reproducible:{' '}
+            <a href="https://github.com/THEGRANDNICK/smash_lab/tree/main/scripts/analysis" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              scripts/analysis on GitHub
+            </a>
+            .
+          </li>
+        </ul>
+      </section>
 
       <FAQ />
       <div id="knowledge-contact">
@@ -66,7 +97,7 @@ export default function StringKnowledge() {
   )
 }
 
-function KnowledgeCard({ title, art, children, index, wide = false }: { title: string; art: ReactNode; children: ReactNode; index: number; wide?: boolean }) {
+function KnowledgeCard({ title, art, children, index, wide = false, source }: { title: string; art: ReactNode; children: ReactNode; index: number; wide?: boolean; source?: { href: string; at: string } }) {
   return (
     <article className={`paper deal p-5 sm:p-6 flex gap-4 ${wide ? 'sm:col-span-2' : ''}`} style={{ ['--deal-i' as string]: index }}>
       <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20" aria-hidden="true">
@@ -75,6 +106,13 @@ function KnowledgeCard({ title, art, children, index, wide = false }: { title: s
       <div className="min-w-0 space-y-2 text-sm text-ink-700/90 dark:text-shuttle-100/90">
         <h2 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">{title}</h2>
         {children}
+        {source && (
+          <p className="text-xs">
+            <a href={source.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-ink-700/70 dark:text-shuttle-100/70 hover:text-ink-900 dark:hover:text-shuttle-50">
+              ▶ In the video at {source.at}
+            </a>
+          </p>
+        )}
       </div>
     </article>
   )

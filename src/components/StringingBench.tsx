@@ -5,6 +5,7 @@ import { formatGauge } from '../logic/formatGauge'
 import { stringPagePath } from '../logic/stringPages'
 import { cutEllipse, cutPolygon } from '../logic/scissors'
 import { PERFORMANCE_AXES, getPerformanceValues } from './performanceAxes'
+import { HANDS_ON_PROPERTY_COUNT, provenanceOf } from '../logic/provenance'
 
 /** Drag payload type for a string reel (set by StringTile). */
 export const REEL_DRAG_TYPE = 'application/x-smashlab-string'
@@ -106,7 +107,15 @@ export default function StringingBench({ items, max, specialistProfiles, onAdd, 
                     </button>
                   </div>
 
-                  <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-court-700 dark:text-shuttle-400">🔬 Hands-on · out of 5</p>
+                  <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wide text-court-700 dark:text-shuttle-400">Hands-on · out of 5</p>
+                  {(() => {
+                    const pv = provenanceOf(specialistProfiles?.[item.id])
+                    return (
+                      <p className="text-[10px] text-ink-700/70 dark:text-shuttle-100/70">
+                        {pv.ratedCount} of {HANDS_ON_PROPERTY_COUNT} rated{pv.source ? ` · ${pv.source}` : ''}{pv.confidence ? ` · ${pv.confidence}` : ''}
+                      </p>
+                    )
+                  })()}
                   {Object.keys(handsOn[items.indexOf(item)]).length === 0 ? (
                     <p className="text-[11px] text-ink-700/70 dark:text-shuttle-100/70">No hands-on notes yet.</p>
                   ) : (
@@ -121,7 +130,7 @@ export default function StringingBench({ items, max, specialistProfiles, onAdd, 
                               {v != null && <span className="absolute inset-y-0 left-0 rounded-full bg-court-600 dark:bg-shuttle-400" style={{ width: `${(v / 5) * 100}%` }} />}
                             </span>
                             <span className={`w-8 text-right tabular-nums ${isBest ? 'font-bold text-court-700 dark:text-shuttle-400' : 'text-ink-700/80 dark:text-shuttle-100/80'}`}>
-                              {isBest && <span aria-label="best">▲</span>}
+                              {isBest && <span aria-label="highest on the bench" title="Highest value on the bench — not a measurement">▲</span>}
                               {v ?? '–'}
                             </span>
                           </li>

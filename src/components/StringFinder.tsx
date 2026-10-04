@@ -66,10 +66,11 @@ export type QuizMode = 'quick' | 'detailed'
 const QUICK_STEPS = ['level', 'playStyles', 'priorities', 'hittingFeel']
 const TENSION_STEP = 'tension'
 
-function buildSteps(answers: QuizAnswers, mode: QuizMode): string[] {
+function buildSteps(_answers: QuizAnswers, mode: QuizMode): string[] {
   if (mode === 'quick') return QUICK_STEPS
   const steps = [...QUICK_STEPS, 'powerGeneration', 'frequency']
-  if (answers.priorities?.includes('durability')) steps.push('restringReason')
+  // always asked in the detailed quiz: mishit breakage lowers the tension, not only a durability matter
+  steps.push('restringReason')
   steps.push(TENSION_STEP)
   return steps
 }

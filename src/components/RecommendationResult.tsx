@@ -10,6 +10,7 @@ import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/re
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import ImageSwiper from './ImageSwiper'
+import { HANDS_ON_PROPERTY_COUNT, provenanceOf } from '../logic/provenance'
 import { CONTACT } from '../data/contact'
 import { hasScoringAnswer } from '../logic/inTheRunning'
 import { getQuestion } from '../data/quizQuestions'
@@ -178,6 +179,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
     onChangeAnswers({ ...answers, maxTensionKnown: 'yes', maxTensionValue: Math.round(lbs * 0.45359237 * 10) / 10 })
   }
   const others = rec.topThree.filter((s) => s.string.id !== featured.string.id)
+  const featuredProvenance = provenanceOf(specialistProfiles?.[featured.string.id])
 
   return (
     <div className="max-w-2xl mx-auto pb-16">
@@ -213,6 +215,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
           </div>
         </div>
         <p className="mt-3 text-ink-700/90 dark:text-shuttle-100/90">{heroReason}</p>
+        {featuredProvenance.thin && (
+          <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">
+            Mostly based on manufacturer data — only {featuredProvenance.ratedCount} of {HANDS_ON_PROPERTY_COUNT} properties have hands-on ratings so far.
+          </p>
+        )}
 
         {/* What to tell the stringer — both numbers, never one ambiguous value (review finding, Oct 2026). */}
         <div className="mt-5 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
