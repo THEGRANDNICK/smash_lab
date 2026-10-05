@@ -19,7 +19,7 @@ import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
 import ErrorBoundary from './components/ErrorBoundary'
 import StringKnowledge from './components/StringKnowledge'
-import TensionPicker from './components/TensionPicker'
+import Workshop from './components/Workshop'
 import { play, soundForElement } from './logic/sound'
 import { strings } from './data/strings'
 import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
@@ -28,7 +28,7 @@ import { STRING_SPECIALIST_PROFILES } from './data/stringSpecialistProfiles'
 
 const BASE = import.meta.env.BASE_URL
 
-type View = 'home' | 'finder' | 'compare' | 'knowledge' | 'tension' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
+type View = 'home' | 'finder' | 'compare' | 'knowledge' | 'workshop' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
 
 /** The string shown on a real string page (…/strings/<id>/), or from an old "#string/<id>" link. */
 function getStringIdFromLocation(): string {
@@ -64,7 +64,7 @@ function getPageTitle(hash: string): string {
   if (clean === 'finder') return 'Find Your String — Smash Lab'
   if (clean === 'compare') return 'Compare Strings — Smash Lab'
   if (clean === 'knowledge' || clean === 'knowledge-contact') return 'String knowledge — Smash Lab'
-  if (clean === 'tension') return 'Tension picker — Smash Lab'
+  if (clean === 'workshop' || clean === 'tension') return 'Setup workshop — Smash Lab'
   if (clean === 'finder-detailed') return 'Detailed string quiz — Smash Lab'
   if (clean === 'faq') return 'FAQ — Smash Lab'
   if (clean === 'contact') return 'Contact — Smash Lab'
@@ -100,7 +100,9 @@ function viewFromHash(): View {
   if (route.kind === 'stringsIndex' && !hash) return 'compare'
   // #finder-detailed opens the same quiz view in detailed mode (8 rounds instead of 4)
   if (hash === 'finder-detailed') return 'finder'
-  if (hash === 'finder' || hash === 'compare' || hash === 'knowledge' || hash === 'tension' || hash === 'impressum' || hash === 'datenschutz') return hash
+  // the Tension Picker became part of the Setup Workshop — old links keep working
+  if (hash === 'tension') return 'workshop'
+  if (hash === 'finder' || hash === 'compare' || hash === 'knowledge' || hash === 'workshop' || hash === 'impressum' || hash === 'datenschutz') return hash
   // v2: FAQ and contact live on the Knowledge page (old links keep working).
   if (hash === 'faq' || hash === 'contact' || hash === 'knowledge-contact') return 'knowledge'
   if (hash.startsWith('result/')) return 'result'
@@ -229,7 +231,7 @@ function App() {
 
         {view === 'knowledge' && <StringKnowledge />}
 
-        {view === 'tension' && <TensionPicker pool={liveStrings} />}
+        {view === 'workshop' && <Workshop pool={liveStrings} specialistProfiles={specialistProfiles} />}
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">

@@ -616,3 +616,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .bench-strings path { animation: none; }
 }
+
+/* ------------------------------------------------------------- setup workshop racket
+ * components/WorkshopRacket.tsx — transforms only (smooth in every browser), stepped like stop-motion. */
+.ws-sweet { transform-box: view-box; transform-origin: 70px 76px; transition: transform 420ms steps(4, end); }
+.ws-pin { transition: transform 420ms steps(4, end); }
+.ws-frame { transition: stroke-width 320ms steps(3, end); }
+.ws-fade { transition: opacity 320ms steps(3, end); }
+.ws-grip { transform-box: fill-box; transform-origin: center; transition: transform 320ms steps(3, end); }
+@keyframes ws-restring {
+  from { stroke-dasharray: 140; stroke-dashoffset: 140; }
+  to { stroke-dasharray: 140; stroke-dashoffset: 0; }
+}
+.ws-restring path { animation: ws-restring 560ms steps(5, end) both; }
+.ws-restring path:nth-child(n + 9) { animation-delay: 200ms; }
+@media (prefers-reduced-motion: reduce) {
+  .ws-sweet, .ws-pin, .ws-frame, .ws-fade, .ws-grip { transition: none; }
+  .ws-restring path { animation: none; }
+}

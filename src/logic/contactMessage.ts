@@ -15,7 +15,10 @@ import { formatKg } from './units.js'
 export interface EnquiryDetails {
   stringName: string
   tensionKg: number
-  matchPercent: number
+  /** Absent for setups built by hand in the workshop (there is no ranking score then). */
+  matchPercent?: number
+  /** Racket balance chosen in the workshop, e.g. "head-heavy". */
+  racketBalance?: string
   dataSourceLabel: string
   /** Shown only when the caller opts in (off by default, to match the reference message shape) — e.g. "10.0 kg (easier power) / 11.0 kg (control)". */
   alternativeTensions?: string
@@ -39,7 +42,7 @@ export interface EnquiryDetails {
  * what still needs an answer.
  */
 export function buildResultSummaryText(details: EnquiryDetails): string {
-  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note, rank, mainsKg, crossKg, racketMaxKg } = details
+  const { stringName, tensionKg, matchPercent, dataSourceLabel, alternativeTensions, racketModel, note, rank, mainsKg, crossKg, racketMaxKg, racketBalance } = details
   const lines = [
     `Hello ${CONTACT.name},`,
     // Says so when the player picked one of their other matches instead of the recommendation.
@@ -54,7 +57,9 @@ export function buildResultSummaryText(details: EnquiryDetails): string {
     racketMaxKg != null ? `Racket max: ${racketMaxKg.toFixed(1)} kg / ${Math.round(racketMaxKg / 0.45359237)} lbs (checked)` : 'Racket max: NOT CHECKED — please check before stringing',
   ]
   if (alternativeTensions) lines.push(`Alternative tensions: ${alternativeTensions}`)
-  lines.push(`Model score: ${matchPercent} (a ranking score, not a probability)`, `Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, `My question: ${note ?? ''}`)
+  if (racketBalance) lines.push(`Racket balance: ${racketBalance}`)
+  if (matchPercent != null) lines.push(`Model score: ${matchPercent} (a ranking score, not a probability)`)
+  lines.push(`Data source: ${dataSourceLabel}`, '', `Racket: ${racketModel ?? ''}`, `My question: ${note ?? ''}`)
   return lines.join('\n')
 }
 

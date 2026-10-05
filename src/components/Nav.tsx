@@ -23,8 +23,8 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           <button type="button" onClick={onOpenCompare} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50 cursor-pointer">
             Strings
           </button>
-          <a href={`${import.meta.env.BASE_URL}#tension`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
-            Tension
+          <a href={`${import.meta.env.BASE_URL}#workshop`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
+            Workshop
           </a>
           <a href={`${import.meta.env.BASE_URL}#knowledge`} className="focus-ring hover:text-court-800 dark:hover:text-shuttle-50">
             Knowledge
@@ -69,7 +69,7 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           >
             Strings
           </button>
-          <a href={`${import.meta.env.BASE_URL}#tension`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
+          <a href={`${import.meta.env.BASE_URL}#workshop`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             Tension
           </a>
           <a href={`${import.meta.env.BASE_URL}#knowledge`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">

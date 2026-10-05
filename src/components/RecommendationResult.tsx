@@ -10,6 +10,7 @@ import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/re
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import ImageSwiper from './ImageSwiper'
+import { writeWorkshopPreset } from '../logic/workshopPreset'
 import { HANDS_ON_PROPERTY_COUNT, provenanceOf } from '../logic/provenance'
 import { CONTACT } from '../data/contact'
 import { hasScoringAnswer } from '../logic/inTheRunning'
@@ -290,6 +291,22 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
           </button>
         </div>
       </section>
+
+      {/* into the Setup Workshop with this exact build, to play around with racket, string and tension */}
+      <button
+        type="button"
+        onClick={() => {
+          writeWorkshopPreset(typeof window === 'undefined' ? null : window.sessionStorage, { stringId: featured.string.id, tensionKg: tension.recommendedKg, racketMaxKg })
+          window.location.hash = 'workshop'
+        }}
+        className="paper press focus-ring mt-4 w-full px-4 py-3 text-left flex items-center justify-between gap-3 cursor-pointer"
+      >
+        <span>
+          <span className="block font-semibold text-ink-900 dark:text-shuttle-50">Tweak this setup in the Workshop</span>
+          <span className="block text-sm text-ink-700/80 dark:text-shuttle-100/80">Try another racket balance, string or tension and see what changes.</span>
+        </span>
+        <span aria-hidden="true" className="text-xl text-shuttle-700 dark:text-shuttle-400">→</span>
+      </button>
 
       {/* 2 — the alternatives, one line each, one tap to show them at the top */}
       <section aria-labelledby="alternatives-heading" className="mt-6">
