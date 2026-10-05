@@ -81,7 +81,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
           value={input.category}
           onChange={(e) => set('category', e.target.value)}
           disabled={saving}
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         >
           <option value="">Choose…</option>
           {CATEGORY_OPTIONS.map((c) => (
@@ -176,7 +176,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
             disabled={saving}
             rows={3}
             placeholder="optional"
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
         </label>
       </details>
@@ -242,7 +242,7 @@ export default function CatalogStringForm({ mode, initial, context, saving, save
             onChange={(e) => set('tensionNotes', e.target.value)}
             disabled={saving}
             placeholder="optional"
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
         </label>
       </details>
@@ -313,7 +313,7 @@ function TextField({ label, value, onChange, error, disabled, placeholder, mono,
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder}
-        className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
+        className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
       />
       {hint && !error && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</p>}
       {error && <FieldError message={error} />}
@@ -344,7 +344,7 @@ function NumberField({ label, value, onChange, error, disabled, placeholder, ste
         disabled={disabled}
         placeholder={placeholder}
         step={step}
-        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
       {error && <FieldError message={error} />}
     </label>
@@ -381,7 +381,7 @@ function RatingSlider({ label, value, onChange, error, disabled, nullable, lowLa
             disabled={disabled}
             placeholder={nullable ? 'unknown' : undefined}
             aria-label={`${label} (exact value)`}
-            className="focus-ring w-16 rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-2 py-1 text-sm text-center text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-16 rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-2 py-1 text-sm text-center text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
           {nullable && (
             <label className="flex items-center gap-1 text-xs text-ink-700/70 dark:text-shuttle-100/60 cursor-pointer">

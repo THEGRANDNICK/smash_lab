@@ -123,7 +123,7 @@ function TextField({ label, value, onChange, error, disabled, placeholder, mono,
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder}
-        className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
+        className={`focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60 ${mono ? 'font-mono text-xs' : ''}`}
       />
       {hint && !error && <p className="text-xs text-ink-700/70 dark:text-shuttle-100/50 mt-1">{hint}</p>}
       {error && <FieldError message={error} />}

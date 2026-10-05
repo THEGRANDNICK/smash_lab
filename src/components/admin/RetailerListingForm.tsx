@@ -54,7 +54,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
           value={input.stringId}
           onChange={(e) => set('stringId', e.target.value)}
           disabled={saving || editingId != null}
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         >
           <option value="">Choose…</option>
           {catalogOptions.map((c) => (
@@ -74,7 +74,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             value={input.retailerId}
             onChange={(e) => set('retailerId', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             <option value="">Choose…</option>
             {retailerOptionsFor(context.retailers, context.originalRetailerId).map((r) => (
@@ -99,7 +99,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             value={input.currency}
             onChange={(e) => set('currency', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             {CURRENCY_OPTIONS.map((c) => (
               <option key={c} value={c}>
@@ -115,7 +115,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             value={input.availabilityStatus}
             onChange={(e) => set('availabilityStatus', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             {AVAILABILITY_OPTIONS.map((a) => (
               <option key={a} value={a}>
@@ -131,7 +131,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             value={input.packageType}
             onChange={(e) => set('packageType', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             {PACKAGE_TYPE_OPTIONS.map((p) => (
               <option key={p} value={p}>
@@ -164,7 +164,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
             value={input.lastCheckedAt}
             onChange={(e) => set('lastCheckedAt', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
           {errors.lastCheckedAt && <FieldError message={errors.lastCheckedAt} />}
         </label>
@@ -188,7 +188,7 @@ export default function RetailerListingForm({ initial, context, editingId, catal
           onChange={(e) => set('notes', e.target.value)}
           disabled={saving}
           rows={2}
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         />
       </label>
 
@@ -265,7 +265,7 @@ function TextField({ label, value, onChange, error, disabled, placeholder }: Tex
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder}
-        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
       {error && <FieldError message={error} />}
     </label>
@@ -292,7 +292,7 @@ function NumberField({ label, value, onChange, error, disabled, placeholder }: N
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         placeholder={placeholder}
-        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+        className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
       />
       {error && <FieldError message={error} />}
     </label>

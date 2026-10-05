@@ -7,7 +7,7 @@ export default function FAQ() {
   return (
     <section id="faq" className="py-20 px-4 sm:px-6 max-w-3xl mx-auto scroll-mt-20">
       <div className="text-center mb-10">
-        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold text-sm tracking-wide uppercase">FAQ</p>
+        <p className="tape">FAQ</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Good questions</h2>
       </div>
 
@@ -19,7 +19,7 @@ export default function FAQ() {
               if (item.group !== group) return null
               const open = openIndex === i
               return (
-                <div key={item.q} className="rounded-xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 overflow-hidden">
+                <div key={item.q} className="rounded-xl border-2 border-court-900/10 dark:border-white/10 card-stock overflow-hidden">
                   <button
                     type="button"
                     onClick={() => setOpenIndex(open ? null : i)}

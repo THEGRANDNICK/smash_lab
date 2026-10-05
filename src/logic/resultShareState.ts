@@ -28,6 +28,8 @@ const LIST_SEPARATOR = ','
 export interface ResultShareState {
   answers: QuizAnswers
   dataSource: DataSource
+  /** The string the sender had chosen to show, when it wasn't the top pick. */
+  featuredId?: string
 }
 
 // Fixed field order — do not reorder existing entries in a released
@@ -48,6 +50,8 @@ const FIELD_ORDER = [
   'maxTensionKnown',
   'maxTensionValue',
   'dataSource',
+  // appended in v2: the string the player chose to show (an alternative instead of the top pick)
+  'featured',
 ] as const
 
 const MAX_TENSION_KG = 100
@@ -70,7 +74,7 @@ function decodeList(raw: string): string[] | undefined {
   return raw === '' ? undefined : raw.split(LIST_SEPARATOR)
 }
 
-export function encodeResultShareState(answers: QuizAnswers, dataSource: DataSource): string {
+export function encodeResultShareState(answers: QuizAnswers, dataSource: DataSource, featuredId?: string): string {
   const fields: Record<(typeof FIELD_ORDER)[number], string> = {
     level: answers.level ?? '',
     playStyles: encodeList(answers.playStyles),
@@ -86,6 +90,7 @@ export function encodeResultShareState(answers: QuizAnswers, dataSource: DataSou
     maxTensionKnown: answers.maxTensionKnown ?? '',
     maxTensionValue: answers.maxTensionValue != null ? String(answers.maxTensionValue) : '',
     dataSource,
+    featured: featuredId && /^[a-z0-9-]{1,60}$/.test(featuredId) ? featuredId : '',
   }
   const body = FIELD_ORDER.map((key) => fields[key]).join(FIELD_SEPARATOR)
   return `${FORMAT_VERSION}:${encodeURIComponent(body)}`
@@ -105,6 +110,8 @@ export function decodeResultShareState(encoded: string): ResultShareState | null
   }
 
   const parts = body.split(FIELD_SEPARATOR)
+  // links made before the 'featured' field existed have one field less — still valid
+  if (parts.length === FIELD_ORDER.length - 1) parts.push('')
   if (parts.length !== FIELD_ORDER.length) return null
   const raw: Record<(typeof FIELD_ORDER)[number], string> = {} as never
   FIELD_ORDER.forEach((key, i) => {
@@ -153,5 +160,6 @@ export function decodeResultShareState(encoded: string): ResultShareState | null
     maxTensionValue: raw.maxTensionValue !== '' ? Number(raw.maxTensionValue) : undefined,
   }
 
-  return { answers, dataSource: raw.dataSource }
+  const featuredId = /^[a-z0-9-]{1,60}$/.test(raw.featured) ? raw.featured : undefined
+  return { answers, dataSource: raw.dataSource, ...(featuredId ? { featuredId } : {}) }
 }

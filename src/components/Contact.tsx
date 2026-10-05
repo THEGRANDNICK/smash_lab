@@ -6,14 +6,14 @@ export default function Contact() {
   return (
     <section id="contact" className="py-20 px-4 sm:px-6 max-w-3xl mx-auto scroll-mt-20">
       <div className="text-center mb-10">
-        <p className="text-shuttle-700 dark:text-shuttle-400 font-semibold tracking-wide uppercase">Get in touch</p>
+        <p className="tape">Get in touch</p>
         <h2 className="font-display text-3xl sm:text-4xl font-bold mt-2 text-ink-900 dark:text-shuttle-50">Say hello</h2>
         <p className="text-ink-700/70 dark:text-shuttle-100/70 mt-3">
           Got a question about a string or your setup? Message me — I usually reply within a day.
         </p>
       </div>
 
-      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-8">
+      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <ContactRow emoji="👤" label="Name" value={CONTACT.name} />
           <ContactRow emoji="📍" label="Location" value={CONTACT.location} />

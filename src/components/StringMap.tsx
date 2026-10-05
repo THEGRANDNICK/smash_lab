@@ -68,8 +68,8 @@ function describePosition(holdRepulsion: number, softHard: number): string {
  */
 export default function StringMap({ items, specialistProfiles, useSpecialistData = true, rankedIds = [], selectedIds = [], selectionFull = false, onToggleSelect, className = '' }: StringMapProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
-  // On phones the map renders ~330px wide and its labels get very small, so the readable list starts open there.
-  const [showList, setShowList] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 480px)').matches)
+  // Closed by default everywhere — the map itself is the summary; the list is one tap away.
+  const [showList, setShowList] = useState(false)
 
   const points = useMemo(
     () =>

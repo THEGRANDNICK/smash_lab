@@ -303,15 +303,82 @@ function gaugeBeginnerFriendliness(item: StringItem): number | undefined {
   return Math.round(Math.min(4, Math.max(1.5, 1.5 + t * 2.5)) * 4) / 4
 }
 
-/** Neutral fallback for specialist dimensions nobody has hands-on data for: "average, unproven" instead of "ignored". */
-const NEUTRAL_SPECIALIST_VALUE = 3
-const NEUTRAL_CONFIDENCE: Confidence = 'low'
+/*
+ * Missing hands-on knowledge (v2, review Oct 2026). Three ways were measured
+ * (scripts/analysis/unratedHandling.ts):
+ *   - 'midpoint' (DEFAULT): an unrated property counts as a cautious 3/5 with low trust;
+ *   - 'estimate': estimated from the manufacturer counterpart (mapped relatively) or the rated average;
+ *   - 'estimateWithCoverage': the estimate, plus the hands-on layer only decides as much as is rated.
+ * Hands-on ratings systematically correct the (inflated) packet ratings DOWNWARDS, so the less an
+ * unrated property is held back, the more often strings nobody has tested win: 0.3% of all results
+ * with 'midpoint', 11.5% with 'estimate', 28.9% with 'estimateWithCoverage'. A hands-on guide
+ * should recommend what it can vouch for, so unverified strings are ranked cautiously — and the
+ * result page says so when a pick rests on little hands-on data.
+ */
+export type UnratedHandsOnMode = 'midpoint' | 'estimate' | 'estimateWithCoverage'
+let unratedHandsOn: UnratedHandsOnMode = 'midpoint'
+/** For the analysis scripts only — the site always uses the default. */
+export function setUnratedHandsOnMode(mode: UnratedHandsOnMode): void {
+  unratedHandsOn = mode
+}
+const ESTIMATE_CONFIDENCE: Confidence = 'low'
+const SCALE_MIDPOINT = 3
+/** Hands-on properties with a direct manufacturer counterpart. */
+const MANUFACTURER_COUNTERPART: Partial<Record<SpecialistDimensionKey, Dimension>> = {
+  easyPower: 'repulsion',
+  controlPrecision: 'control',
+  normalWearDurability: 'durability',
+  comfort: 'shockAbsorption',
+}
+
+interface RatedStats {
+  mean: number
+  range: number
+}
+const ratedStatsCache = new WeakMap<Record<string, StringSpecialistProfile>, Partial<Record<SpecialistDimensionKey, RatedStats>>>()
+function ratedStats(profiles: Record<string, StringSpecialistProfile>, key: SpecialistDimensionKey): RatedStats | undefined {
+  let all = ratedStatsCache.get(profiles)
+  if (!all) {
+    all = {}
+    for (const k of ALL_SPECIALIST_KEYS) {
+      const vals = Object.values(profiles).map((p) => p.dimensions[k]).filter((v): v is number => typeof v === 'number')
+      if (vals.length) all[k] = { mean: vals.reduce((x, y) => x + y, 0) / vals.length, range: Math.max(...vals) - Math.min(...vals) }
+    }
+    ratedStatsCache.set(profiles, all)
+  }
+  return all[key]
+}
+
+/**
+ * Best estimate for an unrated hands-on property (see the note above). Manufacturer ratings are
+ * inflated (mostly 8–11 of 11), so they are mapped RELATIVELY: a string that sits X% of the
+ * catalog's spread above the catalog average on the packet gets an estimate X% of the hands-on
+ * spread above the hands-on average — never the raw packet number squeezed onto 1–5.
+ */
+export function estimateUnratedDimension(
+  item: StringItem,
+  key: SpecialistDimensionKey,
+  profiles: Record<string, StringSpecialistProfile>,
+  poolStats: PoolStats = DEFAULT_POOL_STATS,
+): number {
+  if (unratedHandsOn === 'midpoint') return SCALE_MIDPOINT
+  const rated = ratedStats(profiles, key)
+  if (!rated) return SCALE_MIDPOINT
+  const makerDim = MANUFACTURER_COUNTERPART[key]
+  const maker = makerDim ? item[makerDim] : null
+  if (makerDim && typeof maker === 'number') {
+    const relative = (maker - poolStats[makerDim].mean) / poolStats[makerDim].range
+    return Math.min(5, Math.max(1, rated.mean + relative * rated.range))
+  }
+  return rated.mean
+}
 
 function scoreSpecialist(
   item: StringItem,
   specialistWeights: SpecialistWeightVector,
   totalWeightBudget: number,
   specialistProfiles: Record<string, StringSpecialistProfile>,
+  poolStats: PoolStats = DEFAULT_POOL_STATS,
 ): SpecialistScoreResult | undefined {
   if (totalWeightBudget <= 0.0001) return undefined
   // Manufacturer-only mode (empty profile map): no specialist layer at all.
@@ -320,6 +387,7 @@ function scoreSpecialist(
 
   let weightedValue = 0
   let trustWeighted = 0
+  let coveredWeight = 0
   const known: [SpecialistDimensionKey, number][] = []
   for (const key of ALL_SPECIALIST_KEYS) {
     const w = specialistWeights[key]
@@ -329,14 +397,16 @@ function scoreSpecialist(
     if (v != null && profile) {
       weightedValue += w * v
       trustWeighted += w * CONFIDENCE_TRUST[dimensionConfidence(profile, key)]
+      coveredWeight += w
       known.push([key, v])
     } else if (gaugeFallback != null) {
       weightedValue += w * gaugeFallback
       trustWeighted += w * CONFIDENCE_TRUST[GAUGE_BEGINNER_CONFIDENCE]
+      coveredWeight += w
     } else {
-      // Missing knowledge is neither a bonus nor a free pass: score it as average, with low trust.
-      weightedValue += w * NEUTRAL_SPECIALIST_VALUE
-      trustWeighted += w * CONFIDENCE_TRUST[NEUTRAL_CONFIDENCE]
+      // Not rated: estimated from what we know (manufacturer counterpart or rated average), low trust.
+      weightedValue += w * estimateUnratedDimension(item, key, specialistProfiles, poolStats)
+      trustWeighted += w * CONFIDENCE_TRUST[ESTIMATE_CONFIDENCE]
     }
   }
 
@@ -344,8 +414,34 @@ function scoreSpecialist(
   const confidenceMultiplier = trustWeighted / totalWeightBudget
   const topDims = known.sort((a, b) => specialistWeights[b[0]] * b[1] - specialistWeights[a[0]] * a[1]).map(([k]) => k).slice(0, 2)
 
-  // relevance is always 1 now: every string is judged on everything the player asked for.
-  return { percent, relevance: 1, confidenceMultiplier, topDims }
+  // With coverage: the hands-on layer may only decide as much as is actually rated (no ratings at
+  // all → manufacturer data only). Otherwise every string is judged on everything asked for.
+  const relevance = unratedHandsOn === 'estimateWithCoverage' ? coveredWeight / totalWeightBudget : 1
+  return { percent, relevance, confidenceMultiplier, topDims }
+}
+
+/**
+ * Beginners: strings thinner than 0.68 mm move down the ranking (Smash Lab v2).
+ * Source: Badminton Insight (Aug 2026) — beginners around 0.70 mm for durability and forgiveness;
+ * 0.68 mm and thinner for high-intermediate/advanced players. A soft guardrail, not a filter: a
+ * beginner who really wants a thin string still sees it, just not as the default pick.
+ */
+export const BEGINNER_MIN_GAUGE = 0.68
+export const BEGINNER_THIN_STRING_FACTOR = 0.85
+
+function gaugeOf(item: StringItem): number | undefined {
+  if (item.isHybrid) {
+    const sides = [item.mainString?.gauge, item.crossString?.gauge].filter((g): g is number => typeof g === 'number')
+    return sides.length ? Math.min(...sides) : undefined
+  }
+  return item.tension?.gauge
+}
+
+export function applyBeginnerGaugeGuardrail(scored: ScoredString, answers: QuizAnswers): ScoredString {
+  if (answers.level !== 'beginner') return scored
+  const gauge = gaugeOf(scored.string)
+  if (gauge == null || gauge >= BEGINNER_MIN_GAUGE) return scored
+  return { ...scored, matchPercent: Math.round(scored.matchPercent * BEGINNER_THIN_STRING_FACTOR) }
 }
 
 /** Scores a single string by blending manufacturer data with Smash Lab specialist knowledge. `specialistProfiles` defaults to the local data file — pass the live, Supabase-merged map from useSpecialistProfiles() to source it from there instead; the scoring math itself never changes. */
@@ -359,7 +455,7 @@ export function scoreString(
 ): ScoredString {
   const hasSpecialistProfile = specialistProfiles[item.id] != null
   const manufacturer = scoreManufacturer(item, profile, poolStats, hasSpecialistProfile)
-  const specialist = scoreSpecialist(item, specialistWeights, specialistBudget, specialistProfiles)
+  const specialist = scoreSpecialist(item, specialistWeights, specialistBudget, specialistProfiles, poolStats)
 
   let finalPercent = manufacturer.percent
   let influence = 0
@@ -530,7 +626,7 @@ export function recommendStrings(
   const poolStats = computePoolStats(pool)
   const dominantArchetype = detectDominantArchetype(profile, specialistWeights, answers)
 
-  const scored = pool.map((item) => scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles, poolStats))
+  const scored = pool.map((item) => applyBeginnerGaugeGuardrail(scoreString(item, profile, specialistWeights, specialistBudget, specialistProfiles, poolStats), answers))
 
   // Ranked purely on how well each string fits this player — stock never
   // enters scoring or eligibility. We can order in strings we don't

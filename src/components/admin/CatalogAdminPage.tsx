@@ -110,12 +110,12 @@ export default function CatalogAdminPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search brand, name, or ID…"
-          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         />
         <select
           value={brandFilter}
           onChange={(e) => setBrandFilter(e.target.value)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All brands</option>
           {brands.map((b) => (
@@ -127,7 +127,7 @@ export default function CatalogAdminPage() {
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50 capitalize"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50 capitalize"
         >
           <option value="all">All categories</option>
           <option value="repulsion">Repulsion</option>
@@ -137,7 +137,7 @@ export default function CatalogAdminPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="brand">Sort: Brand</option>
           <option value="name">Sort: Name</option>
@@ -156,7 +156,7 @@ export default function CatalogAdminPage() {
       </div>
 
       {creating && (
-        <div className="rounded-2xl border-2 border-shuttle-500/40 bg-white/90 dark:bg-white/5 p-5">
+        <div className="rounded-2xl border-2 border-shuttle-500/40 card-stock p-5">
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">New string</h3>
           <CatalogStringForm
             mode="create"

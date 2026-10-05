@@ -17,6 +17,10 @@ interface StringingEnquiryProps {
   dataSource: DataSource
   /** The string's position in the player's ranking (1 = the recommendation). */
   rank?: number
+  /** Mains/crosses and the racket maximum (if checked), carried into every message. */
+  mainsKg?: number
+  crossKg?: number
+  racketMaxKg?: number
 }
 
 /**
@@ -28,7 +32,7 @@ interface StringingEnquiryProps {
  * message body at the moment the player taps Send/Copy, never stored or
  * transmitted anywhere before that.
  */
-export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource, rank }: StringingEnquiryProps) {
+export default function StringingEnquiry({ stringBrand, stringName, tensionKg, matchPercent, dataSourceLabel, answers, dataSource, rank, mainsKg, crossKg, racketMaxKg }: StringingEnquiryProps) {
   const [racketModel, setRacketModel] = useState('')
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState(false)
@@ -36,7 +40,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
   const [saved, setSaved] = useState(false)
 
   const fullName = `${stringBrand} ${stringName}`
-  const details = { stringName: fullName, tensionKg, matchPercent, dataSourceLabel, racketModel: racketModel.trim() || undefined, note: note.trim() || undefined, rank }
+  const details = { stringName: fullName, tensionKg, mainsKg, crossKg, racketMaxKg, matchPercent, dataSourceLabel, racketModel: racketModel.trim() || undefined, note: note.trim() || undefined, rank }
   const whatsAppUrl = buildEnquiryWhatsAppUrl(details)
   const mailtoUrl = buildEnquiryMailto(details)
 
@@ -97,7 +101,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
             value={racketModel}
             onChange={(e) => setRacketModel(e.target.value)}
             placeholder="e.g. Yonex Astrox 88D"
-            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
           />
         </label>
         <label className="block">
@@ -107,7 +111,7 @@ export default function StringingEnquiry({ stringBrand, stringName, tensionKg, m
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="What would you like to know?"
-            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+            className="focus-ring mt-1 w-full rounded-xl border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
           />
         </label>
       </div>

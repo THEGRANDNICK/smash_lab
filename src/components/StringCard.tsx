@@ -12,7 +12,6 @@ import StatBars from './StatBars'
 import RadarChart from './RadarChart'
 import SpecialistPanel from './SpecialistPanel'
 import SpecialistHighlights from './SpecialistHighlights'
-import StringPrice from './StringPrice'
 import PurchaseOptions from './PurchaseOptions'
 
 const CATEGORY_LABEL: Record<StringItem['category'], string> = {
@@ -48,7 +47,7 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
 
   return (
     <div
-      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 bg-white/90 dark:bg-white/5 transition-[box-shadow,transform] duration-200 ${
+      className={`rounded-2xl border-2 p-5 flex flex-col gap-4 card-stock transition-[box-shadow,transform] duration-200 ${
         compareSelected
           ? 'border-shuttle-500 ring-2 ring-shuttle-500/30'
           : orderable
@@ -155,10 +154,6 @@ export default function StringCard({ item, view = 'bars', compareSelected = fals
           View on {item.brand} ↗
         </a>
       )}
-
-      <div className="mt-auto pt-3">
-        <StringPrice stringCost={item.stringCost} />
-      </div>
 
       <div className="pt-3 border-t border-court-900/10 dark:border-white/10 flex items-center justify-end gap-2">
         {onToggleCompare && (

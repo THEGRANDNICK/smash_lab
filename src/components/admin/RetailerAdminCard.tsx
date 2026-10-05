@@ -63,7 +63,7 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
 
   if (state === 'editing' || (state === 'saving' && error == null)) {
     return (
-      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
         <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">{row.name}</h3>
         <RetailerForm
           initial={retailerFormInputFromRow(row)}
@@ -82,7 +82,7 @@ export default function RetailerAdminCard({ row, context, onSaved, onDeleted }: 
   }
 
   return (
-    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-5">
+    <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           {row.logoUrl && !logoFailed && (

@@ -5,13 +5,17 @@
 
 import {
   LEVEL_BASE_RANGES,
+  BEGINNER_MAX_TENSION,
+  GAUGE_TENSION_ADJUSTMENTS,
+  MISHIT_TENSION_ADJUSTMENT,
   GOAL_ADJUSTMENTS,
   POWER_GENERATION_TENSION_ADJUSTMENTS,
   CURRENT_TENSION_FEEL_ADJUSTMENTS,
   UNSURE_BLEND_TOWARD_BASELINE,
   ABSOLUTE_MIN_TENSION,
   ABSOLUTE_MAX_TENSION,
-  RACKET_MAX_SAFETY_MARGIN,
+  CROSS_OFFSET_KG,
+  DEFAULT_RACKET_MAX_KG,
   TENSION_ROUNDING_INCREMENT,
   COMPARISON_STEP,
 } from '../config/tensionRules.js'
@@ -23,7 +27,12 @@ export interface TensionRecommendation {
   lowerKg: number
   /** null when one step firmer would exceed the racket's stated maximum — the UI then shows that option as unavailable. */
   higherKg: number | null
+  /** Mains and crosses: the stated tension is their average (crosses CROSS_OFFSET_KG higher). */
+  mainsKg: number
+  crossKg: number
   wasCappedByRacketMax: boolean
+  /** Capped by the typical Yonex maximum because the player didn't give their racket's. */
+  cappedByTypicalRacketMax: boolean
   racketMaxKg?: number
   explanation: string
 }
@@ -35,6 +44,16 @@ function round(kg: number): number {
 /** Rounds DOWN to the tension increment — used whenever a value must never end up above a racket maximum. */
 function roundDown(kg: number): number {
   return Math.floor(kg / TENSION_ROUNDING_INCREMENT + 1e-9) * TENSION_ROUNDING_INCREMENT
+}
+
+/** The string's gauge for tension purposes; for hybrids the thinner side. */
+function stringGauge(string: StringItem | undefined): number | undefined {
+  if (!string) return undefined
+  if (string.isHybrid) {
+    const sides = [string.mainString?.gauge, string.crossString?.gauge].filter((g): g is number => typeof g === 'number')
+    return sides.length ? Math.min(...sides) : undefined
+  }
+  return string.tension?.gauge
 }
 
 function clamp(kg: number, min: number, max: number): number {
@@ -91,10 +110,35 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
         : ' Since you could use some help generating power, we nudged it down slightly for extra forgiveness.'
   }
 
-  // Small, string-specific nudge (thinner/livelier strings can hold a hair more usable tension).
-  if (string?.tension?.tensionAdjustment) {
-    target += string.tension.tensionAdjustment
-    reasoning += ` ${string.name}'s construction allows a small additional adjustment.`
+  // Thinner strings a little lower (durability), thick strings unchanged — see GAUGE_TENSION_ADJUSTMENTS.
+  const gauge = stringGauge(string)
+  const gaugeRule = gauge == null ? undefined : GAUGE_TENSION_ADJUSTMENTS.find((rule) => gauge <= rule.maxGauge)
+  if (gaugeRule && gaugeRule.adjustKg !== 0) {
+    const before = target
+    target += gaugeRule.adjustKg
+    // Only say so when it actually changes the (rounded) number you'll see.
+    if (round(target) !== round(before)) reasoning += ` ${string!.name} is a thin string (${gauge} mm), so we went a little lower to help it last.`
+  }
+
+  // Strings breaking from mishits: lower tension forgives off-centre hits.
+  if (answers.restringReason === 'mishitBreakage') {
+    const before = target
+    target += MISHIT_TENSION_ADJUSTMENT
+    if (round(target) !== round(before)) reasoning += ' Because your strings often break from mishits, we went a little lower — it forgives off-centre hits.'
+  }
+
+  // The level's maximum is a real limit. The one exception: you already play a known tension, you're
+  // happy with it, AND you've checked your racket's maximum — then we don't push you below it.
+  const levelMax = Math.min(LEVEL_BASE_RANGES[level]?.max ?? ABSOLUTE_MAX_TENSION, level === 'beginner' ? BEGINNER_MAX_TENSION : Infinity)
+  const keepsProvenTension =
+    answers.currentTensionKnown === 'yes' &&
+    typeof answers.currentTensionValue === 'number' &&
+    answers.currentTensionFeel === 'aboutRight' &&
+    answers.maxTensionKnown === 'yes' &&
+    typeof answers.maxTensionValue === 'number'
+  if (!keepsProvenTension && target > levelMax) {
+    target = levelMax
+    reasoning += ` We kept it within the usual maximum for your level (${levelMax} kg).`
   }
 
   target = clamp(target, ABSOLUTE_MIN_TENSION, ABSOLUTE_MAX_TENSION)
@@ -103,41 +147,47 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
   if (string?.tension?.recommendedMax != null) target = Math.min(target, string.tension.recommendedMax)
 
   let wasCappedByRacketMax = false
+  let cappedByTypicalRacketMax = false
   const racketMaxKg = answers.maxTensionKnown === 'yes' ? answers.maxTensionValue : undefined
-
-  if (typeof racketMaxKg === 'number') {
-    const alreadyNearMax = knowsCurrent && (answers.currentTensionValue as number) >= racketMaxKg - RACKET_MAX_SAFETY_MARGIN
-    const cap = alreadyNearMax ? racketMaxKg : racketMaxKg - RACKET_MAX_SAFETY_MARGIN
-    if (target > cap) {
-      target = cap
-      wasCappedByRacketMax = true
-    }
+  // The crosses are strung CROSS_OFFSET_KG above the stated tension and must stay within the
+  // racket's maximum. Unknown maximum → what most Yonex rackets allow (DEFAULT_RACKET_MAX_KG).
+  const effectiveMaxKg = typeof racketMaxKg === 'number' ? racketMaxKg : DEFAULT_RACKET_MAX_KG
+  const statedCap = effectiveMaxKg - CROSS_OFFSET_KG
+  if (target > statedCap) {
+    target = statedCap
+    if (typeof racketMaxKg === 'number') wasCappedByRacketMax = true
+    else cappedByTypicalRacketMax = true
   }
 
   let recommendedKg = round(target)
-  // Rounding must never push the recommendation above the racket's maximum (e.g. 12.25 kg max would round up to 12.5).
-  if (typeof racketMaxKg === 'number' && recommendedKg > racketMaxKg) {
-    recommendedKg = roundDown(racketMaxKg)
-    wasCappedByRacketMax = true
+  // Rounding must never push the crosses above the maximum (e.g. a 12.25 kg cap would round up to 12.5).
+  if (recommendedKg > statedCap) {
+    recommendedKg = roundDown(statedCap)
+    if (typeof racketMaxKg === 'number') wasCappedByRacketMax = true
+    else cappedByTypicalRacketMax = true
   }
 
-  // The "firmer" comparison option obeys the racket maximum too — it used to be recommended + 0.5 kg unconditionally,
-  // which could show e.g. 12.5 kg for a racket rated to 12.25 kg (Arcsaber 11 Pro 4U, 27 lbs).
+  // The "firmer" comparison option obeys the same limit.
   let higherKg: number | null = round(recommendedKg + COMPARISON_STEP)
-  if (typeof racketMaxKg === 'number' && higherKg > racketMaxKg) {
-    const firmestAllowed = roundDown(racketMaxKg)
+  if (higherKg > statedCap) {
+    const firmestAllowed = roundDown(statedCap)
     higherKg = firmestAllowed > recommendedKg ? firmestAllowed : null
   }
 
   if (wasCappedByRacketMax) {
-    reasoning += ` We've kept this within your racket's maximum recommended tension of ${racketMaxKg} kg, with a safety margin.`
+    reasoning += ` We've kept this safely below your racket's maximum of ${racketMaxKg} kg.`
+  } else if (cappedByTypicalRacketMax) {
+    reasoning += ` Most Yonex rackets allow up to ${DEFAULT_RACKET_MAX_KG} kg, so we stopped at ${roundDown(statedCap)} kg to stay safely below it. If your racket allows more, add its maximum.`
   }
 
   return {
     recommendedKg,
     lowerKg: round(recommendedKg - COMPARISON_STEP),
     higherKg,
+    mainsKg: recommendedKg - CROSS_OFFSET_KG,
+    crossKg: recommendedKg + CROSS_OFFSET_KG,
     wasCappedByRacketMax,
+    cappedByTypicalRacketMax,
     racketMaxKg,
     explanation: reasoning,
   }

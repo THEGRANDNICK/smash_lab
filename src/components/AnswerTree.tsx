@@ -25,7 +25,7 @@ export default function AnswerTree({ answers, pool, specialistProfiles, featured
   const [showAll, setShowAll] = useState(false)
 
   return (
-    <section aria-labelledby="answer-tree-heading" className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6">
+    <section aria-labelledby="answer-tree-heading" className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="answer-tree-heading" className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">

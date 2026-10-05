@@ -77,7 +77,7 @@ const SAMPLE_ANSWERS: QuizAnswers[] = [
 
 const FIXTURES: { best: string; pct: number; cross?: string; spec: string }[] = [
   { best: 'yonex-bg80', pct: 89, cross: 'lining-no1', spec: 'yonex-aerobite' },
-  { best: 'yonex-skyarc', pct: 87, cross: 'lining-no1-boost', spec: 'yonex-exbolt-65' },
+  { best: 'yonex-skyarc', pct: 87, cross: undefined, spec: 'lining-no7' }, // v2: beginners are steered to ≥0.68 mm (video guidance)
   { best: 'yonex-bg80', pct: 91, cross: undefined, spec: 'yonex-nanogy-99' },
   { best: 'yonex-exbolt-63', pct: 82, cross: 'lining-no1-boost', spec: 'yonex-exbolt-68' },
 ]
@@ -250,11 +250,11 @@ test('buildAlternativeReasons never duplicates a reason', () => {
   assert.equal(new Set(reasons).size, reasons.length)
 })
 
-test('buildAlternativeReasons flags a lower price than the baseline', () => {
+test('buildAlternativeReasons never uses price as a reason (v2: no prices on the site)', () => {
   const cheaper: ScoredString = { string: { ...bg80, id: 'synthetic-cheap', stringCost: 5 }, matchPercent: 80, topDimensions: [], topSpecialistDims: [], specialistInfluence: 0 }
   const pricier: ScoredString = { string: { ...bg80, id: 'synthetic-pricy', stringCost: 20 }, matchPercent: 85, topDimensions: [], topSpecialistDims: [], specialistInfluence: 0 }
   const reasons = buildAlternativeReasons(cheaper, pricier, undefined, undefined)
-  assert.ok(reasons.includes('Lower price than the Best Match.'))
+  assert.ok(!reasons.some((r) => /price/i.test(r)))
 })
 
 test('buildAlternativeReasons flags in-stock vs the baseline being unavailable', () => {

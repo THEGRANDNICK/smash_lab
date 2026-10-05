@@ -132,12 +132,12 @@ export default function RetailerListingAdminPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search brand, string, or retailer…"
-          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring flex-1 min-w-[180px] rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-4 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         />
         <select
           value={brandFilter}
           onChange={(e) => setBrandFilter(e.target.value)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All brands</option>
           {brands.map((b) => (
@@ -149,7 +149,7 @@ export default function RetailerListingAdminPage() {
         <select
           value={retailerFilter}
           onChange={(e) => setRetailerFilter(e.target.value)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All retailers</option>
           {retailers.map((r) => (
@@ -161,7 +161,7 @@ export default function RetailerListingAdminPage() {
         <select
           value={retailerActiveFilter}
           onChange={(e) => setRetailerActiveFilter(e.target.value as RetailerActiveFilter)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">Active + inactive retailers</option>
           <option value="active">Active retailers only</option>
@@ -170,7 +170,7 @@ export default function RetailerListingAdminPage() {
         <select
           value={availabilityFilter}
           onChange={(e) => setAvailabilityFilter(e.target.value as 'all' | RetailerAvailabilityStatus)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All availability</option>
           {RETAILER_AVAILABILITY_STATUSES.map((a) => (
@@ -182,7 +182,7 @@ export default function RetailerListingAdminPage() {
         <select
           value={preferredFilter}
           onChange={(e) => setPreferredFilter(e.target.value as PreferredFilter)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="all">All listings</option>
           <option value="preferred">Preferred only</option>
@@ -191,7 +191,7 @@ export default function RetailerListingAdminPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
+          className="focus-ring rounded-full border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-sm text-ink-900 dark:text-shuttle-50"
         >
           <option value="string">Sort: String</option>
           <option value="retailer">Sort: Retailer</option>
@@ -211,7 +211,7 @@ export default function RetailerListingAdminPage() {
       </div>
 
       {creating && (
-        <div className="rounded-2xl border-2 border-shuttle-500/40 bg-white/90 dark:bg-white/5 p-5">
+        <div className="rounded-2xl border-2 border-shuttle-500/40 card-stock p-5">
           <h3 className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50 mb-4">New retailer listing</h3>
           <RetailerListingForm
             initial={emptyRetailerListingFormInput()}

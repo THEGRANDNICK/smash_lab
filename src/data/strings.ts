@@ -159,6 +159,8 @@ export const strings: StringItem[] = [
   },
   {
     id: 'yonex-nanogy-98',
+    // Gauge: manufacturer spec 0.66 mm / 22 GA (Yonex product listings, checked Oct 2026)
+    tension: { gauge: 0.66 },
     brand: 'Yonex',
     name: 'Nanogy 98',
     category: 'repulsion',
@@ -358,6 +360,8 @@ export const strings: StringItem[] = [
   },
   {
     id: 'yonex-nanogy-95',
+    // Gauge: manufacturer spec 0.69 mm / 22 GA (Yonex product listings, checked Oct 2026)
+    tension: { gauge: 0.69 },
     brand: 'Yonex',
     name: 'Nanogy 95',
     category: 'durability',
@@ -427,6 +431,8 @@ export const strings: StringItem[] = [
   },
   {
     id: 'lining-no1-boost',
+    // Gauge: 0.66 mm per retailer listing (single source, checked Oct 2026) — the original No.1 is 0.65 mm
+    tension: { gauge: 0.66 },
     brand: 'Li-Ning',
     name: 'No.1 Boost',
     category: 'repulsion',

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { QuizAnswers } from '../logic/types'
 import { getQuestion } from '../data/quizQuestions'
+import QuizIcon from './QuizIcon'
 import TensionInputStep from './TensionInputStep'
 
 interface TensionTunerProps {
@@ -18,7 +19,7 @@ export default function TensionTuner({ answers, onChange }: TensionTunerProps) {
   const alreadyTuned = answers.racketGoal != null || answers.currentTensionValue != null || answers.maxTensionValue != null
   const [open, setOpen] = useState(alreadyTuned)
   return (
-    <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-5 sm:p-6" aria-labelledby="tension-tuner-heading">
+    <section className="mt-6 rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-5 sm:p-6" aria-labelledby="tension-tuner-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="tension-tuner-heading" className="font-display text-lg font-bold text-ink-900 dark:text-shuttle-50">
@@ -46,7 +47,7 @@ export default function TensionTuner({ answers, onChange }: TensionTunerProps) {
  * maximum. Shared by the optional quiz step and the "Fine-tune your tension" panel on the results
  * page, so both always behave the same.
  */
-export function TensionFields({ answers, onChange, className = '' }: TensionTunerProps & { className?: string }) {
+export function TensionFields({ answers, onChange, className = '', showRacketMax = true }: TensionTunerProps & { className?: string; /** false where the racket maximum is asked elsewhere on the page */ showRacketMax?: boolean }) {
   const goal = getQuestion('racketGoal')
   const feel = getQuestion('currentTensionFeel')
 
@@ -62,7 +63,8 @@ export function TensionFields({ answers, onChange, className = '' }: TensionTune
           <div className="mt-2 flex flex-wrap gap-2">
             {goal.options.map((o) => (
               <Chip key={o.id} selected={answers.racketGoal === o.id} onClick={() => set({ racketGoal: answers.racketGoal === o.id ? undefined : o.id })}>
-                {o.emoji} {o.label}
+                <QuizIcon questionId="racketGoal" optionId={o.id} className="inline-block w-6 h-6 -my-1 mr-1 align-middle" fallback={o.emoji} />
+                {o.label}
               </Chip>
             ))}
           </div>
@@ -91,13 +93,15 @@ export function TensionFields({ answers, onChange, className = '' }: TensionTune
         )}
       </div>
 
-      <TensionInputStep
-        compact
-        title="Your racket's maximum tension"
-        subtitle="Usually printed on the racket's throat. We'll never recommend more."
-        valueKg={answers.maxTensionValue}
-        onChange={(kg) => set({ maxTensionValue: kg, maxTensionKnown: kg != null ? 'yes' : 'no' })}
-      />
+      {showRacketMax && (
+        <TensionInputStep
+          compact
+          title="Your racket's maximum tension"
+          subtitle="Usually printed on the racket's throat. We'll never recommend more."
+          valueKg={answers.maxTensionValue}
+          onChange={(kg) => set({ maxTensionValue: kg, maxTensionKnown: kg != null ? 'yes' : 'no' })}
+        />
+      )}
     </div>
   )
 }

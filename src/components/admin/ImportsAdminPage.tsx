@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { parseImagePackManifest, planImageImport, type ImagePackManifest, type PlannedSide, type PlannedString } from '../../logic/imagePack'
-import { buildProfileRow, parseResearchPack, planResearchMerge, takenFields, type ExistingProfile, type ProfilePlan, type ResearchPack } from '../../logic/researchPack'
+import { buildProfileRow, buildRestoreRow, parseResearchPack, planResearchMerge, takenFields, type ExistingProfile, type MergeMode, type ProfilePlan, type ResearchPack } from '../../logic/researchPack'
 import {
   fetchCatalogImageState,
   fetchExistingProfiles,
@@ -320,6 +320,7 @@ const DIMENSION_LABEL = Object.fromEntries(DIMENSION_OPTIONS.map((d) => [d.key, 
 interface LoadedResearch {
   pack: ResearchPack
   existing: Record<string, ExistingProfile>
+  catalogIds: Set<string>
   conflicts: Record<string, string[]>
 }
 
@@ -329,6 +330,7 @@ function ResearchImportPanel({ blocked }: { blocked: boolean }) {
   const [data, setData] = useState<LoadedResearch | null>(null)
   const [plans, setPlans] = useState<ProfilePlan[]>([])
   const [onlyChanges, setOnlyChanges] = useState(true)
+  const [mode, setMode] = useState<MergeMode>('fillGaps')
   const [progress, setProgress] = useState<string | null>(null)
   const [log, setLog] = useState<string[]>([])
 
@@ -359,13 +361,35 @@ function ResearchImportPanel({ blocked }: { blocked: boolean }) {
       const conflicts: Record<string, string[]> = {}
       const list = (conflictsJson as { conflicts?: { stringId?: string; local?: string; external?: string; decision?: string }[] } | undefined)?.conflicts ?? []
       for (const c of list) if (c.stringId) (conflicts[c.stringId] ??= []).push(`Yours: ${c.local ?? '—'} · Research: ${c.external ?? '—'} · ${c.decision ?? ''}`)
-      setData({ pack: parsed.value, existing: existing.data, conflicts })
-      setPlans(planResearchMerge(parsed.value, new Set(catalog.data.map((c) => c.id)), existing.data))
+      const catalogIds = new Set(catalog.data.map((c) => c.id))
+      setData({ pack: parsed.value, existing: existing.data, catalogIds, conflicts })
+      setPlans(planResearchMerge(parsed.value, catalogIds, existing.data, mode))
     } catch (err) {
       setErrors([err instanceof Error ? err.message : String(err)])
     } finally {
       setLoading(false)
     }
+  }
+
+  function chooseMode(next: MergeMode) {
+    setMode(next)
+    if (data) setPlans(planResearchMerge(data.pack, data.catalogIds, data.existing, next))
+  }
+
+  /** Puts the owner's backed-up values back on every string a "replace" import overwrote. */
+  async function restoreAll() {
+    if (!data) return
+    const lines: string[] = []
+    for (const [stringId, existing] of Object.entries(data.existing)) {
+      const row = buildRestoreRow(stringId, existing)
+      if (!row) continue
+      setProgress(`Restoring ${stringId}`)
+      const result = await writeProfileRow(row, false)
+      lines.push(result.ok ? `✓ ${stringId}: your own values restored` : `✗ ${stringId}: ${result.error}`)
+      setLog([...lines])
+    }
+    setProgress(null)
+    setLog([...lines, 'Done. Re-open this importer to see the restored state.'])
   }
 
   function update(stringId: string, change: (p: ProfilePlan) => ProfilePlan) {
@@ -406,6 +430,38 @@ function ResearchImportPanel({ blocked }: { blocked: boolean }) {
       {data && (
         <>
           {data.pack.scoreMeaning && <p className="text-sm text-ink-700/80 dark:text-shuttle-100/80">Note from the pack: {data.pack.scoreMeaning}.</p>}
+
+          <fieldset className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-3">
+            <legend className="px-1 text-sm font-semibold">How should the research be used?</legend>
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input type="radio" name="merge-mode" checked={mode === 'fillGaps'} onChange={() => chooseMode('fillGaps')} disabled={progress != null} className="mt-1" />
+              <span>
+                <strong>Fill only empty values</strong> — your own values stay.
+              </span>
+            </label>
+            <label className="mt-2 flex items-start gap-2 text-sm cursor-pointer">
+              <input type="radio" name="merge-mode" checked={mode === 'replace'} onChange={() => chooseMode('replace')} disabled={progress != null} className="mt-1" />
+              <span>
+                <strong>Replace my values with the research</strong> — less shaped by one person's taste. Your values are backed up and can be restored any time.
+                {mode === 'replace' && (
+                  <span className="block mt-1 font-semibold text-amber-700 dark:text-amber-400">
+                    {plans.reduce((n, p) => n + (p.known ? p.dimensions.filter((d) => d.take && d.current != null && d.current !== d.proposed).length : 0), 0)} of your own values will be replaced.
+                  </span>
+                )}
+              </span>
+            </label>
+          </fieldset>
+
+          {Object.values(data.existing).some((e) => e.researchImport?.replaced) && (
+            <div className="rounded-xl border-2 border-court-900/10 dark:border-white/10 p-3 text-sm flex flex-wrap items-center justify-between gap-3">
+              <span>
+                Some of your own values were replaced by an earlier import ({Object.values(data.existing).filter((e) => e.researchImport?.replaced).length} strings) and are backed up.
+              </span>
+              <button type="button" onClick={restoreAll} disabled={progress != null} className="focus-ring rounded-full border-2 border-court-900/20 dark:border-white/30 px-4 py-1.5 font-semibold cursor-pointer disabled:opacity-50">
+                Restore my own values
+              </button>
+            </div>
+          )}
           <label className="inline-flex items-center gap-2 text-sm">
             <input type="checkbox" checked={onlyChanges} onChange={(e) => setOnlyChanges(e.target.checked)} /> Only show strings with something to decide
           </label>
@@ -557,7 +613,7 @@ function ErrorList({ errors }: { errors: string[] }) {
 
 function ImportBar({ count, busy, blocked, progress, onImport, noun, extra }: { count: number; busy: boolean; blocked: boolean; progress: string | null; onImport: () => void; noun: string; extra?: string }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 px-4 py-3 bg-shuttle-50/95 dark:bg-[#0c1210]/95 border-t border-court-900/10 dark:border-white/10 flex flex-wrap items-center gap-3">
+    <div className="sticky bottom-0 z-10 -mx-4 px-4 py-3 bg-shuttle-50/95 dark:bg-[#1e201f]/95 border-t border-court-900/10 dark:border-white/10 flex flex-wrap items-center gap-3">
       <button
         type="button"
         onClick={onImport}

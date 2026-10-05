@@ -133,7 +133,7 @@ export default function RadarChart({ series, size = 220, showValues = false, max
               const raw = s.values[axis.key]
               if (raw == null) return null
               const { x, y } = pointAt(i, radarRatio(raw), center, radius)
-              return <circle key={axis.key} cx={x} cy={y} r={2.2} className={`${s.strokeClassName} fill-white dark:fill-[#0c1210]`} strokeWidth={1.5} />
+              return <circle key={axis.key} cx={x} cy={y} r={2.2} className={`${s.strokeClassName} fill-white dark:fill-[#1e201f]`} strokeWidth={1.5} />
             })}
           </g>
         ))}

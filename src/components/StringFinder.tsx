@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getQuestion } from '../data/quizQuestions'
 import type { QuizAnswers } from '../logic/types'
@@ -10,6 +10,7 @@ import QuizQuestion from './QuizQuestion'
 import ProgressBar from './ProgressBar'
 import CalculatingAnimation from './CalculatingAnimation'
 import RecommendationResult from './RecommendationResult'
+import QuizFeelMap from './QuizFeelMap'
 import { TensionFields } from './TensionTuner'
 import { type QuizHistoryState, clearStoredQuiz, loadStoredQuiz, newRunId, readHistoryState, safeSessionStorage, saveStoredQuiz } from '../logic/quizSession'
 
@@ -27,6 +28,8 @@ type Phase = 'quiz' | 'calculating' | 'result'
 
 
 interface StringFinderProps {
+  /** Which quiz to start with when there's nothing to restore (#finder = quick, #finder-detailed = detailed). */
+  initialMode?: QuizMode
   onExit: () => void
   onCompare: () => void
   /** Defaults to the full static catalog when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
@@ -37,21 +40,42 @@ interface StringFinderProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
+/** True while the media query matches (re-renders on change). */
+function useMediaQuery(query: string): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(query)
+      mq.addEventListener('change', onChange)
+      return () => mq.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  )
+}
+
+export type QuizMode = 'quick' | 'detailed'
+
 /**
- * The questions that decide WHICH string is recommended, followed by ONE optional tension step.
- * Tension used to be three separate questions (too long), then only a panel on the results page
- * (players overlooked it) — now it's a single, skippable screen with all three inputs together.
+ * Quick quiz (the default): four rounds — level, playing style, priorities, feel. Measured over all
+ * 118,800 answer combinations, these four alone give the same best string as the full quiz 80% of
+ * the time, a top-3 pick 98% of the time, and a tension within 0.5 kg 99% of the time.
+ * Detailed quiz: the same four FIRST, then own power, how often you play, why you restring (only
+ * if durability matters to you) and the tension details — so "be more precise" on the result can
+ * simply continue at question 5 without repeating anything. Every question can be skipped.
  */
-function buildSteps(answers: QuizAnswers): string[] {
-  const steps = ['level', 'playStyles', 'powerGeneration', 'priorities', 'hittingFeel', 'frequency']
-  if (answers.priorities?.includes('durability')) steps.push('restringReason')
+const QUICK_STEPS = ['level', 'playStyles', 'priorities', 'hittingFeel']
+const TENSION_STEP = 'tension'
+
+function buildSteps(_answers: QuizAnswers, mode: QuizMode): string[] {
+  if (mode === 'quick') return QUICK_STEPS
+  const steps = [...QUICK_STEPS, 'powerGeneration', 'frequency']
+  // always asked in the detailed quiz: mishit breakage lowers the tension, not only a durability matter
+  steps.push('restringReason')
   steps.push(TENSION_STEP)
   return steps
 }
 
-const TENSION_STEP = 'tension'
-
-export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId }: StringFinderProps) {
+export default function StringFinder({ onExit, onCompare, pool, specialistProfiles, retailerListingsByStringId, initialMode = 'quick' }: StringFinderProps) {
   // Restore only when this history entry is one of ours (reload, or Back-then-Forward into the quiz).
   // A fresh visit from the home page carries no marker and always starts clean.
   const [initial] = useState(() => {
@@ -59,19 +83,22 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     const stored = entry ? loadStoredQuiz(safeSessionStorage()) : undefined
     if (!entry || !stored || stored.runId !== entry.runId) {
       clearStoredQuiz(safeSessionStorage())
-      return { runId: newRunId(), answers: {} as QuizAnswers, stepIndex: 0, phase: 'quiz' as Phase, dataSource: DEFAULT_DATA_SOURCE }
+      return { runId: newRunId(), answers: {} as QuizAnswers, stepIndex: 0, phase: 'quiz' as Phase, dataSource: DEFAULT_DATA_SOURCE, mode: initialMode }
     }
-    return { runId: stored.runId, answers: stored.answers, stepIndex: entry.stepIndex, phase: entry.phase as Phase, dataSource: stored.dataSource ?? DEFAULT_DATA_SOURCE }
+    return { runId: stored.runId, answers: stored.answers, stepIndex: entry.stepIndex, phase: entry.phase as Phase, dataSource: stored.dataSource ?? DEFAULT_DATA_SOURCE, mode: stored.mode ?? initialMode }
   })
   const [runId, setRunId] = useState(initial.runId)
   const [answers, setAnswers] = useState<QuizAnswers>(initial.answers)
   const [stepIndex, setStepIndex] = useState(initial.stepIndex)
   const [phase, setPhase] = useState<Phase>(initial.phase)
   const [direction, setDirection] = useState(1)
+  const isWide = useMediaQuery('(min-width: 1024px)')
   // A setting, not a scored quiz answer — its only effect is which
   // specialist-profile map the recommendation receives (the real one, or {}
   // for a manufacturer-only run). Switched on the results page.
-  const [dataSource, setDataSource] = useState<DataSource>(initial.dataSource)
+  // v2: always calibrated (manufacturer data + Smash Lab specialist profiles); no switch on the site.
+  const [dataSource] = useState<DataSource>(initial.dataSource)
+  const [mode, setMode] = useState<QuizMode>(initial.mode)
   const resolvedSpecialistProfiles = resolveSpecialistProfiles(dataSource, specialistProfiles)
 
   // Mark the entry we were opened on as ours, so a reload restores it.
@@ -81,8 +108,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   }, [initial])
 
   useEffect(() => {
-    saveStoredQuiz(safeSessionStorage(), { runId, answers, dataSource })
-  }, [runId, answers, dataSource])
+    saveStoredQuiz(safeSessionStorage(), { runId, answers, dataSource, mode })
+  }, [runId, answers, dataSource, mode])
 
   // Browser Back / Forward (incl. the Android back gesture) move between questions.
   useEffect(() => {
@@ -105,10 +132,10 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     return () => window.removeEventListener('popstate', onPopState)
   }, [stepIndex, runId])
 
-  const steps = useMemo(() => buildSteps(answers), [answers])
+  const steps = useMemo(() => buildSteps(answers, mode), [answers, mode])
   // For the progress bar only: count the conditional follow-up as long as it's still possible,
   // so the total can only shrink ("7" -> "6") instead of growing mid-quiz.
-  const displayTotal = useMemo(() => buildSteps({ ...answers, priorities: answers.priorities ?? ['durability'] }).length, [answers])
+  const displayTotal = useMemo(() => buildSteps({ ...answers, priorities: answers.priorities ?? ['durability'] }, mode).length, [answers, mode])
   const currentStepId = steps[Math.min(stepIndex, steps.length - 1)]
 
   function pushEntry(next: Omit<QuizHistoryState['smashQuiz'], 'runId'>, forRun: string = runId) {
@@ -135,9 +162,10 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     if (maxSelect == null) {
       const nextAnswers: QuizAnswers = { ...answers, [questionId]: optionId }
       setAnswers(nextAnswers)
-      const nextSteps = buildSteps(nextAnswers)
+      const nextSteps = buildSteps(nextAnswers, mode)
       const from = stepIndex
-      window.setTimeout(() => advance(from, nextSteps), 220)
+      // just long enough to see your choice light up — controls stay crisp (stop-motion is for the playful bits only)
+      window.setTimeout(() => advance(from, nextSteps), 110)
       return
     }
 
@@ -153,6 +181,23 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       }
       return { ...prev, [questionId]: next }
     })
+  }
+
+  /** Skip = no preference for this question: the answer is cleared and counts as neutral. */
+  function handleSkip(questionId: string) {
+    const next: QuizAnswers = { ...answers, [questionId]: undefined }
+    setAnswers(next)
+    advance(stepIndex, buildSteps(next, mode))
+  }
+
+  /** From a quick result: switch to the detailed quiz and continue right after the four quick questions. */
+  function goDetailed() {
+    setMode('detailed')
+    setDirection(1)
+    pushEntry({ stepIndex: QUICK_STEPS.length, phase: 'quiz' })
+    setStepIndex(QUICK_STEPS.length)
+    setPhase('quiz')
+    window.scrollTo({ top: 0 })
   }
 
   function handleContinue() {
@@ -192,12 +237,12 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
     return (
       <div className="px-4">
         <RecommendationResult
+          onGoDetailed={mode === 'quick' ? goDetailed : undefined}
           answers={answers}
           onChangeAnswers={setAnswers}
           onRetake={restart}
           onCompare={onCompare}
           dataSource={dataSource}
-          onChangeDataSource={setDataSource}
           pool={pool}
           specialistProfiles={resolvedSpecialistProfiles}
           retailerListingsByStringId={retailerListingsByStringId}
@@ -207,7 +252,8 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4">
+    <div className="max-w-5xl mx-auto px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10">
+      <div className="min-w-0">
       <div className="flex items-center justify-between mb-6">
         <button
           type="button"
@@ -216,24 +262,58 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
         >
           {stepIndex === 0 ? '← Exit' : '← Back'}
         </button>
+        {/* always visible, no scrolling: skip = no preference for this question */}
+        <button
+          type="button"
+          onClick={() => handleSkip(currentStepId)}
+          className="focus-ring text-sm font-semibold text-ink-700/80 dark:text-shuttle-100/80 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
+        >
+          Skip →
+        </button>
       </div>
 
       <ProgressBar step={stepIndex} total={displayTotal} />
+      {mode === 'quick' && (
+        <button
+          type="button"
+          onClick={() => setMode('detailed')}
+          className="focus-ring mt-2 text-xs font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer"
+        >
+          Want it more precise? Switch to the detailed quiz (8 questions) — your answers stay
+        </button>
+      )}
+
+      {/* phones: a compact strip of the live feel map above the question */}
+      {!isWide && (
+        <div className="mt-4">
+          <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} compact />
+        </div>
+      )}
 
       <div className="mt-8 min-h-[420px]">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStepId}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 40 }}
+            initial={{ opacity: 0, x: direction * 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -40 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            exit={{ opacity: 0, x: direction * -24, transition: { duration: 0.09, ease: 'easeIn' } }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
           >
             <StepContent stepId={currentStepId} answers={answers} onToggle={handleToggle} onContinue={handleContinue} onPatch={setAnswers} />
           </motion.div>
         </AnimatePresence>
       </div>
+      </div>
+
+      {/* desktop: the full live feel map beside the quiz */}
+      {isWide && (
+        <aside>
+          <div className="sticky top-24">
+            <QuizFeelMap answers={answers} pool={pool} specialistProfiles={specialistProfiles} />
+          </div>
+        </aside>
+      )}
     </div>
   )
 }
@@ -252,9 +332,7 @@ function StepContent({ stepId, answers, onToggle, onContinue, onPatch }: StepCon
     return (
       <div>
         <h1 className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 dark:text-shuttle-50 mb-1">Let's dial in your tension</h1>
-        <p className="text-ink-700/70 dark:text-shuttle-100/70">
-          Optional, but it makes your tension much more precise. Don't know these? Just skip — you'll still get a solid starting tension.
-        </p>
+        <p className="text-ink-700/70 dark:text-shuttle-100/70">Optional. Don't know these? Skip — you'll still get a solid starting tension.</p>
         <TensionFields answers={answers} onChange={onPatch} className="mt-6" />
         <ContinueButton onClick={onContinue} label={hasInput ? 'See my result' : 'Skip — see my result'} />
       </div>
@@ -275,10 +353,9 @@ function StepContent({ stepId, answers, onToggle, onContinue, onPatch }: StepCon
   )
 }
 
-/** Sticks to the bottom of the screen on phones, where long multi-select lists pushed it below the fold. */
 function ContinueButton({ onClick, disabled, selectedCount, label }: { onClick: () => void; disabled?: boolean; selectedCount?: number; label?: string }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-3 bg-gradient-to-t from-shuttle-50 via-shuttle-50/95 to-shuttle-50/0 dark:from-[#0c1210] dark:via-[#0c1210]/95 dark:to-[#0c1210]/0 sm:static sm:mx-0 sm:p-0 sm:bg-none">
+    <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-3 bg-gradient-to-t from-shuttle-50 via-shuttle-50/95 to-shuttle-50/0 dark:from-[#1e201f] dark:via-[#1e201f]/95 dark:to-[#1e201f]/0 sm:static sm:mx-0 sm:p-0 sm:bg-none">
       <button
         type="button"
         onClick={onClick}

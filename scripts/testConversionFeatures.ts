@@ -180,8 +180,14 @@ test('summary matches the reference message shape exactly', () => {
   const text = buildResultSummaryText(ENQUIRY_DETAILS)
   assert.equal(
     text,
-    ['Hello Nick,', 'Smash Lab recommended the following setup:', '', 'String: Yonex BG80', 'Tension: 10.5 kg', 'Match: 91%', 'Data source: Manufacturer + Specialist calibration', '', 'Racket: ', 'My question: '].join('\n'),
+    // v2 (review, Oct 2026): the racket-max status is always stated, and the score is called a score.
+    ['Hello Nick,', 'Smash Lab recommended the following setup:', '', 'String: Yonex BG80', 'Tension: 10.5 kg', 'Racket max: NOT CHECKED — please check before stringing', 'Model score: 91 (a ranking score, not a probability)', 'Data source: Manufacturer + Specialist calibration', '', 'Racket: ', 'My question: '].join('\n'),
   )
+})
+test('with mains/crosses the summary spells out both and names the average', () => {
+  const text = buildResultSummaryText({ ...ENQUIRY_DETAILS, mainsKg: 10, crossKg: 11, racketMaxKg: 12.7 })
+  assert.match(text, /Tension: mains 10\.0 kg \/ crosses 11\.0 kg \(average 10\.5 kg\)/)
+  assert.match(text, /Racket max: 12\.7 kg \/ 28 lbs \(checked\)/)
 })
 test('says when the player picked another match than the recommendation', () => {
   assert.match(buildResultSummaryText({ ...ENQUIRY_DETAILS, rank: 2 }), /I picked my #2 match from Smash Lab:/)

@@ -9,20 +9,52 @@ export interface TensionRange {
 }
 
 /**
- * Base ranges in kg by self-reported level, before any personalization.
- * These reflect realistic starting points for normal adult club players —
- * guidance, not rigid buckets. Lower tensions (~9–9.5 kg) still surface
- * naturally for beginners, juniors, or anyone leaning hard into "easier
- * power" via GOAL_ADJUSTMENTS or POWER_GENERATION_TENSION_ADJUSTMENTS below;
- * a known current tension the player is happy with always takes priority
- * over these baselines (see recommendTension in tensionRecommendation.ts).
+ * Base ranges in kg by self-reported level, before any personalization (Smash Lab v2).
+ *
+ * Beginners follow Badminton Insight's video (Aug 2026): at most 24 lb, stated there as 11 kg.
+ * Club players follow the stringer's own practice instead of the video's 24–27+ lb: 11.5 kg,
+ * at most 12 kg — because the crosses are strung 1 kg above the mains (see CROSS_OFFSET_KG), and
+ * at 12 kg the crosses already sit at the 12.5 kg most Yonex rackets allow.
+ * A known current tension the player is happy with always takes priority over these baselines
+ * (see recommendTension in tensionRecommendation.ts).
  */
 export const LEVEL_BASE_RANGES: Record<string, TensionRange> = {
-  beginner: { min: 8.5, max: 10.5, target: 9.5 },
-  intermediate: { min: 9.5, max: 11.5, target: 10.5 },
-  advanced: { min: 10.5, max: 12, target: 11 },
-  tournament: { min: 11, max: 13, target: 12 },
+  beginner: { min: 9, max: 11, target: 10 },
+  intermediate: { min: 10.5, max: 12, target: 11.5 },
+  advanced: { min: 11, max: 12, target: 11.5 },
+  // Tournament players follow the video: "27 lb and upwards" (≈12.25 kg); the presenters string at
+  // 30 lb (Greg, VBS-66 Nano ≈13.6 kg) and 29 lb (Jenny, VBS-68 ≈13.15 kg) — 11:25 in the video.
+  // Only reachable with a CHECKED racket maximum: without it the crosses stop at the assumed 12.5 kg.
+  tournament: { min: 12.25, max: 13.6, target: 12.7 },
 }
+
+/**
+ * The stated tension is the average: mains are strung CROSS_OFFSET_KG below it, crosses the same
+ * amount above (e.g. 12 kg → mains 11.5 kg, crosses 12.5 kg). The crosses must never exceed the
+ * racket's maximum.
+ */
+export const CROSS_OFFSET_KG = 0.5
+
+/** Maximum assumed when the player doesn't know theirs: what most Yonex rackets allow. */
+export const DEFAULT_RACKET_MAX_KG = 12.5
+
+/** Beginners: never above 24 lb — the video states this as 11 kg — unless they already play a known, higher tension. */
+export const BEGINNER_MAX_TENSION = 11
+
+/**
+ * Thinner strings → a little LESS tension, to offset their lower durability while keeping their
+ * liveliness (same source). Replaces the old per-string adjustments, which did the opposite.
+ * Checked top-down: the first row whose maxGauge the string's gauge doesn't exceed applies.
+ * Hybrids use their thinner side (that's the one that breaks).
+ */
+export const GAUGE_TENSION_ADJUSTMENTS: { maxGauge: number; adjustKg: number }[] = [
+  { maxGauge: 0.63, adjustKg: -0.5 },
+  { maxGauge: 0.66, adjustKg: -0.25 },
+  { maxGauge: Infinity, adjustKg: 0 },
+]
+
+/** Frequent mishit breakage → lower tension (and better timing) — the video recommends both. */
+export const MISHIT_TENSION_ADJUSTMENT = -0.5
 
 /** Nudge (kg) applied based on what the player wants from their racket. */
 export const GOAL_ADJUSTMENTS: Record<string, number> = {
@@ -60,7 +92,7 @@ export const UNSURE_BLEND_TOWARD_BASELINE = 0.3
 
 /** Absolute sane floor/ceiling regardless of any other input. */
 export const ABSOLUTE_MIN_TENSION = 7
-export const ABSOLUTE_MAX_TENSION = 13.5
+export const ABSOLUTE_MAX_TENSION = 14
 
 /** Safety margin (kg) kept below a user-provided racket max, unless they're already near it. */
 export const RACKET_MAX_SAFETY_MARGIN = 0.5

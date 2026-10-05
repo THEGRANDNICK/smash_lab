@@ -60,7 +60,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             value={input.experienceSource}
             onChange={(e) => set('experienceSource', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             <option value="">Choose…</option>
             {EXPERIENCE_SOURCE_OPTIONS.map((s) => (
@@ -78,7 +78,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             value={input.confidence}
             onChange={(e) => set('confidence', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             <option value="">Choose…</option>
             {CONFIDENCE_OPTIONS.map((c) => (
@@ -96,7 +96,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             value={input.feel}
             onChange={(e) => set('feel', e.target.value)}
             disabled={saving}
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           >
             <option value="">Not set</option>
             {FEEL_OPTIONS.map((f) => (
@@ -116,7 +116,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             onChange={(e) => set('reviewer', e.target.value)}
             disabled={saving}
             placeholder="optional — e.g. a name or 'club consensus'"
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
         </label>
       </div>
@@ -131,7 +131,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             onChange={(e) => set('personalTensionMinKg', e.target.value)}
             disabled={saving}
             placeholder="optional"
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
           {errors.personalTensionMinKg && <FieldError message={errors.personalTensionMinKg} />}
         </label>
@@ -144,7 +144,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
             onChange={(e) => set('personalTensionMaxKg', e.target.value)}
             disabled={saving}
             placeholder="optional"
-            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+            className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
           />
           {errors.personalTensionMaxKg && <FieldError message={errors.personalTensionMaxKg} />}
         </label>
@@ -158,7 +158,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
           disabled={saving}
           rows={3}
           placeholder="optional"
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         />
       </label>
 
@@ -170,7 +170,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
           disabled={saving}
           rows={3}
           placeholder="optional"
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         />
       </label>
 
@@ -182,7 +182,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
           onChange={(e) => set('specialistTags', e.target.value)}
           disabled={saving}
           placeholder="comma-separated, e.g. hard-hitter, fast-doubles"
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         />
       </label>
 
@@ -194,7 +194,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
           disabled={saving}
           rows={3}
           placeholder="optional — the stringer's own read, in prose"
-          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+          className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
         />
       </label>
 
@@ -215,7 +215,7 @@ export default function SpecialistProfileForm({ stringId, initial, saving, saveE
                 onChange={(e) => setDimension(key, e.target.value)}
                 disabled={saving}
                 placeholder={derived[key] != null ? `${derived[key]} (map)` : '—'}
-                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 bg-white/90 dark:bg-white/5 px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
+                className="focus-ring w-full rounded-lg border-2 border-court-900/10 dark:border-white/15 card-stock px-3 py-2 text-ink-900 dark:text-shuttle-50 disabled:opacity-60"
               />
               {errors.dimensions?.[key] && <FieldError message={errors.dimensions[key] as string} />}
             </label>

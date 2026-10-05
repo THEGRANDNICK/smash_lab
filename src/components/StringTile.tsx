@@ -9,9 +9,10 @@ import type { PerformanceView } from './StringCard'
 interface StringTileProps {
   item: StringItem
   view?: PerformanceView
-  compareSelected?: boolean
-  compareDisabled?: boolean
-  onToggleCompare?: (id: string) => void
+  /** Opens the Setup Workshop with this string on the racket. */
+  onTryInWorkshop?: (id: string) => void
+  /** Position in the grid — staggers the "dealt onto the table" entrance. */
+  index?: number
 }
 
 const STOCK_DOT: Record<StringItem['stock'], { className: string; label: string }> = {
@@ -25,7 +26,7 @@ const STOCK_DOT: Record<StringItem['stock'], { className: string; label: string 
  * small radar — nothing else. Description, hands-on notes, price and retailer links live on the
  * string's own page, one tap away ("Details"). Two tiles fit side by side on a phone.
  */
-export default function StringTile({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare }: StringTileProps) {
+export default function StringTile({ item, view = 'bars', onTryInWorkshop, index = 0 }: StringTileProps) {
   const href = `${import.meta.env.BASE_URL}${stringPagePath(item.id)}`
   const gauge = formatGauge(item)
   const stock = STOCK_DOT[item.stock]
@@ -33,9 +34,8 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
 
   return (
     <article
-      className={`relative rounded-2xl border-2 bg-white/90 dark:bg-white/5 p-2.5 sm:p-3.5 flex flex-col gap-2.5 transition-[box-shadow,transform] duration-200 hover:shadow-lg ${
-        compareSelected ? 'border-shuttle-500 ring-2 ring-shuttle-500/30' : 'border-court-900/10 dark:border-white/10'
-      }`}
+      style={{ ['--deal-i' as string]: Math.min(index, 8) }}
+      className="paper deal relative rounded-2xl border-2 border-transparent p-2.5 sm:p-3.5 flex flex-col gap-2.5 transition-transform duration-200 hover:-rotate-1"
     >
       <div className="relative">
         <ImageSwiper front={item.imageUrl} back={item.imageBackUrl} label={`${item.brand} ${item.name}`} placeholderText={item.name} />
@@ -91,22 +91,18 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
       )}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-        {onToggleCompare ? (
+        {onTryInWorkshop ? (
           <button
             type="button"
-            onClick={() => onToggleCompare(item.id)}
-            disabled={compareDisabled && !compareSelected}
-            aria-pressed={compareSelected}
-            className={`focus-ring rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
-              compareSelected ? 'border-shuttle-500 bg-shuttle-500 text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
-            }`}
+            onClick={() => onTryInWorkshop(item.id)}
+            className="focus-ring shrink-0 whitespace-nowrap rounded-full border-2 border-court-900/15 dark:border-white/20 px-2 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400 cursor-pointer"
           >
-            {compareSelected ? '✓ Compare' : '+ Compare'}
+            Try in Workshop
           </button>
         ) : (
           <span />
         )}
-        <a href={href} className="focus-ring rounded text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline" aria-label={`Details about ${item.brand} ${item.name}`}>
+        <a href={href} className="focus-ring shrink-0 whitespace-nowrap rounded text-xs font-semibold text-shuttle-700 dark:text-shuttle-400 hover:underline" aria-label={`Details about ${item.brand} ${item.name}`}>
           Details →
         </a>
       </div>

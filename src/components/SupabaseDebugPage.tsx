@@ -139,7 +139,7 @@ export default function SupabaseDebugPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
-      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 bg-white/90 dark:bg-white/5 p-8">
+      <div className="rounded-2xl border-2 border-court-900/10 dark:border-white/10 card-stock p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400 mb-1">Development only — not linked from the site</p>
         <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50 mb-6">Supabase Debug</h1>
 

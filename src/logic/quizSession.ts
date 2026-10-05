@@ -24,6 +24,8 @@ export interface StoredQuiz {
   runId: string
   answers: QuizAnswers
   dataSource?: DataSource
+  /** Quick (4 rounds, default) or detailed (8 rounds). */
+  mode?: 'quick' | 'detailed'
 }
 
 const STORAGE_KEY = 'smashlab.quiz.v1'

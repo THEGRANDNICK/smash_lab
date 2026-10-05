@@ -2,27 +2,27 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import Nav from './components/Nav'
 import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
-import HowItWorks from './components/HowItWorks'
+import HomeBasics from './components/HomeBasics'
 import StringComparison from './components/StringComparison'
-import WhyUs from './components/WhyUs'
-import RestringAndCraft from './components/RestringAndCraft'
-import FAQ from './components/FAQ'
-import Contact from './components/Contact'
 import Footer from './components/Footer'
-import StringFinder from './components/StringFinder'
 import SavedSetupBanner from './components/SavedSetupBanner'
-import RecommendationResult from './components/RecommendationResult'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 // Lazy-loaded: the admin area (forms, map placer, Supabase auth UI) is never needed by visitors,
 // so it stays out of the main bundle and only downloads when #admin is opened.
 const AdminApp = lazy(() => import('./components/admin/AdminApp'))
+// Loaded when opened, not on the first visit: keeps the start page light on phones.
+const StringFinder = lazy(() => import('./components/StringFinder'))
+const RecommendationResult = lazy(() => import('./components/RecommendationResult'))
+const Workshop = lazy(() => import('./components/Workshop'))
+const StringKnowledge = lazy(() => import('./components/StringKnowledge'))
 import Impressum from './components/legal/Impressum'
 import Datenschutz from './components/legal/Datenschutz'
 import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
-import { useRetailerPrices } from './hooks/useRetailerPrices'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
+import ErrorBoundary from './components/ErrorBoundary'
+import { play, soundForElement } from './logic/sound'
 import { strings } from './data/strings'
 import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
 import { buildStringPageMeta, buildStringsIndexMeta, stringPagePath } from './logic/stringPages'
@@ -30,7 +30,7 @@ import { STRING_SPECIALIST_PROFILES } from './data/stringSpecialistProfiles'
 
 const BASE = import.meta.env.BASE_URL
 
-type View = 'home' | 'finder' | 'compare' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
+type View = 'home' | 'finder' | 'compare' | 'knowledge' | 'workshop' | 'debug' | 'admin' | 'impressum' | 'datenschutz' | 'result' | 'string' | 'notFound'
 
 /** The string shown on a real string page (…/strings/<id>/), or from an old "#string/<id>" link. */
 function getStringIdFromLocation(): string {
@@ -65,6 +65,9 @@ function getPageTitle(hash: string): string {
   }
   if (clean === 'finder') return 'Find Your String — Smash Lab'
   if (clean === 'compare') return 'Compare Strings — Smash Lab'
+  if (clean === 'knowledge' || clean === 'knowledge-contact') return 'String knowledge — Smash Lab'
+  if (clean === 'workshop' || clean === 'tension') return 'Setup workshop — Smash Lab'
+  if (clean === 'finder-detailed') return 'Detailed string quiz — Smash Lab'
   if (clean === 'faq') return 'FAQ — Smash Lab'
   if (clean === 'contact') return 'Contact — Smash Lab'
   if (clean === 'impressum') return 'Impressum — Smash Lab'
@@ -97,7 +100,13 @@ function viewFromHash(): View {
   if (route.kind === 'notFound') return 'notFound'
   if (route.kind === 'string' && !hash) return 'string'
   if (route.kind === 'stringsIndex' && !hash) return 'compare'
-  if (hash === 'finder' || hash === 'compare' || hash === 'impressum' || hash === 'datenschutz') return hash
+  // #finder-detailed opens the same quiz view in detailed mode (8 rounds instead of 4)
+  if (hash === 'finder-detailed') return 'finder'
+  // the Tension Picker became part of the Setup Workshop — old links keep working
+  if (hash === 'tension') return 'workshop'
+  if (hash === 'finder' || hash === 'compare' || hash === 'knowledge' || hash === 'workshop' || hash === 'impressum' || hash === 'datenschutz') return hash
+  // v2: FAQ and contact live on the Knowledge page (old links keep working).
+  if (hash === 'faq' || hash === 'contact' || hash === 'knowledge-contact') return 'knowledge'
   if (hash.startsWith('result/')) return 'result'
   if (hash.startsWith('string/')) return 'string'
   // Not linked from the public nav — a direct URL is the entry point.
@@ -111,7 +120,8 @@ function viewFromHash(): View {
     hash === 'admin/specialists' ||
     hash === 'admin/retailers' ||
     hash === 'admin/retailer-listings' ||
-    hash === 'admin/imports'
+    hash === 'admin/imports' ||
+    hash === 'admin/feedback'
   )
     return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
@@ -133,7 +143,6 @@ function App() {
   const [stringId, setStringId] = useState<string>(getStringIdFromLocation)
   const liveStrings = useStringPool()
   const specialistProfiles = useSpecialistProfiles()
-  const retailerListingsByStringId = useRetailerPrices()
 
   useEffect(() => {
     if (redirectLegacyStringLink()) document.title = getPageTitle('')
@@ -142,6 +151,8 @@ function App() {
       setView(viewFromHash())
       setSharedResultEncoded(getSharedResultEncoded())
       const nextStringId = getStringIdFromLocation()
+      // A new view starts at the top (in-page anchors like #knowledge-contact scroll themselves below).
+      if (!window.location.hash.startsWith('#knowledge-contact')) window.scrollTo({ top: 0, behavior: 'auto' })
       setStringId(nextStringId)
       if (nextStringId) window.scrollTo({ top: 0, behavior: 'auto' })
       document.title = getPageTitle(window.location.hash)
@@ -155,10 +166,22 @@ function App() {
   // first; scroll to them once it has rendered, since the browser's own jump happened too early.
   useEffect(() => {
     const anchor = window.location.hash.replace('#', '')
-    if (anchor && view === 'home') document.getElementById(anchor)?.scrollIntoView()
+    if (anchor === 'knowledge-contact' || anchor === 'contact') document.getElementById('knowledge-contact')?.scrollIntoView()
     // Only on first load — later clicks on these anchors are handled by the browser as usual.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Tap sounds (off until switched on in the header): one listener for the whole app.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const kind = soundForElement(e.target as Element | null)
+      if (kind) play(kind)
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [])
+
+  const detailedQuiz = typeof window !== 'undefined' && window.location.hash === '#finder-detailed'
 
   function goTo(next: View) {
     // On a static string page, other views live on the root page: navigate there.
@@ -177,9 +200,11 @@ function App() {
   // entirely inside AdminApp; this route split is just presentation.
   if (view === 'admin') {
     return (
-      <Suspense fallback={<p className="p-8 text-center text-ink-700/70 dark:text-shuttle-100/70">Loading admin…</p>}>
-        <AdminApp onExit={() => goTo('home')} />
-      </Suspense>
+      <ErrorBoundary area="The admin area">
+        <Suspense fallback={<p className="p-8 text-center text-ink-700/70 dark:text-shuttle-100/70">Loading admin…</p>}>
+          <AdminApp onExit={() => goTo('home')} />
+        </Suspense>
+      </ErrorBoundary>
     )
   }
 
@@ -199,27 +224,29 @@ function App() {
       <Nav onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onHome={() => goTo('home')} />
 
       <main className="flex-1">
+        <Suspense fallback={<p className="p-10 text-center text-sm text-ink-700/70 dark:text-shuttle-100/70">Loading…</p>}>
         {view === 'home' && (
           <>
             <SavedSetupBanner />
-            <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} />
-            <HowItWorks />
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
-            <WhyUs />
-            <RestringAndCraft />
-            <FAQ />
-            <Contact />
+            <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onOpenDetailed={() => (window.location.hash = 'finder-detailed')} />
+            <HomeBasics strings={liveStrings} onQuiz={() => goTo('finder')} onDetailedQuiz={() => (window.location.hash = 'finder-detailed')} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
           </>
         )}
+
+        {view === 'knowledge' && <StringKnowledge />}
+
+        {view === 'workshop' && <Workshop pool={liveStrings} specialistProfiles={specialistProfiles} />}
 
         {view === 'finder' && (
           <div className="py-10 sm:py-16">
             <StringFinder
+              key={detailedQuiz ? 'detailed' : 'quick'}
+              initialMode={detailedQuiz ? 'detailed' : 'quick'}
               onExit={() => goTo('home')}
               onCompare={() => goTo('compare')}
               pool={liveStrings}
               specialistProfiles={specialistProfiles}
-              retailerListingsByStringId={retailerListingsByStringId}
             />
           </div>
         )}
@@ -245,13 +272,13 @@ function App() {
               }
               return (
                 <RecommendationResult
+                  initialFeaturedId={decoded.featuredId}
                   answers={decoded.answers}
                   dataSource={decoded.dataSource}
                   onRetake={() => goTo('finder')}
                   onCompare={() => goTo('compare')}
                   pool={liveStrings}
                   specialistProfiles={specialistProfiles}
-                  retailerListingsByStringId={retailerListingsByStringId}
                 />
               )
             })()}
@@ -279,7 +306,6 @@ function App() {
             stringId={stringId}
             strings={liveStrings}
             specialistProfiles={specialistProfiles}
-            retailerListingsByStringId={retailerListingsByStringId}
             onBrowse={() => goTo('compare')}
             onCompare={() => goTo('compare')}
             onQuiz={() => goTo('finder')}
@@ -289,7 +315,7 @@ function App() {
         {view === 'compare' && (
           <div className="pt-6">
             <h1 className="sr-only">Compare badminton strings</h1>
-            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} retailerListingsByStringId={retailerListingsByStringId} />
+            <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
             <div className="text-center pb-16">
               <button
                 type="button"
@@ -303,6 +329,7 @@ function App() {
         )}
 
         {view === 'debug' && import.meta.env.DEV && <DevSupabaseDebugPage />}
+        </Suspense>
       </main>
 
       <Footer />

@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+      # Smash Lab v2 is built on its own branch; run the checks on every push there too.
+      - smashlab-v2
 
 permissions:
   contents: read
