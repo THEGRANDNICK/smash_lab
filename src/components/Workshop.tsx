@@ -9,6 +9,7 @@ import { SEGMENTS, SHELF_COLOR, SHELVES, STAT_ORDER, setupStats, shelfOf, string
 import { formatKg, formatLbs } from '../logic/units'
 import { readWorkshopPreset } from '../logic/workshopPreset'
 import WorkshopRacket from './WorkshopRacket'
+import WheelPicker from './WheelPicker'
 
 const BALANCES: { id: RacketBalance; label: string; hint: string }[] = [
   { id: 'standard', label: "Don't know", hint: 'a standard, even-balanced racket' },
@@ -39,30 +40,38 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
   const items = pool ?? builtInStrings
   const profiles = specialistProfiles ?? STRING_SPECIALIST_PROFILES
   const [preset] = useState(() => readWorkshopPreset(typeof window === 'undefined' ? null : window.sessionStorage))
-  const [build, setBuild] = useState<Build>(() => ({
-    balance: 'standard',
-    stringId: preset?.stringId && items.some((s) => s.id === preset.stringId) ? preset.stringId : (items.find((s) => s.id === 'yonex-nanogy-99') ?? items[0]).id,
-    tensionKg: preset?.tensionKg ?? 11,
-  }))
+  const known = (id?: string) => (id && items.some((s) => s.id === id) ? id : undefined)
+  const defaultString = (items.find((s) => s.id === 'yonex-nanogy-99') ?? items[0]).id
+  const [builds, setBuilds] = useState<Build[]>(() => {
+    const a: Build = { balance: 'standard', stringId: known(preset?.stringId) ?? defaultString, tensionKg: preset?.tensionKg ?? 11 }
+    const b = known(preset?.compareStringId)
+    return b ? [a, { ...a, stringId: b }] : [a]
+  })
+  const [active, setActive] = useState(0)
+  const build = builds[Math.min(active, builds.length - 1)]
   const [racketMaxKg, setRacketMaxKg] = useState<number | undefined>(preset?.racketMaxKg)
+  // Packet data by default; Smash Lab's hands-on ratings only when switched on.
+  const [source, setSource] = useState<'maker' | 'handsOn'>('maker')
   const string = items.find((s) => s.id === build.stringId) ?? items[0]
   const shelfOfString = useMemo(() => Object.fromEntries(items.map((s) => [s.id, shelfOf(s, profiles[s.id])])) as Record<string, ShelfId>, [items, profiles])
-  const [shelf, setShelf] = useState<ShelfId>(shelfOfString[string.id] ?? 'startHere')
   const maxStated = (racketMaxKg ?? DEFAULT_RACKET_MAX_KG) - CROSS_OFFSET_KG
 
   const statsFor = (b: Build): SetupStats => {
     const s = items.find((x) => x.id === b.stringId) ?? items[0]
-    return setupStats({ string: s, profile: profiles[s.id], tensionKg: b.tensionKg, balance: b.balance, pool: items })
+    return setupStats({ string: s, profile: profiles[s.id], tensionKg: b.tensionKg, balance: b.balance, pool: items, source })
   }
-  const stats = statsFor(build)
+  const allStats = builds.map(statsFor)
+  const stats = allStats[Math.min(active, builds.length - 1)]
   const [previous, setPrevious] = useState<SetupStats | null>(null)
   const [garage, setGarage] = useState<Build[]>([])
 
   function change(next: Partial<Build>) {
     setPrevious(stats)
-    setBuild((b) => ({ ...b, ...next, tensionKg: Math.min(next.tensionKg ?? b.tensionKg, maxStated) }))
+    setBuilds((all) => all.map((b, i) => (i === active ? { ...b, ...next, tensionKg: Math.min(next.tensionKg ?? b.tensionKg, maxStated) } : b)))
   }
 
+  // the strings wheel, in shelf order (Start here → Crisp control → Easy power → All-round)
+  const wheelStrings = SHELVES.flatMap((sh) => items.filter((s) => shelfOfString[s.id] === sh.id))
   const provenance = provenanceOf(profiles[string.id])
   const whatsAppUrl = buildEnquiryWhatsAppUrl({
     stringName: `${string.brand} ${string.name}`,
@@ -71,7 +80,7 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
     crossKg: build.tensionKg + CROSS_OFFSET_KG,
     racketMaxKg,
     racketBalance: BALANCE_WORDS[build.balance],
-    dataSourceLabel: 'Built in the Smash Lab workshop',
+    dataSourceLabel: source === 'maker' ? 'Workshop · manufacturer data' : 'Workshop · manufacturer + Smash Lab hands-on',
   })
 
   return (
@@ -79,75 +88,142 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
       <header className="text-center max-w-2xl mx-auto">
         <span className="tape">Setup workshop</span>
         <h1 className="mt-4 font-display text-3xl sm:text-4xl font-bold text-ink-900 dark:text-shuttle-50">Build your setup</h1>
-        <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">Pick a racket, a string and a tension — the bars show what each change does. Rules of thumb, not lab data.</p>
+        <p className="mt-3 text-ink-700/80 dark:text-shuttle-100/80">Scroll through rackets, strings and tensions — the bars show what each change does. Rules of thumb, not lab data.</p>
       </header>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-        {/* the racket + stats: pinned while you scroll through the parts */}
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2" role="group" aria-label="Data source">
+        {(
+          [
+            ['maker', 'Manufacturer data'],
+            ['handsOn', '+ Smash Lab hands-on'],
+          ] as const
+        ).map(([id, text]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={source === id}
+            onClick={() => {
+              setPrevious(stats)
+              setSource(id)
+            }}
+            className={`focus-ring rounded-full border-2 px-4 py-1.5 text-sm font-semibold cursor-pointer ${
+              source === id ? 'border-court-800 bg-court-800 text-white dark:border-shuttle-500 dark:bg-shuttle-500 dark:text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50'
+            }`}
+          >
+            {text}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+        {/* rackets on top, bars below — pinned while you scroll through the parts */}
         <section aria-label="Your setup" className="paper min-w-0 p-4 sticky top-16 z-20 lg:top-24">
-          <div className="flex gap-4 items-center">
-            <WorkshopRacket
-              balance={build.balance}
-              gauge={stringGauge(string) ?? 0.66}
-              shelf={shelfOfString[string.id] ?? 'allRound'}
-              tensionKg={build.tensionKg}
-              stringKey={string.id}
-              className="w-20 sm:w-28 lg:w-32 shrink-0 h-auto"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">{BALANCE_WORDS[build.balance]} racket</p>
-              <p className="font-display font-bold text-ink-900 dark:text-shuttle-50 leading-tight">{string.brand} {string.name}</p>
-              <p className="text-xs text-ink-700/80 dark:text-shuttle-100/80">
-                {formatKg(build.tensionKg - CROSS_OFFSET_KG)} mains / {formatKg(build.tensionKg + CROSS_OFFSET_KG)} crosses
-              </p>
-              <ul className="mt-2 space-y-1" aria-label="What this setup does">
-                {STAT_ORDER.map(({ key, label }) => (
-                  <StatBar key={key} label={label} now={stats.segments[key]} before={previous?.segments[key]} estimated={stats.estimated.includes(key)} />
-                ))}
-              </ul>
-            </div>
+          <div className="flex justify-center gap-4">
+            {builds.map((b, i) => {
+              const s = items.find((x) => x.id === b.stringId) ?? items[0]
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActive(i)}
+                  aria-pressed={i === active}
+                  aria-label={`Edit racket ${i === 0 ? 'A' : 'B'}`}
+                  className={`focus-ring rounded-xl p-1 cursor-pointer ${builds.length > 1 && i === active ? 'ring-2 ring-shuttle-500' : ''}`}
+                >
+                  <WorkshopRacket balance={b.balance} gauge={stringGauge(s) ?? 0.66} shelf={shelfOfString[s.id] ?? 'allRound'} tensionKg={b.tensionKg} stringKey={s.id} className="h-28 sm:h-36 w-auto mx-auto" />
+                  {builds.length > 1 && (
+                    <span className="block text-[11px] font-bold" style={{ color: i === 0 ? '#ef7410' : '#2f63c9' }}>
+                      {i === 0 ? 'A' : 'B'} · {s.name}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
-          {stats.estimated.length > 0 && (
+          <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
+            {builds.length > 1 ? `Editing racket ${active === 0 ? 'A' : 'B'} · ` : ''}
+            {BALANCE_WORDS[build.balance]} · {string.name} · {formatKg(build.tensionKg - CROSS_OFFSET_KG)} / {formatKg(build.tensionKg + CROSS_OFFSET_KG)}
+          </p>
+          <ul className="mt-3 space-y-1.5" aria-label="What this setup does">
+            {STAT_ORDER.map(({ key, label }) => (
+              <li key={key} className="grid grid-cols-[4.75rem_1fr] items-center gap-2 text-[11px]">
+                <span className="text-ink-700/80 dark:text-shuttle-100/80">
+                  {label}
+                  {stats.estimated.includes(key) && <span title="estimated from packet data">*</span>}
+                </span>
+                <span className="space-y-0.5">
+                  {allStats.map((st, i) => (
+                    <StatBar
+                      key={i}
+                      label={`${label}${builds.length > 1 ? ` (${i === 0 ? 'A' : 'B'})` : ''}`}
+                      now={st.segments[key]}
+                      before={i === active ? previous?.segments[key] : undefined}
+                      color={builds.length > 1 ? (i === 0 ? 'bg-shuttle-500' : 'bg-[#2f63c9]') : 'bg-shuttle-500'}
+                    />
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {source === 'handsOn' && stats.estimated.length > 0 && (
             <p className="mt-2 text-[11px] text-ink-700/70 dark:text-shuttle-100/70">
-              * estimated from packet data — {provenance.ratedCount} of 15 properties of this string have hands-on ratings.
+              * no hands-on rating yet — packet data used ({provenance.ratedCount} of 15 properties of {string.name} are rated).
             </p>
           )}
+          <div className="mt-3 text-center">
+            {builds.length < 2 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setBuilds((all) => [...all, { ...all[0] }])
+                  setActive(1)
+                }}
+                className="focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 px-4 py-1.5 text-xs font-semibold cursor-pointer"
+              >
+                + Add a racket to compare
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setBuilds((all) => [all[active === 1 ? 0 : 1]])
+                  setActive(0)
+                }}
+                className="focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 px-4 py-1.5 text-xs font-semibold cursor-pointer"
+              >
+                Remove racket {active === 0 ? 'A' : 'B'}
+              </button>
+            )}
+          </div>
         </section>
 
-        {/* min-w-0: grid items default to their content width — the swipeable shelf row would widen the page */}
         <div className="min-w-0 space-y-5">
           <section className="paper p-4 sm:p-5" aria-labelledby="ws-racket">
             <h2 id="ws-racket" className="font-display font-bold text-ink-900 dark:text-shuttle-50">1 · Racket <span className="font-normal text-sm text-ink-700/70 dark:text-shuttle-100/70">(optional)</span></h2>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {BALANCES.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  aria-pressed={build.balance === b.id}
-                  onClick={() => change({ balance: b.id })}
-                  className={`press focus-ring rounded-xl border-2 px-3 py-2 text-left cursor-pointer ${
-                    build.balance === b.id ? 'border-shuttle-500 bg-shuttle-100 dark:bg-shuttle-500/15' : 'border-court-900/10 dark:border-white/15 card-stock'
-                  }`}
-                >
-                  <span className="block text-sm font-semibold text-ink-900 dark:text-shuttle-50">{b.label}</span>
-                  <span className="block text-[11px] text-ink-700/70 dark:text-shuttle-100/70">{b.hint}</span>
-                </button>
-              ))}
+            <div className="mt-3">
+              <WheelPicker
+                label="racket balance"
+                items={BALANCES.map((b) => ({ id: b.id, label: b.label, sub: b.hint }))}
+                value={build.balance}
+                onChange={(id: string) => change({ balance: id as RacketBalance })}
+              />
             </div>
           </section>
 
           <section className="paper p-4 sm:p-5" aria-labelledby="ws-string">
             <h2 id="ws-string" className="font-display font-bold text-ink-900 dark:text-shuttle-50">2 · String</h2>
-            <div role="tablist" aria-label="String shelves" className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="group" aria-label="Jump to a shelf">
               {SHELVES.map((sh) => (
                 <button
                   key={sh.id}
-                  role="tab"
                   type="button"
-                  aria-selected={shelf === sh.id}
-                  onClick={() => setShelf(sh.id)}
-                  className={`focus-ring shrink-0 whitespace-nowrap rounded-full border-2 px-3 py-1.5 text-sm font-semibold cursor-pointer ${
-                    shelf === sh.id ? 'border-court-800 bg-court-800 text-white dark:border-shuttle-500 dark:bg-shuttle-500 dark:text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50'
+                  onClick={() => {
+                    const first = wheelStrings.find((s) => shelfOfString[s.id] === sh.id)
+                    if (first) change({ stringId: first.id })
+                  }}
+                  aria-pressed={shelfOfString[string.id] === sh.id}
+                  className={`focus-ring shrink-0 whitespace-nowrap rounded-full border-2 px-3 py-1 text-xs font-semibold cursor-pointer ${
+                    shelfOfString[string.id] === sh.id ? 'border-court-800 bg-court-800 text-white dark:border-shuttle-500 dark:bg-shuttle-500 dark:text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50'
                   }`}
                 >
                   <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full mr-1.5 align-middle" style={{ background: SHELF_COLOR[sh.id] }} />
@@ -155,29 +231,17 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">{SHELVES.find((x) => x.id === shelf)?.blurb}</p>
-            <ul className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {items
-                .filter((s) => shelfOfString[s.id] === shelf)
-                .map((s) => (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      aria-pressed={build.stringId === s.id}
-                      onClick={() => change({ stringId: s.id })}
-                      className={`press focus-ring w-full rounded-xl border-2 px-3 py-2 text-left cursor-pointer ${
-                        build.stringId === s.id ? 'border-shuttle-500 bg-shuttle-100 dark:bg-shuttle-500/15' : 'border-court-900/10 dark:border-white/15 card-stock'
-                      }`}
-                    >
-                      <span className="block text-[10px] font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">{s.brand}</span>
-                      <span className="block text-sm font-semibold text-ink-900 dark:text-shuttle-50">{s.name}</span>
-                      <span className="block text-[11px] text-ink-700/70 dark:text-shuttle-100/70">{stringGauge(s) != null ? `${stringGauge(s)} mm` : 'hybrid'}</span>
-                    </button>
-                  </li>
-                ))}
-            </ul>
+            <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">{SHELVES.find((x) => x.id === shelfOfString[string.id])?.blurb}</p>
+            <div className="mt-3">
+              <WheelPicker
+                label="string"
+                rows={5}
+                items={wheelStrings.map((s) => ({ id: s.id, label: `${s.brand} ${s.name}`, sub: stringGauge(s) != null ? `${stringGauge(s)} mm` : 'hybrid', swatch: SHELF_COLOR[shelfOfString[s.id]] }))}
+                value={build.stringId}
+                onChange={(id: string) => change({ stringId: id })}
+              />
+            </div>
           </section>
-
           <section className="paper p-4 sm:p-5" aria-labelledby="ws-tension">
             <h2 id="ws-tension" className="font-display font-bold text-ink-900 dark:text-shuttle-50">3 · Tension</h2>
             <p className="mt-2 font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">
@@ -215,7 +279,7 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
                   if (Number.isFinite(lbs) && lbs >= 14 && lbs <= 40) {
                     const kg = Math.round(lbs * 0.45359237 * 10) / 10
                     setRacketMaxKg(kg)
-                    setBuild((b) => ({ ...b, tensionKg: Math.min(b.tensionKg, kg - CROSS_OFFSET_KG) }))
+                    setBuilds((all) => all.map((b) => ({ ...b, tensionKg: Math.min(b.tensionKg, kg - CROSS_OFFSET_KG) })))
                   }
                 }}
               />
@@ -248,7 +312,10 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
                       <p className="font-semibold text-ink-900 dark:text-shuttle-50">{s?.name}</p>
                       <ul className="mt-1 space-y-0.5">
                         {STAT_ORDER.map(({ key, label }) => (
-                          <StatBar key={key} label={label} now={st.segments[key]} compact />
+                          <li key={key} className="grid grid-cols-[4rem_1fr] items-center gap-1 text-[10px] text-ink-700/80 dark:text-shuttle-100/80">
+                            {label}
+                            <StatBar label={label} now={st.segments[key]} compact />
+                          </li>
                         ))}
                       </ul>
                       <div className="mt-2 flex gap-3 text-xs font-semibold">
@@ -283,16 +350,15 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
   )
 }
 
-/** A six-segment bar (Mario Kart style). Gains since the previous pick glow green, losses show red. */
-function StatBar({ label, now, before, estimated = false, compact = false }: { label: string; now: number; before?: number; estimated?: boolean; compact?: boolean }) {
+/**
+ * A six-segment bar (Mario Kart style). Gains since the previous pick glow green, losses show red;
+ * the ±delta has a fixed-width column so it always stays inside the card.
+ */
+function StatBar({ label, now, before, compact = false, color = 'bg-shuttle-500' }: { label: string; now: number; before?: number; compact?: boolean; color?: string }) {
   const delta = before == null ? 0 : now - before
   return (
-    <li className="flex items-center gap-2 text-[11px]">
-      <span className={`${compact ? 'w-16' : 'w-[4.6rem]'} shrink-0 text-ink-700/80 dark:text-shuttle-100/80`}>
-        {label}
-        {estimated && <span title="estimated from packet data">*</span>}
-      </span>
-      <span role="img" className="flex gap-[3px]" aria-label={`${label}: ${now} of ${SEGMENTS}${delta ? ` (${delta > 0 ? '+' : ''}${delta})` : ''}`}>
+    <span className="flex items-center gap-1.5">
+      <span role="img" className="flex gap-[2px]" aria-label={`${label}: ${now} of ${SEGMENTS}${delta ? ` (${delta > 0 ? '+' : ''}${delta})` : ''}`}>
         {Array.from({ length: SEGMENTS }, (_, i) => {
           const filled = i < now
           const gained = delta > 0 && i >= now - delta && i < now
@@ -300,19 +366,16 @@ function StatBar({ label, now, before, estimated = false, compact = false }: { l
           return (
             <span
               key={i}
-              className={`${compact ? 'h-1.5 w-2.5' : 'h-2 w-3.5'} rounded-[2px] ${
-                gained ? 'bg-emerald-500' : filled ? 'bg-shuttle-500' : lost ? 'border border-red-500 bg-red-500/20' : 'bg-court-900/10 dark:bg-white/10'
-              }`}
+              className={`${compact ? 'h-1.5 w-2.5' : 'h-2 w-3'} rounded-[2px] ${gained ? 'bg-emerald-500' : filled ? color : lost ? 'border border-red-500 bg-red-500/20' : 'bg-court-900/10 dark:bg-white/10'}`}
             />
           )
         })}
       </span>
-      {!compact && delta !== 0 && (
-        <span className={`font-bold tabular-nums ${delta > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
-          {delta > 0 ? `+${delta}` : delta}
+      {!compact && (
+        <span aria-hidden="true" className={`w-6 shrink-0 text-right font-bold tabular-nums ${delta > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+          {delta ? (delta > 0 ? `+${delta}` : delta) : ''}
         </span>
       )}
-    </li>
+    </span>
   )
 }
-

@@ -1,20 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
+import { useSessionState } from '../hooks/useSessionState'
+import { writeWorkshopPreset } from '../logic/workshopPreset'
 import { strings as defaultStrings, type StringItem } from '../data/strings'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { RetailerListing } from '../services/retailerPriceService'
 import { sortStrings, SORT_OPTIONS, type SortOption } from '../logic/sortStrings'
-import { getPerformanceValues, RADAR_COMPARE_COLORS } from './performanceAxes'
-import { consumePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import { type PerformanceView } from './StringCard'
 import StringTile from './StringTile'
-import RadarChart from './RadarChart'
-import ComparisonTable from './ComparisonTable'
-import StringingBench from './StringingBench'
 import StringBasics from './StringBasics'
 
 type CategoryFilter = 'all' | 'repulsion' | 'control' | 'durability'
 
-const MAX_COMPARE = 3
 
 interface StringComparisonProps {
   /** Defaults to the static catalog import when omitted — pass the live, Supabase-merged array from useStringPool() to reflect current stock. */
@@ -25,14 +21,14 @@ interface StringComparisonProps {
   retailerListingsByStringId?: Record<string, RetailerListing[]>
 }
 
-export default function StringComparison({ strings: stringsProp, specialistProfiles, retailerListingsByStringId }: StringComparisonProps) {
+export default function StringComparison({ strings: stringsProp, retailerListingsByStringId }: StringComparisonProps) {
   const strings = stringsProp ?? defaultStrings
-  const [category, setCategory] = useState<CategoryFilter>('all')
-  const [brand, setBrand] = useState<string>('all')
-  const [availableOnly, setAvailableOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<SortOption>('recommended')
-  const [view, setView] = useState<PerformanceView>('bars')
-  const [compareIds, setCompareIds] = useState<string[]>(() => consumePendingComparisonSelection(typeof window === 'undefined' ? null : window.sessionStorage))
+  // Filters survive a visit to a string page and "back to all strings" (sessionStorage).
+  const [category, setCategory] = useSessionState<CategoryFilter>('smashlab.lineup.category', 'all')
+  const [brand, setBrand] = useSessionState<string>('smashlab.lineup.brand', 'all')
+  const [availableOnly, setAvailableOnly] = useSessionState<boolean>('smashlab.lineup.available', false)
+  const [sortBy, setSortBy] = useSessionState<SortOption>('smashlab.lineup.sort', 'recommended', (v): v is SortOption => SORT_OPTIONS.some((o) => o.id === v))
+  const [view, setView] = useSessionState<PerformanceView>('smashlab.lineup.view', 'bars')
 
 
   const brands = useMemo(() => Array.from(new Set(strings.map((s) => s.brand))).sort(), [strings])
@@ -45,34 +41,11 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
   })
 
   const sorted = sortStrings(filtered, sortBy, retailerListingsByStringId)
-  const compareItems = compareIds.map((id) => strings.find((s) => s.id === id)).filter((s): s is StringItem => s != null)
 
   // The comparison panel renders above the whole grid — often thousands of pixels away from the
   // card whose "+ Compare" was just clicked. Track whether it's on screen, and if not, show a
   // sticky bar so the selection is visible and one tap away.
-  const panelRef = useRef<HTMLDivElement>(null)
-  const hasSelection = compareItems.length > 0
-  const [panelVisible, setPanelVisible] = useState(false)
-  useEffect(() => {
-    const el = panelRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(([entry]) => setPanelVisible(entry.isIntersecting), { threshold: 0.15 })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [hasSelection])
 
-  function jumpToPanel() {
-    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    panelRef.current?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
-  }
-
-  function toggleCompare(id: string) {
-    setCompareIds((prev) => {
-      if (prev.includes(id)) return prev.filter((existing) => existing !== id)
-      if (prev.length >= MAX_COMPARE) return prev
-      return [...prev, id]
-    })
-  }
 
   return (
     <section id="strings" className="py-20 px-4 sm:px-6 max-w-6xl mx-auto scroll-mt-20">
@@ -149,36 +122,6 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
         {sortBy === 'popularity' && <p className="text-center text-xs text-ink-700/70 dark:text-shuttle-100/70">★ Popular among players at my club — not a global sales ranking.</p>}
       </div>
 
-      {/* The comparison is a stringing bench now — same size and material as the rest of the page. */}
-      <div ref={panelRef} className="mb-6 scroll-mt-24">
-        <StringingBench
-          items={compareItems}
-          max={MAX_COMPARE}
-          specialistProfiles={specialistProfiles}
-          onAdd={(id) => setCompareIds((prev) => (prev.includes(id) || prev.length >= MAX_COMPARE ? prev : [...prev, id]))}
-          onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
-          detail={
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <RadarChart
-                  size={300}
-                  showValues
-                  maxWidthClassName="max-w-[420px]"
-                  series={compareItems.map((item, i) => ({
-                    id: item.id,
-                    label: item.name,
-                    values: getPerformanceValues(item),
-                    strokeClassName: RADAR_COMPARE_COLORS[i].strokeClassName,
-                    fillClassName: RADAR_COMPARE_COLORS[i].fillClassName,
-                  }))}
-                />
-              </div>
-              <ComparisonTable items={compareItems} specialistProfiles={specialistProfiles} />
-            </div>
-          }
-        />
-      </div>
-
       <StringBasics className="mb-5 max-w-3xl mx-auto" />
 
       {sorted.length === 0 ? (
@@ -191,40 +134,15 @@ export default function StringComparison({ strings: stringsProp, specialistProfi
               index={index}
               item={item}
               view={view}
-              compareSelected={compareIds.includes(item.id)}
-              compareDisabled={compareIds.length >= MAX_COMPARE}
-              onToggleCompare={toggleCompare}
+              onTryInWorkshop={(id) => {
+                writeWorkshopPreset(typeof window === 'undefined' ? null : window.sessionStorage, { stringId: id, tensionKg: 11.5 })
+                window.location.hash = 'workshop'
+              }}
             />
           ))}
         </div>
       )}
 
-      {compareItems.length > 0 && !panelVisible && (
-        <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 pointer-events-none">
-          <div
-            role="region"
-            aria-label="Strings selected for comparison"
-            className="pointer-events-auto mx-auto max-w-xl flex items-center gap-3 rounded-2xl border-2 border-shuttle-500 bg-court-900 text-white shadow-2xl px-4 py-3"
-          >
-            <p className="min-w-0 flex-1 text-sm">
-              <span className="font-bold">
-                {compareItems.length} of {MAX_COMPARE} on the bench
-              </span>
-              <span className="block truncate text-white/70">{compareItems.map((i) => i.name).join(', ')}</span>
-            </p>
-            <button type="button" onClick={() => setCompareIds([])} className="focus-ring shrink-0 text-xs font-semibold text-white/70 hover:text-white cursor-pointer">
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={jumpToPanel}
-              className="focus-ring shrink-0 rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-sm font-bold px-4 py-2 cursor-pointer"
-            >
-              {compareItems.length === 1 ? 'View' : 'Compare now'}
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   )
 }

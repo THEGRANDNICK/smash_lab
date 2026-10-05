@@ -16,7 +16,6 @@ import { CONTACT } from '../data/contact'
 import { hasScoringAnswer } from '../logic/inTheRunning'
 import { getQuestion } from '../data/quizQuestions'
 import { TensionFields } from './TensionTuner'
-import { writePendingComparisonSelection } from '../logic/pendingComparisonSelection'
 import type { StringSpecialistProfile } from '../data/stringSpecialistProfiles'
 import type { QuizAnswers } from '../logic/types'
 import type { StringItem } from '../data/strings'
@@ -112,11 +111,13 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
     })
   }
 
+  /** Comparing happens in the Setup Workshop now: racket A with the shown string, racket B with the first other pick. */
   function handleCompareClick() {
-    if (selectedForCompare.size > 0) {
-      writePendingComparisonSelection(typeof window === 'undefined' ? null : window.sessionStorage, [...selectedForCompare])
-    }
-    onCompare()
+    const picked = [...selectedForCompare]
+    const a = picked[0] ?? featured.string.id
+    const b = picked.find((id) => id !== a) ?? rec.topThree.map((s) => s.string.id).find((id) => id !== a)
+    writeWorkshopPreset(typeof window === 'undefined' ? null : window.sessionStorage, { stringId: a, compareStringId: b, tensionKg: tension.recommendedKg, racketMaxKg })
+    window.location.hash = 'workshop'
   }
 
   // Availability is presentation only — never a filter on the podium

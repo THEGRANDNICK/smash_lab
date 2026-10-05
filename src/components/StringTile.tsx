@@ -2,7 +2,6 @@ import type { StringItem } from '../data/strings'
 import { formatGauge } from '../logic/formatGauge'
 import { stringPagePath } from '../logic/stringPages'
 import ImageSwiper from './ImageSwiper'
-import { REEL_DRAG_TYPE } from './StringingBench'
 import RadarChart from './RadarChart'
 import { AXIS_EXPLANATION, PERFORMANCE_AXES, PERFORMANCE_MAX, RADAR_COMPARE_COLORS, getPerformanceValues } from './performanceAxes'
 import type { PerformanceView } from './StringCard'
@@ -10,9 +9,8 @@ import type { PerformanceView } from './StringCard'
 interface StringTileProps {
   item: StringItem
   view?: PerformanceView
-  compareSelected?: boolean
-  compareDisabled?: boolean
-  onToggleCompare?: (id: string) => void
+  /** Opens the Setup Workshop with this string on the racket. */
+  onTryInWorkshop?: (id: string) => void
   /** Position in the grid — staggers the "dealt onto the table" entrance. */
   index?: number
 }
@@ -28,7 +26,7 @@ const STOCK_DOT: Record<StringItem['stock'], { className: string; label: string 
  * small radar — nothing else. Description, hands-on notes, price and retailer links live on the
  * string's own page, one tap away ("Details"). Two tiles fit side by side on a phone.
  */
-export default function StringTile({ item, view = 'bars', compareSelected = false, compareDisabled = false, onToggleCompare, index = 0 }: StringTileProps) {
+export default function StringTile({ item, view = 'bars', onTryInWorkshop, index = 0 }: StringTileProps) {
   const href = `${import.meta.env.BASE_URL}${stringPagePath(item.id)}`
   const gauge = formatGauge(item)
   const stock = STOCK_DOT[item.stock]
@@ -37,19 +35,9 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
   return (
     <article
       style={{ ['--deal-i' as string]: Math.min(index, 8) }}
-      className={`paper deal relative rounded-2xl border-2 p-2.5 sm:p-3.5 flex flex-col gap-2.5 transition-transform duration-200 hover:-rotate-1 ${
-        compareSelected ? 'border-shuttle-500' : 'border-transparent'
-      }`}
+      className="paper deal relative rounded-2xl border-2 border-transparent p-2.5 sm:p-3.5 flex flex-col gap-2.5 transition-transform duration-200 hover:-rotate-1"
     >
-      {/* drag the reel onto a racket on the stringing bench (desktop); "+ Racket" does the same anywhere */}
-      <div
-        className="relative cursor-grab active:cursor-grabbing"
-        draggable={onToggleCompare != null && !compareSelected}
-        onDragStart={(e) => {
-          e.dataTransfer.setData(REEL_DRAG_TYPE, item.id)
-          e.dataTransfer.effectAllowed = 'copy'
-        }}
-      >
+      <div className="relative">
         <ImageSwiper front={item.imageUrl} back={item.imageBackUrl} label={`${item.brand} ${item.name}`} placeholderText={item.name} />
         {item.popularityRank != null && (
           <span
@@ -103,17 +91,13 @@ export default function StringTile({ item, view = 'bars', compareSelected = fals
       )}
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-        {onToggleCompare ? (
+        {onTryInWorkshop ? (
           <button
             type="button"
-            onClick={() => onToggleCompare(item.id)}
-            disabled={compareDisabled && !compareSelected}
-            aria-pressed={compareSelected}
-            className={`focus-ring shrink-0 whitespace-nowrap rounded-full border-2 px-2 py-1 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
-              compareSelected ? 'border-shuttle-500 bg-shuttle-500 text-court-900' : 'border-court-900/15 dark:border-white/20 text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400'
-            }`}
+            onClick={() => onTryInWorkshop(item.id)}
+            className="focus-ring shrink-0 whitespace-nowrap rounded-full border-2 border-court-900/15 dark:border-white/20 px-2 py-1 text-xs font-semibold text-ink-900 dark:text-shuttle-50 hover:border-shuttle-400 cursor-pointer"
           >
-            {compareSelected ? '✓ On racket' : '+ Racket'}
+            Try in Workshop
           </button>
         ) : (
           <span />

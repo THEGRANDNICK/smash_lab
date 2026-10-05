@@ -5,6 +5,8 @@ export interface WorkshopPreset {
   stringId: string
   tensionKg: number
   racketMaxKg?: number
+  /** Opens a second racket (B) with this string, for side-by-side comparison. */
+  compareStringId?: string
 }
 
 const KEY = 'smashlab.workshopPreset'

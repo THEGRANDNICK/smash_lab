@@ -22,7 +22,10 @@ export const LEVEL_BASE_RANGES: Record<string, TensionRange> = {
   beginner: { min: 9, max: 11, target: 10 },
   intermediate: { min: 10.5, max: 12, target: 11.5 },
   advanced: { min: 11, max: 12, target: 11.5 },
-  tournament: { min: 11.5, max: 12.5, target: 12 },
+  // Tournament players follow the video: "27 lb and upwards" (≈12.25 kg); the presenters string at
+  // 30 lb (Greg, VBS-66 Nano ≈13.6 kg) and 29 lb (Jenny, VBS-68 ≈13.15 kg) — 11:25 in the video.
+  // Only reachable with a CHECKED racket maximum: without it the crosses stop at the assumed 12.5 kg.
+  tournament: { min: 12.25, max: 13.6, target: 12.7 },
 }
 
 /**

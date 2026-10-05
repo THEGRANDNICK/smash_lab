@@ -47,6 +47,17 @@ describe('level limits are real limits (review findings, Oct 2026)', () => {
   })
 })
 
+describe('tournament players follow the video (Greg 30 lb, Jenny 29 lb)', () => {
+  it('with a racket rated for it, a tournament player can reach the presenters’ range', () => {
+    const t = recommendTension({ level: 'tournament', racketGoal: 'precision', powerGeneration: 'ownPower', maxTensionKnown: 'yes', maxTensionValue: 14.5 }, bg80)
+    expect(t.recommendedKg).toBeGreaterThanOrEqual(12.5)
+    expect(t.recommendedKg).toBeLessThanOrEqual(13.6)
+  })
+  it('without a checked racket maximum it still stops at 12 kg (crosses ≤ 12.5 kg)', () => {
+    expect(recommendTension({ level: 'tournament', racketGoal: 'precision', powerGeneration: 'ownPower' }, bg80).crossKg).toBeLessThanOrEqual(12.5)
+  })
+})
+
 describe('mains, crosses and the racket maximum', () => {
   it('crosses are 1 kg above the mains; the stated tension is their average', () => {
     const t = recommendTension({ level: 'intermediate' }, bg80)

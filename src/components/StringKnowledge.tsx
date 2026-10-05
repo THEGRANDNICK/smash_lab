@@ -44,7 +44,7 @@ export default function StringKnowledge() {
           <p>Lower tension gives a bigger sweet spot and easier power and forgives off-centre hits. Higher tension gives more control — if you hit the centre consistently.</p>
           <p>
             <strong>Club players (Smash Lab's stringing practice):</strong> around {formatKg(club.target)}, at most {formatKg(club.max)}. Mains are strung {formatKg(CROSS_OFFSET_KG)} lower and crosses {formatKg(CROSS_OFFSET_KG)} higher
-            — at {formatKg(club.max)} that's {formatKg(club.max - CROSS_OFFSET_KG)} / {formatKg(club.max + CROSS_OFFSET_KG)}, and most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}. A thinner string goes a little lower. Not sure? Start lower and add 0.5 kg per restring.
+            — at {formatKg(club.max)} that's {formatKg(club.max - CROSS_OFFSET_KG)} / {formatKg(club.max + CROSS_OFFSET_KG)}, and most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}. A thinner string goes a little lower. <strong>Tournament players:</strong> from 27 lb (≈12.3 kg) — the video's presenters string at 29–30 lb (≈13.2–13.6 kg) — but only if your racket's maximum allows it. Not sure? Start lower and add 0.5 kg per restring.
           </p>
         </KnowledgeCard>
 

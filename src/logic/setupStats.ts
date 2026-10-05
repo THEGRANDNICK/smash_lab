@@ -68,6 +68,11 @@ export interface SetupInput {
   balance: RacketBalance
   /** The catalogue, for relative estimates of unrated properties. */
   pool: StringItem[]
+  /**
+   * 'maker' (the workshop's default): packet data only, mapped relative to the catalogue.
+   * 'handsOn': Smash Lab's hands-on ratings where they exist, packet data for the rest (flagged).
+   */
+  source?: 'maker' | 'handsOn'
 }
 
 export interface SetupStats {
@@ -91,10 +96,12 @@ function relativeEstimate(item: StringItem, key: MakerKey, pool: StringItem[]): 
 
 /** A string property on 0–1: hands-on rating if there is one, else a flagged relative estimate. */
 function stringValue(input: SetupInput, dim: SpecialistDimensionKey, maker: MakerKey): { v: number; estimated: boolean } {
-  const hands = input.profile?.dimensions[dim]
+  const handsOnMode = input.source === 'handsOn'
+  const hands = handsOnMode ? input.profile?.dimensions[dim] : undefined
   if (typeof hands === 'number') return { v: hands / 5, estimated: false }
   const est = relativeEstimate(input.string, maker, input.pool)
-  return { v: (est ?? 3) / 5, estimated: true }
+  // In packet-data mode nothing is "estimated" — packet data is the chosen source.
+  return { v: (est ?? 3) / 5, estimated: handsOnMode }
 }
 
 const BALANCE: Record<RacketBalance, Partial<Record<StatKey, number>>> = {

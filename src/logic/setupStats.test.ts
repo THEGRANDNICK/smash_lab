@@ -4,7 +4,7 @@ import { STRING_SPECIALIST_PROFILES as P } from '../data/stringSpecialistProfile
 import { SEGMENTS, SHELVES, setupStats, shelfOf, type RacketBalance } from './setupStats'
 
 const byId = (id: string) => strings.find((s) => s.id === id)!
-const base = (id: string, tensionKg = 11, balance: RacketBalance = 'standard') => setupStats({ string: byId(id), profile: P[id], tensionKg, balance, pool: strings })
+const base = (id: string, tensionKg = 11, balance: RacketBalance = 'standard') => setupStats({ string: byId(id), profile: P[id], tensionKg, balance, pool: strings, source: 'handsOn' })
 
 describe('string shelves', () => {
   it('every string sits on exactly one shelf, and every shelf has strings', () => {
@@ -15,6 +15,15 @@ describe('string shelves', () => {
     expect(shelfOf(byId('yonex-bg65'), P['yonex-bg65'])).toBe('startHere')
     expect(shelfOf(byId('yonex-bg80'), P['yonex-bg80'])).toBe('control')
     expect(shelfOf(byId('yonex-aerosonic'), P['yonex-aerosonic'])).toBe('power')
+  })
+})
+
+describe('data source', () => {
+  it('packet data is the default; hands-on ratings only count when switched on', () => {
+    const maker = setupStats({ string: byId('yonex-bg80'), profile: P['yonex-bg80'], tensionKg: 11, balance: 'even', pool: strings })
+    const hands = setupStats({ string: byId('yonex-bg80'), profile: P['yonex-bg80'], tensionKg: 11, balance: 'even', pool: strings, source: 'handsOn' })
+    expect(maker.estimated).toEqual([])
+    expect(maker.values).not.toEqual(hands.values)
   })
 })
 
