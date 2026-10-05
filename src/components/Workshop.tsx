@@ -10,6 +10,7 @@ import { formatKg, formatLbs } from '../logic/units'
 import { readWorkshopPreset } from '../logic/workshopPreset'
 import WorkshopRacket from './WorkshopRacket'
 import WheelPicker from './WheelPicker'
+import RacketMaxInput from './RacketMaxInput'
 
 const BALANCES: { id: RacketBalance; label: string; hint: string }[] = [
   { id: 'standard', label: "Don't know", hint: 'a standard, even-balanced racket' },
@@ -76,8 +77,6 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
   const whatsAppUrl = buildEnquiryWhatsAppUrl({
     stringName: `${string.brand} ${string.name}`,
     tensionKg: build.tensionKg,
-    mainsKg: build.tensionKg - CROSS_OFFSET_KG,
-    crossKg: build.tensionKg + CROSS_OFFSET_KG,
     racketMaxKg,
     racketBalance: BALANCE_WORDS[build.balance],
     dataSourceLabel: source === 'maker' ? 'Workshop · manufacturer data' : 'Workshop · manufacturer + Smash Lab hands-on',
@@ -142,7 +141,7 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
           </div>
           <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
             {builds.length > 1 ? `Editing racket ${active === 0 ? 'A' : 'B'} · ` : ''}
-            {BALANCE_WORDS[build.balance]} · {string.name} · {formatKg(build.tensionKg - CROSS_OFFSET_KG)} / {formatKg(build.tensionKg + CROSS_OFFSET_KG)}
+            {BALANCE_WORDS[build.balance]} · {string.name} · {formatKg(build.tensionKg)}
           </p>
           <ul className="mt-3 space-y-1.5" aria-label="What this setup does">
             {STAT_ORDER.map(({ key, label }) => (
@@ -245,9 +244,8 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
           <section className="paper p-4 sm:p-5" aria-labelledby="ws-tension">
             <h2 id="ws-tension" className="font-display font-bold text-ink-900 dark:text-shuttle-50">3 · Tension</h2>
             <p className="mt-2 font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">
-              {formatKg(build.tensionKg - CROSS_OFFSET_KG)} mains / {formatKg(build.tensionKg + CROSS_OFFSET_KG)} crosses
+              {formatKg(build.tensionKg)} <span className="text-base font-normal text-ink-700/70 dark:text-shuttle-100/70">≈ {formatLbs(build.tensionKg)}</span>
             </p>
-            <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">Average {formatKg(build.tensionKg)} (≈ {formatLbs(build.tensionKg)})</p>
             <label className="block mt-3">
               <span className="sr-only">Tension</span>
               <input
@@ -264,27 +262,14 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
               <span>{formatKg(8)} · forgiving</span>
               <span>max {formatKg(maxStated)} · crisp</span>
             </p>
-            <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-semibold text-ink-900 dark:text-shuttle-50">My racket's max:</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={14}
-                max={40}
-                defaultValue={racketMaxKg ? Math.round(racketMaxKg / 0.45359237) : undefined}
-                placeholder="e.g. 28"
-                className="focus-ring w-20 rounded-lg border-2 border-court-900/20 dark:border-white/25 card-stock px-2 py-1 text-ink-900 dark:text-shuttle-50"
-                onBlur={(e) => {
-                  const lbs = Number(e.target.value)
-                  if (Number.isFinite(lbs) && lbs >= 14 && lbs <= 40) {
-                    const kg = Math.round(lbs * 0.45359237 * 10) / 10
-                    setRacketMaxKg(kg)
-                    setBuilds((all) => all.map((b) => ({ ...b, tensionKg: Math.min(b.tensionKg, kg - CROSS_OFFSET_KG) })))
-                  }
-                }}
-              />
-              <span className="text-ink-700/80 dark:text-shuttle-100/80">lbs {racketMaxKg ? '✓' : '— not checked, 12.5 kg assumed'}</span>
-            </label>
+            <RacketMaxInput
+              className="mt-3"
+              valueKg={racketMaxKg}
+              onChange={(kg) => {
+                setRacketMaxKg(kg)
+                setBuilds((all) => all.map((b) => ({ ...b, tensionKg: Math.min(b.tensionKg, kg - CROSS_OFFSET_KG) })))
+              }}
+            />
           </section>
 
           <section className="paper p-4 sm:p-5" aria-labelledby="ws-garage">
@@ -341,7 +326,7 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
               data-sound="pluck"
               className="press focus-ring block rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-center font-bold py-3"
             >
-              💬 Ask {CONTACT.name} to string this · WhatsApp
+              💬 Ask {CONTACT.name} about this setup · WhatsApp
             </a>
           )}
         </div>

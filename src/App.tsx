@@ -4,13 +4,16 @@ import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
 import StringComparison from './components/StringComparison'
 import Footer from './components/Footer'
-import StringFinder from './components/StringFinder'
 import SavedSetupBanner from './components/SavedSetupBanner'
-import RecommendationResult from './components/RecommendationResult'
 import DevSupabaseDebugPage from './components/SupabaseDebugPage'
 // Lazy-loaded: the admin area (forms, map placer, Supabase auth UI) is never needed by visitors,
 // so it stays out of the main bundle and only downloads when #admin is opened.
 const AdminApp = lazy(() => import('./components/admin/AdminApp'))
+// Loaded when opened, not on the first visit: keeps the start page light on phones.
+const StringFinder = lazy(() => import('./components/StringFinder'))
+const RecommendationResult = lazy(() => import('./components/RecommendationResult'))
+const Workshop = lazy(() => import('./components/Workshop'))
+const StringKnowledge = lazy(() => import('./components/StringKnowledge'))
 import Impressum from './components/legal/Impressum'
 import Datenschutz from './components/legal/Datenschutz'
 import { useStringPool } from './hooks/useStringPool'
@@ -18,8 +21,6 @@ import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
 import ErrorBoundary from './components/ErrorBoundary'
-import StringKnowledge from './components/StringKnowledge'
-import Workshop from './components/Workshop'
 import { play, soundForElement } from './logic/sound'
 import { strings } from './data/strings'
 import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
@@ -221,6 +222,7 @@ function App() {
       <Nav onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onHome={() => goTo('home')} />
 
       <main className="flex-1">
+        <Suspense fallback={<p className="p-10 text-center text-sm text-ink-700/70 dark:text-shuttle-100/70">Loading…</p>}>
         {view === 'home' && (
           <>
             <SavedSetupBanner />
@@ -324,6 +326,7 @@ function App() {
         )}
 
         {view === 'debug' && import.meta.env.DEV && <DevSupabaseDebugPage />}
+        </Suspense>
       </main>
 
       <Footer />

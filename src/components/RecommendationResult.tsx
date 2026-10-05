@@ -10,6 +10,7 @@ import { buildPodiumAlternativeReason, buildPodiumBestReason } from '../logic/re
 import { getSpecialistProfile } from '../data/stringSpecialistProfiles'
 import { DATA_SOURCE_NOTE, type DataSource } from '../logic/dataSourcePreference'
 import ImageSwiper from './ImageSwiper'
+import RacketMaxInput from './RacketMaxInput'
 import { writeWorkshopPreset } from '../logic/workshopPreset'
 import { HANDS_ON_PROPERTY_COUNT, provenanceOf } from '../logic/provenance'
 import { CONTACT } from '../data/contact'
@@ -157,8 +158,6 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
   const whatsAppUrl = buildEnquiryWhatsAppUrl({
     stringName: `${featured.string.brand} ${featured.string.name}`,
     tensionKg: tension.recommendedKg,
-    mainsKg: tension.mainsKg,
-    crossKg: tension.crossKg,
     racketMaxKg,
     matchPercent: featured.matchPercent,
     dataSourceLabel: DATA_SOURCE_NOTE[dataSource],
@@ -175,11 +174,6 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         ? 'Ahead in the ranking'
         : 'Close call in the ranking'
 
-  function applyRacketMax(raw: string) {
-    const lbs = Number(raw)
-    if (!onChangeAnswers || !Number.isFinite(lbs) || lbs < 14 || lbs > 40) return
-    onChangeAnswers({ ...answers, maxTensionKnown: 'yes', maxTensionValue: Math.round(lbs * 0.45359237 * 10) / 10 })
-  }
   const others = rec.topThree.filter((s) => s.string.id !== featured.string.id)
   const featuredProvenance = provenanceOf(specialistProfiles?.[featured.string.id])
 
@@ -223,49 +217,25 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
           </p>
         )}
 
-        {/* What to tell the stringer — both numbers, never one ambiguous value (review finding, Oct 2026). */}
-        <div className="mt-5 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
-            For your stringer{tensionIsProvisional ? ' · provisional' : ''}
-          </p>
-          <p className="font-display text-2xl sm:text-3xl font-bold text-ink-900 dark:text-shuttle-50">
-            {formatKg(tension.mainsKg)} mains / {formatKg(tension.crossKg)} crosses
-          </p>
-          <p className="text-sm text-ink-700/70 dark:text-shuttle-100/70">
-            Average {formatKg(tension.recommendedKg)} (≈ {formatLbs(tension.recommendedKg)}) · crosses {formatKg(tension.crossKg - tension.mainsKg)} higher than mains
-          </p>
+        <div className="mt-5 flex flex-wrap items-baseline gap-x-3 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">Tension{tensionIsProvisional ? ' · provisional' : ''}</span>
+          <span className="font-display text-3xl font-bold text-ink-900 dark:text-shuttle-50">{formatKg(tension.recommendedKg)}</span>
+          <span className="text-ink-700/70 dark:text-shuttle-100/70">≈ {formatLbs(tension.recommendedKg)}</span>
         </div>
         {!answers.level && <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">You skipped your level, so this is the tension for a typical club player.</p>}
 
         {/* Racket maximum: checked right here, not hidden in a fold — the default is only an assumption. */}
         {answers.maxTensionKnown === 'yes' && typeof answers.maxTensionValue === 'number' ? (
           <p className="mt-3 text-sm font-semibold text-court-700 dark:text-shuttle-400">
-            ✓ Within your racket's maximum of {answers.maxTensionValue.toFixed(1)} kg ({Math.round(answers.maxTensionValue / 0.45359237)} lbs) — crosses included.
+            ✓ Within your racket's maximum of {answers.maxTensionValue.toFixed(1)} kg ({Math.round(answers.maxTensionValue / 0.45359237)} lbs).
           </p>
         ) : (
           <div role="note" className="mt-3 rounded-xl border-2 border-amber-500/70 bg-amber-500/10 p-3 text-sm">
             <p className="font-semibold text-ink-900 dark:text-shuttle-50">Check your racket's maximum before stringing.</p>
             <p className="mt-0.5 text-ink-700/90 dark:text-shuttle-100/90">
-              It's printed on the shaft or near the T-joint, e.g. “20–28 lbs”. We assumed 12.5 kg (common for Yonex) — some beginner rackets allow only 9–10 kg.
+              It's printed on the shaft or near the T-joint, e.g. “20–28 lbs” — enter the higher number, in kg or lbs. We assumed 12.5 kg (common for Yonex); some beginner rackets allow only 9–10 kg.
             </p>
-            {onChangeAnswers && (
-              <label className="mt-2 flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">My racket's max:</span>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min={14}
-                  max={40}
-                  placeholder="e.g. 28"
-                  className="focus-ring w-24 rounded-lg border-2 border-court-900/20 dark:border-white/25 card-stock px-2 py-1 text-ink-900 dark:text-shuttle-50"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') applyRacketMax((e.target as HTMLInputElement).value)
-                  }}
-                  onBlur={(e) => applyRacketMax(e.target.value)}
-                />
-                <span className="text-ink-700/80 dark:text-shuttle-100/80">lbs (the higher number)</span>
-              </label>
-            )}
+            {onChangeAnswers && <RacketMaxInput className="mt-2" onChange={(kg) => onChangeAnswers({ ...answers, maxTensionKnown: 'yes', maxTensionValue: kg })} />}
           </div>
         )}
         <p className="mt-1 text-sm text-ink-700/80 dark:text-shuttle-100/80">
@@ -280,7 +250,7 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         <div className="mt-5 flex gap-2">
           {whatsAppUrl && (
             <a href={whatsAppUrl} target="_blank" rel="noopener noreferrer" data-sound="pluck" className="press focus-ring flex-1 rounded-full bg-shuttle-500 hover:bg-shuttle-400 text-court-900 text-center font-bold py-3">
-              💬 Ask {CONTACT.name} to string it · WhatsApp
+              💬 Ask {CONTACT.name} · WhatsApp
             </a>
           )}
           <button
@@ -397,8 +367,6 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         )}
         <Fold title="Ask a question or add your racket">
           <StringingEnquiry
-            mainsKg={tension.mainsKg}
-            crossKg={tension.crossKg}
             racketMaxKg={racketMaxKg}
             stringBrand={featured.string.brand}
             stringName={featured.string.name}
@@ -469,7 +437,7 @@ function FineTune({ answers, onChange }: { answers: QuizAnswers; onChange: (next
         />
         My strings often break from mishits
       </label>
-      <TensionFields answers={answers} onChange={onChange} />
+      <TensionFields answers={answers} onChange={onChange} showRacketMax={false} />
     </div>
   )
 }

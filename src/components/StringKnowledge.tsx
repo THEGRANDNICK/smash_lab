@@ -2,14 +2,14 @@ import type { ReactNode } from 'react'
 import FAQ from './FAQ'
 import Contact from './Contact'
 import { cutEllipse, cutPolygon } from '../logic/scissors'
-import { CROSS_OFFSET_KG, DEFAULT_RACKET_MAX_KG, LEVEL_BASE_RANGES } from '../config/tensionRules'
+import { DEFAULT_RACKET_MAX_KG, LEVEL_BASE_RANGES } from '../config/tensionRules'
 import { formatKg } from '../logic/units'
 
 /**
  * "Knowledge": what actually matters when choosing a string and a tension, in five cut-paper
  * cards. Replaces the old marketing sections (How it works, Why Smash Lab, restring tip).
  * Content: Badminton Insight, "What Badminton String & Tension Should You Use?" (Aug 2026), plus
- * the stringer's own practice for club players (tension cap, mains/crosses). Numbers come from
+ * the stringer's own practice for club players (tension cap). Numbers come from
  * config/tensionRules.ts, so this page can't drift from what the recommendation actually does.
  */
 const VIDEO = 'https://www.youtube.com/watch?v=Z09cXPwU-n0'
@@ -43,8 +43,7 @@ export default function StringKnowledge() {
         <KnowledgeCard title="Tension — tighter isn't better" art={<TensionArt />} index={3} source={{ href: `${VIDEO}&t=371s`, at: '6:11' }}>
           <p>Lower tension gives a bigger sweet spot and easier power and forgives off-centre hits. Higher tension gives more control — if you hit the centre consistently.</p>
           <p>
-            <strong>Club players (Smash Lab's stringing practice):</strong> around {formatKg(club.target)}, at most {formatKg(club.max)}. Mains are strung {formatKg(CROSS_OFFSET_KG)} lower and crosses {formatKg(CROSS_OFFSET_KG)} higher
-            — at {formatKg(club.max)} that's {formatKg(club.max - CROSS_OFFSET_KG)} / {formatKg(club.max + CROSS_OFFSET_KG)}, and most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}. A thinner string goes a little lower. <strong>Tournament players:</strong> from 27 lb (≈12.3 kg) — the video's presenters string at 29–30 lb (≈13.2–13.6 kg) — but only if your racket's maximum allows it. Not sure? Start lower and add 0.5 kg per restring.
+            <strong>Club players (Smash Lab's stringing practice):</strong> around {formatKg(club.target)}, at most {formatKg(club.max)} — most Yonex rackets allow {formatKg(DEFAULT_RACKET_MAX_KG)}, so that leaves a little safety room. A thinner string goes a little lower. <strong>Tournament players:</strong> from 27 lb (≈12.3 kg) — the video's presenters string at 29–30 lb (≈13.2–13.6 kg) — but only if your racket's maximum allows it. Not sure? Start lower and add 0.5 kg per restring.
           </p>
         </KnowledgeCard>
 

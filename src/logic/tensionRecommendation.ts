@@ -175,9 +175,9 @@ export function recommendTension(answers: QuizAnswers, string?: StringItem): Ten
   }
 
   if (wasCappedByRacketMax) {
-    reasoning += ` We've kept this within your racket's maximum of ${racketMaxKg} kg — the crosses are strung ${CROSS_OFFSET_KG} kg higher than this.`
+    reasoning += ` We've kept this safely below your racket's maximum of ${racketMaxKg} kg.`
   } else if (cappedByTypicalRacketMax) {
-    reasoning += ` Most Yonex rackets allow up to ${DEFAULT_RACKET_MAX_KG} kg, and the crosses are strung ${CROSS_OFFSET_KG} kg higher, so we stopped at ${roundDown(statedCap)} kg. If your racket allows more, add its maximum.`
+    reasoning += ` Most Yonex rackets allow up to ${DEFAULT_RACKET_MAX_KG} kg, so we stopped at ${roundDown(statedCap)} kg to stay safely below it. If your racket allows more, add its maximum.`
   }
 
   return {
