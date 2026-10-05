@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import Nav from './components/Nav'
 import OfflineBanner from './components/OfflineBanner'
 import Hero from './components/Hero'
+import HomeBasics from './components/HomeBasics'
 import StringComparison from './components/StringComparison'
 import Footer from './components/Footer'
 import SavedSetupBanner from './components/SavedSetupBanner'
@@ -119,7 +120,8 @@ function viewFromHash(): View {
     hash === 'admin/specialists' ||
     hash === 'admin/retailers' ||
     hash === 'admin/retailer-listings' ||
-    hash === 'admin/imports'
+    hash === 'admin/imports' ||
+    hash === 'admin/feedback'
   )
     return 'admin'
   // Dev-only diagnostic route — import.meta.env.DEV is statically replaced
@@ -227,6 +229,7 @@ function App() {
           <>
             <SavedSetupBanner />
             <Hero onOpenFinder={() => goTo('finder')} onOpenCompare={() => goTo('compare')} onOpenDetailed={() => (window.location.hash = 'finder-detailed')} />
+            <HomeBasics strings={liveStrings} onQuiz={() => goTo('finder')} onDetailedQuiz={() => (window.location.hash = 'finder-detailed')} />
             <StringComparison strings={liveStrings} specialistProfiles={specialistProfiles} />
           </>
         )}

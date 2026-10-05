@@ -215,6 +215,54 @@ export interface Database {
         ]
       }
 
+      string_feedback: {
+        Row: {
+          id: string
+          created_at: string
+          string_id: string
+          racket_name: string | null
+          racket_balance: 'headHeavy' | 'even' | 'headLight' | null
+          tension_kg: number | null
+          level: 'beginner' | 'intermediate' | 'advanced' | 'tournament' | null
+          play_style: 'attacking' | 'doubles' | 'control' | 'defensive' | 'allRound' | null
+          rating_power: number | null
+          rating_control: number | null
+          rating_comfort: number | null
+          rating_durability: number | null
+          comment: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          string_id: string
+          racket_name?: string | null
+          racket_balance?: 'headHeavy' | 'even' | 'headLight' | null
+          tension_kg?: number | null
+          level?: 'beginner' | 'intermediate' | 'advanced' | 'tournament' | null
+          play_style?: 'attacking' | 'doubles' | 'control' | 'defensive' | 'allRound' | null
+          rating_power?: number | null
+          rating_control?: number | null
+          rating_comfort?: number | null
+          rating_durability?: number | null
+          comment?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          string_id?: string
+          racket_name?: string | null
+          racket_balance?: 'headHeavy' | 'even' | 'headLight' | null
+          tension_kg?: number | null
+          level?: 'beginner' | 'intermediate' | 'advanced' | 'tournament' | null
+          play_style?: 'attacking' | 'doubles' | 'control' | 'defensive' | 'allRound' | null
+          rating_power?: number | null
+          rating_control?: number | null
+          rating_comfort?: number | null
+          rating_durability?: number | null
+          comment?: string | null
+        }
+        Relationships: []
+      }
       specialist_profiles: {
         Row: {
           string_id: string

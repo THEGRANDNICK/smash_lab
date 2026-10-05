@@ -13,12 +13,11 @@ import WheelPicker from './WheelPicker'
 import RacketMaxInput from './RacketMaxInput'
 
 const BALANCES: { id: RacketBalance; label: string; hint: string }[] = [
-  { id: 'standard', label: "Don't know", hint: 'a standard, even-balanced racket' },
   { id: 'headHeavy', label: 'Head-heavy', hint: 'more power, slower handling' },
-  { id: 'even', label: 'Even balance', hint: 'all-round' },
+  { id: 'even', label: 'Medium balance', hint: 'the standard — all-round' },
   { id: 'headLight', label: 'Head-light', hint: 'fast handling, less power' },
 ]
-const BALANCE_WORDS: Record<RacketBalance, string> = { standard: 'standard', headHeavy: 'head-heavy', even: 'even balance', headLight: 'head-light' }
+const BALANCE_WORDS: Record<RacketBalance, string> = { standard: 'medium balance', headHeavy: 'head-heavy', even: 'medium balance', headLight: 'head-light' }
 
 interface Build {
   balance: RacketBalance
@@ -42,9 +41,10 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
   const profiles = specialistProfiles ?? STRING_SPECIALIST_PROFILES
   const [preset] = useState(() => readWorkshopPreset(typeof window === 'undefined' ? null : window.sessionStorage))
   const known = (id?: string) => (id && items.some((s) => s.id === id) ? id : undefined)
-  const defaultString = (items.find((s) => s.id === 'yonex-nanogy-99') ?? items[0]).id
+  // BG65: the most popular, durable all-rounder — the natural place to start
+  const defaultString = (items.find((s) => s.id === 'yonex-bg65') ?? items[0]).id
   const [builds, setBuilds] = useState<Build[]>(() => {
-    const a: Build = { balance: 'standard', stringId: known(preset?.stringId) ?? defaultString, tensionKg: preset?.tensionKg ?? 11 }
+    const a: Build = { balance: 'even', stringId: known(preset?.stringId) ?? defaultString, tensionKg: preset?.tensionKg ?? 11 }
     const b = known(preset?.compareStringId)
     return b ? [a, { ...a, stringId: b }] : [a]
   })

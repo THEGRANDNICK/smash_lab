@@ -46,9 +46,9 @@ export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: He
           <button
             type="button"
             onClick={onOpenDetailed}
-            className="focus-ring mt-3 text-sm font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer"
+            className="press focus-ring mt-3 rounded-full border-2 border-shuttle-500 bg-shuttle-100 hover:bg-shuttle-400/40 dark:bg-shuttle-500/15 px-4 py-1.5 text-sm font-bold text-court-900 dark:text-shuttle-50 cursor-pointer"
           >
-            Want it more precise? Take the detailed quiz (8 questions)
+            More precise: detailed quiz (8 questions)
           </button>
         )}
 

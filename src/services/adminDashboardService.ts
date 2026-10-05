@@ -34,7 +34,7 @@ export const STALE_LISTING_DAYS = 30
  * which has no "jsx" option set). AdminApp.tsx imports this type from here
  * instead of the other way around.
  */
-export type AdminSection = 'dashboard' | 'inventory' | 'catalog' | 'specialists' | 'retailers' | 'retailerListings' | 'imports'
+export type AdminSection = 'dashboard' | 'inventory' | 'catalog' | 'specialists' | 'retailers' | 'retailerListings' | 'imports' | 'feedback'
 
 export type DashboardSourceId = 'catalog' | 'inventory' | 'specialists' | 'retailers' | 'retailerListings'
 

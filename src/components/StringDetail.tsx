@@ -14,6 +14,7 @@ import { AXIS_EXPLANATION, PERFORMANCE_AXES, PERFORMANCE_MAX, getPerformanceValu
 import ImageSwiper from './ImageSwiper'
 import SpecialistPanel from './SpecialistPanel'
 import StringBasics from './StringBasics'
+import StringFeedback from './StringFeedback'
 
 interface StringDetailProps {
   stringId: string
@@ -207,6 +208,8 @@ export default function StringDetail({ stringId, strings, specialistProfiles, on
           )}
         </section>
       )}
+
+      <StringFeedback stringId={item.id} stringName={item.name} />
 
       <div className="mt-6 flex flex-wrap gap-3 justify-center">
         {whatsAppUrl && (

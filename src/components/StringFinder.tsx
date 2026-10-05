@@ -273,6 +273,15 @@ export default function StringFinder({ onExit, onCompare, pool, specialistProfil
       </div>
 
       <ProgressBar step={stepIndex} total={displayTotal} />
+      {mode === 'quick' && (
+        <button
+          type="button"
+          onClick={() => setMode('detailed')}
+          className="focus-ring mt-2 text-xs font-semibold text-court-800 dark:text-shuttle-400 underline underline-offset-4 cursor-pointer"
+        >
+          Want it more precise? Switch to the detailed quiz (8 questions) — your answers stay
+        </button>
+      )}
 
       {/* phones: a compact strip of the live feel map above the question */}
       {!isWide && (

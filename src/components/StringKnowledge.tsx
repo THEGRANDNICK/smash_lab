@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import FAQ from './FAQ'
 import Contact from './Contact'
 import { cutEllipse, cutPolygon } from '../logic/scissors'
@@ -15,6 +15,13 @@ import { formatKg } from '../logic/units'
 const VIDEO = 'https://www.youtube.com/watch?v=Z09cXPwU-n0'
 
 export default function StringKnowledge() {
+  // This page loads on demand, so the app can't scroll to #knowledge-contact / #faq before it exists:
+  // the page does it itself once it's on screen (first click on "Contact" lands right there).
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '')
+    const target = hash === 'knowledge-contact' || hash === 'contact' ? 'knowledge-contact' : hash === 'faq' ? 'faq' : null
+    if (target) document.getElementById(target)?.scrollIntoView()
+  }, [])
   const club = LEVEL_BASE_RANGES.intermediate
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 sm:py-14">
