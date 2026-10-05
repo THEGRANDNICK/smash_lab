@@ -29,7 +29,7 @@ export default function SoundToggle() {
         </svg>
       )}
       {/* the word makes the button's purpose obvious where there's room */}
-      <span className="hidden lg:inline text-xs font-semibold">{on ? 'Sound on' : 'Sound off'}</span>
+      <span className="text-xs font-semibold sm:hidden lg:inline">{on ? 'Sound on' : 'Sound off'}</span>
     </button>
   )
 }

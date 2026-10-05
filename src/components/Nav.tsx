@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Shuttlecock from './Shuttlecock'
 import SoundToggle from './SoundToggle'
 import ThemeToggle from './ThemeToggle'
@@ -11,6 +11,16 @@ interface NavProps {
 
 export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  // Any page change closes the phone menu — also when it happens through a button in the page itself.
+  useEffect(() => {
+    const close = () => setMobileMenuOpen(false)
+    window.addEventListener('hashchange', close)
+    window.addEventListener('popstate', close)
+    return () => {
+      window.removeEventListener('hashchange', close)
+      window.removeEventListener('popstate', close)
+    }
+  }, [])
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-md bg-shuttle-50/80 dark:bg-[#1e201f]/80 border-b border-court-900/10 dark:border-white/10">
@@ -34,8 +44,10 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
           </a>
         </nav>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <ThemeToggle />
-          <SoundToggle />
+          <span className="hidden sm:contents">
+            <ThemeToggle />
+            <SoundToggle />
+          </span>
           <button
             type="button"
             onClick={onOpenFinder}
@@ -70,14 +82,19 @@ export default function Nav({ onOpenFinder, onOpenCompare, onHome }: NavProps) {
             Strings
           </button>
           <a href={`${import.meta.env.BASE_URL}#workshop`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
-            Tension
+            Workshop
           </a>
           <a href={`${import.meta.env.BASE_URL}#knowledge`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
-            FAQ
+            Knowledge
           </a>
           <a href={`${import.meta.env.BASE_URL}#knowledge-contact`} onClick={() => setMobileMenuOpen(false)} className="focus-ring py-2.5 px-2 rounded-lg hover:bg-court-900/5 dark:hover:bg-white/5">
             Contact
           </a>
+          {/* on phones the theme and sound switches live here, keeping the header to three items */}
+          <div className="mt-2 flex gap-2 border-t border-court-900/10 dark:border-white/10 pt-3">
+            <ThemeToggle />
+            <SoundToggle />
+          </div>
         </nav>
       )}
     </header>

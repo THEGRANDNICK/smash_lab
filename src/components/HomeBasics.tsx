@@ -24,15 +24,15 @@ export default function HomeBasics({ strings, onQuiz, onDetailedQuiz }: HomeBasi
   }
 
   return (
-    <section aria-labelledby="basics-heading" className="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+    <section aria-labelledby="basics-heading" className="max-w-6xl mx-auto px-4 py-8 sm:py-16">
       <div className="text-center max-w-2xl mx-auto">
         <span className="tape">The short version</span>
-        <h2 id="basics-heading" className="mt-4 font-display text-3xl sm:text-4xl font-bold text-ink-900 dark:text-shuttle-50">
+        <h2 id="basics-heading" className="mt-3 font-display text-2xl sm:text-4xl font-bold text-ink-900 dark:text-shuttle-50">
           Most players need one of two strings
         </h2>
       </div>
 
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
+      <div className="mt-5 sm:mt-8 grid gap-3 sm:gap-5 md:grid-cols-3">
         <BasicsCard
           index={0}
           title="Not sure? Go thicker."
@@ -49,7 +49,7 @@ export default function HomeBasics({ strings, onQuiz, onDetailedQuiz }: HomeBasi
           pick="Yonex BG80"
           onTry={bg80 ? () => tryIt(bg80.id, 11.5) : undefined}
         />
-        <article className="paper deal p-5 flex flex-col" style={{ ['--deal-i' as string]: 2 }}>
+        <article className="paper deal p-4 sm:p-5 flex flex-col" style={{ ['--deal-i' as string]: 2 }}>
           <h3 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">Everything else: take the quiz</h3>
           <p className="mt-2 text-sm text-ink-700/90 dark:text-shuttle-100/90">
             Four quick questions about how you play. It can't promise to be perfect — but it tries, shows its reasoning, and you can fine-tune the result afterwards.
@@ -74,17 +74,17 @@ export default function HomeBasics({ strings, onQuiz, onDetailedQuiz }: HomeBasi
 
 function BasicsCard({ index, title, item, text, pick, onTry }: { index: number; title: string; item?: StringItem; text: string; pick: string; onTry?: () => void }) {
   return (
-    <article className="paper deal p-5 flex flex-col" style={{ ['--deal-i' as string]: index }}>
+    <article className="paper deal p-4 sm:p-5 flex flex-col" style={{ ['--deal-i' as string]: index }}>
       <div className="flex items-start gap-4">
-        <div className="w-24 shrink-0">
+        <div className="w-16 sm:w-24 shrink-0">
           <ImageSwiper front={item?.imageUrl} back={item?.imageBackUrl} label={pick} placeholderText={item?.name ?? pick} />
         </div>
-        <h3 className="font-display text-xl font-bold text-ink-900 dark:text-shuttle-50">{title}</h3>
+        <h3 className="font-display text-lg sm:text-xl font-bold text-ink-900 dark:text-shuttle-50">{title}</h3>
       </div>
       <p className="mt-3 text-sm text-ink-700/90 dark:text-shuttle-100/90">
         {text} <strong className="text-ink-900 dark:text-shuttle-50">{pick}</strong>.
       </p>
-      <div className="mt-auto pt-5 flex flex-wrap gap-2">
+      <div className="mt-auto pt-4 sm:pt-5 flex flex-wrap gap-2">
         {item && (
           <a href={`${import.meta.env.BASE_URL}${stringPagePath(item.id)}`} className="press focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 px-4 py-2 text-sm font-semibold text-ink-900 dark:text-shuttle-50">
             About {item.name}

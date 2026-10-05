@@ -13,7 +13,7 @@ interface HeroProps {
  */
 export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: HeroProps) {
   return (
-    <section className="relative overflow-hidden px-4 pt-5 pb-6 sm:pt-16 sm:pb-36 min-h-[calc(100svh-4rem)] sm:min-h-[78svh] flex items-start sm:items-center justify-center lg:justify-start lg:pl-[7vw]">
+    <section className="relative overflow-hidden px-4 pt-5 pb-6 sm:pt-16 sm:pb-36 min-h-[64svh] sm:min-h-[78svh] flex items-start sm:items-center justify-center lg:justify-start lg:pl-[7vw]">
       {/* the cut-out stage: a paper rally on a paper court — only here, on the opening screen */}
       <PaperScene />
       {/* drops onto the court in stop-motion frames (CSS only — the start page doesn't load the animation library) */}
@@ -36,7 +36,7 @@ export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: He
           <button
             type="button"
             onClick={onOpenCompare}
-            className="press focus-ring flex-1 sm:flex-none rounded-full border-2 border-court-900/20 dark:border-white/25 font-semibold px-4 sm:px-8 py-3 sm:py-3.5 text-base sm:text-lg text-ink-900 dark:text-shuttle-50 cursor-pointer"
+            className="hidden sm:inline-flex sm:items-center sm:justify-center press focus-ring flex-1 sm:flex-none rounded-full border-2 border-court-900/20 dark:border-white/25 font-semibold px-4 sm:px-8 py-3 sm:py-3.5 text-base sm:text-lg text-ink-900 dark:text-shuttle-50 cursor-pointer"
           >
             Browse strings
           </button>
@@ -46,13 +46,13 @@ export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: He
           <button
             type="button"
             onClick={onOpenDetailed}
-            className="press focus-ring mt-3 rounded-full border-2 border-shuttle-500 bg-shuttle-100 hover:bg-shuttle-400/40 dark:bg-shuttle-500/15 px-4 py-1.5 text-sm font-bold text-court-900 dark:text-shuttle-50 cursor-pointer"
+            className="press focus-ring mt-3 rounded-full border-2 border-shuttle-500 bg-shuttle-100 text-xs sm:text-sm hover:bg-shuttle-400/40 dark:bg-shuttle-500/15 px-4 py-1.5 text-sm font-bold text-court-900 dark:text-shuttle-50 cursor-pointer"
           >
             More precise: detailed quiz (8 questions)
           </button>
         )}
 
-        <ul className="mt-4 sm:mt-7 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-semibold text-ink-700/80 dark:text-shuttle-100/80">
+        <ul className="hidden sm:flex mt-4 sm:mt-7 flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-semibold text-ink-700/80 dark:text-shuttle-100/80">
           <li>✓ Independent</li>
           <li>✓ Hands-on notes</li>
           <li>✓ Free, no sign-up</li>

@@ -116,8 +116,10 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
         {/* rackets on top, bars below — pinned while you scroll through the parts */}
-        <section aria-label="Your setup" className="paper min-w-0 p-4 sticky top-16 z-20 lg:top-24">
-          <div className="flex justify-center gap-4">
+        <section aria-label="Your setup" className="paper min-w-0 p-3 sm:p-4 sticky top-16 z-20 lg:top-24">
+          {/* phones: small racket(s) left, bars right; desktop: racket on top, bars below */}
+          <div className="flex gap-3 items-center lg:block">
+          <div className="flex shrink-0 justify-center gap-1 sm:gap-4">
             {builds.map((b, i) => {
               const s = items.find((x) => x.id === b.stringId) ?? items[0]
               return (
@@ -129,7 +131,7 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
                   aria-label={`Edit racket ${i === 0 ? 'A' : 'B'}`}
                   className={`focus-ring rounded-xl p-1 cursor-pointer ${builds.length > 1 && i === active ? 'ring-2 ring-shuttle-500' : ''}`}
                 >
-                  <WorkshopRacket balance={b.balance} gauge={stringGauge(s) ?? 0.66} shelf={shelfOfString[s.id] ?? 'allRound'} tensionKg={b.tensionKg} stringKey={s.id} className="h-28 sm:h-36 w-auto mx-auto" />
+                  <WorkshopRacket balance={b.balance} gauge={stringGauge(s) ?? 0.66} shelf={shelfOfString[s.id] ?? 'allRound'} tensionKg={b.tensionKg} stringKey={s.id} className="h-20 sm:h-28 lg:h-36 w-auto mx-auto" />
                   {builds.length > 1 && (
                     <span className="block text-[11px] font-bold" style={{ color: i === 0 ? '#ef7410' : '#2f63c9' }}>
                       {i === 0 ? 'A' : 'B'} · {s.name}
@@ -139,13 +141,14 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
               )
             })}
           </div>
-          <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
+          <div className="min-w-0 flex-1">
+          <p className="lg:mt-2 lg:text-center text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">
             {builds.length > 1 ? `Editing racket ${active === 0 ? 'A' : 'B'} · ` : ''}
             {BALANCE_WORDS[build.balance]} · {string.name} · {formatKg(build.tensionKg)}
           </p>
-          <ul className="mt-3 space-y-1.5" aria-label="What this setup does">
+          <ul className="mt-2 lg:mt-3 space-y-1 lg:space-y-1.5" aria-label="What this setup does">
             {STAT_ORDER.map(({ key, label }) => (
-              <li key={key} className="grid grid-cols-[4.75rem_1fr] items-center gap-2 text-[11px]">
+              <li key={key} className="grid grid-cols-[4.25rem_1fr] sm:grid-cols-[4.75rem_1fr] items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px]">
                 <span className="text-ink-700/80 dark:text-shuttle-100/80">
                   {label}
                   {stats.estimated.includes(key) && <span title="estimated from packet data">*</span>}
@@ -164,12 +167,14 @@ export default function Workshop({ pool, specialistProfiles }: WorkshopProps) {
               </li>
             ))}
           </ul>
+          </div>
+          </div>
           {source === 'handsOn' && stats.estimated.length > 0 && (
             <p className="mt-2 text-[11px] text-ink-700/70 dark:text-shuttle-100/70">
               * no hands-on rating yet — packet data used ({provenance.ratedCount} of 15 properties of {string.name} are rated).
             </p>
           )}
-          <div className="mt-3 text-center">
+          <div className="mt-2 lg:mt-3 text-center">
             {builds.length < 2 ? (
               <button
                 type="button"

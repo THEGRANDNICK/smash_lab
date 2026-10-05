@@ -37,7 +37,7 @@ export default function ThemeToggle() {
           <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
         </svg>
       )}
-      <span className="hidden lg:inline text-xs font-semibold">{LABEL[pref]}</span>
+      <span className="text-xs font-semibold sm:hidden lg:inline">{LABEL[pref]}</span>
     </button>
   )
 }
