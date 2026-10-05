@@ -167,12 +167,12 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
   // Honest ranking language: a score gap, not a probability (gap thresholds from scripts/analysis/robustness.mts).
   const lead = rec.ranked.length > 1 ? rec.ranked[0].matchPercent - rec.ranked[1].matchPercent : 99
   const rankingLabel = !hasScoringAnswer(answers)
-    ? 'General preselection'
+    ? 'A general starting point'
     : lead >= 6
-      ? 'Clear lead in the ranking'
+      ? 'Clear best match'
       : lead >= 3
-        ? 'Ahead in the ranking'
-        : 'Close call in the ranking'
+        ? 'Best match, ahead of the rest'
+        : 'Almost tied with the next one'
 
   const others = rec.topThree.filter((s) => s.string.id !== featured.string.id)
   const featuredProvenance = provenanceOf(specialistProfiles?.[featured.string.id])
@@ -218,10 +218,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
         )}
 
         <div className="mt-5 flex flex-wrap items-baseline gap-x-3 border-t border-dashed border-court-900/20 dark:border-white/20 pt-4">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">Tension{tensionIsProvisional ? ' · provisional' : ''}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/70 dark:text-shuttle-100/70">Tension{tensionIsProvisional ? ' · check your racket first' : ''}</span>
           <span className="font-display text-3xl font-bold text-ink-900 dark:text-shuttle-50">{formatKg(tension.recommendedKg)}</span>
           <span className="text-ink-700/70 dark:text-shuttle-100/70">≈ {formatLbs(tension.recommendedKg)}</span>
         </div>
+        <p className="text-xs text-ink-700/70 dark:text-shuttle-100/70">How tightly the strings are pulled — tell this number to whoever strings your racket.</p>
         {!answers.level && <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">You skipped your level, so this is the tension for a typical club player.</p>}
 
         {/* Racket maximum: checked right here, not hidden in a fold — the default is only an assumption. */}
@@ -334,11 +335,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
 
       <div className="mt-6 space-y-2.5">
         {onChangeAnswers && (
-          <Fold title="Fine-tune: your power, mishits & racket">
+          <Fold title="Fine-tune your result">
             <FineTune answers={answers} onChange={onChangeAnswers} />
           </Fold>
         )}
-        <Fold title={isRecommended ? `Why ${featured.string.name}` : 'Details and comparison'}>
+        <Fold title={isRecommended ? `Why ${featured.string.name}?` : 'Details and comparison'}>
           <RecommendationPodium
             topThree={rec.topThree}
             specialistProfiles={specialistProfiles}
@@ -351,21 +352,22 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
           />
           <div className="mt-4 text-center">
             <button type="button" onClick={handleCompareClick} className="focus-ring rounded-full border-2 border-court-900/15 dark:border-white/20 px-5 py-2 text-sm font-semibold cursor-pointer">
-              {selectedForCompare.size > 0 ? `Compare ${selectedForCompare.size} selected` : 'Compare strings'}
+              {selectedForCompare.size > 0 ? `Compare ${selectedForCompare.size} selected in the Workshop` : 'Compare in the Workshop'}
             </button>
           </div>
-        </Fold>
-        <Fold title="How your answers led here">
+          <h3 className="mt-6 font-display font-bold text-ink-900 dark:text-shuttle-50">How your answers led here</h3>
           <AnswerTree answers={answers} pool={pool} specialistProfiles={specialistProfiles} featuredId={featured.string.id} onFeature={feature} />
+          {mapPool.length > 1 && (
+            <>
+              <h3 className="mt-6 font-display font-bold text-ink-900 dark:text-shuttle-50">Where they sit on the feel map</h3>
+              <p className="text-xs text-ink-700/70 dark:text-shuttle-100/70">Hard ↔ soft, and how much the string holds or launches the shuttle.</p>
+              <div className="max-w-md mx-auto">
+                <StringMap items={mapPool} specialistProfiles={specialistProfiles} useSpecialistData={dataSource === 'manufacturer-specialist'} rankedIds={topThreeIds} />
+              </div>
+            </>
+          )}
         </Fold>
-        {mapPool.length > 1 && (
-          <Fold title="Where they sit on the feel map">
-            <div className="max-w-md mx-auto">
-              <StringMap items={mapPool} specialistProfiles={specialistProfiles} useSpecialistData={dataSource === 'manufacturer-specialist'} rankedIds={topThreeIds} />
-            </div>
-          </Fold>
-        )}
-        <Fold title="Ask a question or add your racket">
+        <Fold title={`Ask ${CONTACT.name} · how this works`}>
           <StringingEnquiry
             racketMaxKg={racketMaxKg}
             stringBrand={featured.string.brand}
@@ -377,12 +379,11 @@ export default function RecommendationResult({ answers, onChangeAnswers, onGoDet
             answers={answers}
             dataSource={dataSource}
           />
-        </Fold>
-        <Fold title="About this result">
+          <h3 className="mt-6 font-display font-bold text-ink-900 dark:text-shuttle-50">How this result is made</h3>
           <p className="text-sm">{DATA_SOURCE_NOTE[dataSource]}</p>
           {bestAvailableOutsidePodium && (
             <p className="mt-3 text-sm text-ink-700/80 dark:text-shuttle-100/80">
-              Best available right now: <strong>{bestAvailableOutsidePodium.string.name}</strong> ({bestAvailableOutsidePodium.matchPercent}% match) — {rec.explanations.bestAvailable}
+              Best available right now: <strong>{bestAvailableOutsidePodium.string.name}</strong> — {rec.explanations.bestAvailable}
             </p>
           )}
           <StringBasics className="mt-4" />

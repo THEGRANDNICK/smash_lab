@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-import { stopMotion } from '../logic/stopMotion'
 import PaperScene from './PaperScene'
 
 interface HeroProps {
@@ -18,11 +16,9 @@ export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: He
     <section className="relative overflow-hidden px-4 pt-5 pb-6 sm:pt-16 sm:pb-36 min-h-[calc(100svh-4rem)] sm:min-h-[78svh] flex items-start sm:items-center justify-center lg:justify-start lg:pl-[7vw]">
       {/* the cut-out stage: a paper rally on a paper court — only here, on the opening screen */}
       <PaperScene />
-      <motion.div
-        initial={{ opacity: 0, y: -24, rotate: -3 }}
-        animate={{ opacity: 1, y: 0, rotate: -1 }}
-        transition={{ duration: 0.5, ease: stopMotion(5) }}
-        className="paper relative z-10 w-full max-w-xl px-5 py-5 sm:px-10 sm:py-12 text-center"
+      {/* drops onto the court in stop-motion frames (CSS only — the start page doesn't load the animation library) */}
+      <div
+        className="hero-drop paper relative z-10 w-full max-w-xl px-5 py-5 sm:px-10 sm:py-12 text-center"
       >
         <p className="text-xs sm:text-sm font-semibold tracking-widest uppercase text-shuttle-700 dark:text-shuttle-400">The independent badminton string finder</p>
         <h1 className="font-display text-[1.9rem] sm:text-5xl font-bold mt-2 sm:mt-3 leading-[1.05] text-ink-900 dark:text-shuttle-50">Not sure which string fits your game?</h1>
@@ -61,7 +57,7 @@ export default function Hero({ onOpenFinder, onOpenCompare, onOpenDetailed }: He
           <li>✓ Hands-on notes</li>
           <li>✓ Free, no sign-up</li>
         </ul>
-      </motion.div>
+      </div>
     </section>
   )
 }

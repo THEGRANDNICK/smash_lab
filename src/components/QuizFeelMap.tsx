@@ -41,6 +41,7 @@ export default function QuizFeelMap({ answers, pool, specialistProfiles, compact
         </p>
       </div>
 
+      <p className="mt-2 text-xs text-ink-700/80 dark:text-shuttle-100/80">Every string sits on the court by its feel. The ones that fit your answers stay; the rest fall off.</p>
       <div className={`felt relative overflow-hidden rounded-xl ${compact ? 'mt-3 h-28' : 'mt-3 aspect-[4/3]'}`}>
         {/* cream tape lines: the court, cut-out style */}
         <span aria-hidden="true" className="absolute inset-2 rounded-md border-[3px] border-[#f3e3b5]/80" />

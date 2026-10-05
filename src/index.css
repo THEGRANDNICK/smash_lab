@@ -634,3 +634,11 @@ body {
   .ws-sweet, .ws-pin, .ws-frame, .ws-fade, .ws-grip { transition: none; }
   .ws-restring path { animation: none; }
 }
+
+/* The opening card drops onto the court in 5 stop-motion frames (components/Hero.tsx). */
+@keyframes hero-drop {
+  from { opacity: 0; transform: translateY(-24px) rotate(-3deg); }
+  to { opacity: 1; transform: translateY(0) rotate(-1deg); }
+}
+.hero-drop { animation: hero-drop 500ms steps(5, end) both; }
+@media (prefers-reduced-motion: reduce) { .hero-drop { animation: none; transform: rotate(-1deg); } }
