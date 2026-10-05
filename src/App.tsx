@@ -17,6 +17,7 @@ import { useStringPool } from './hooks/useStringPool'
 import { useSpecialistProfiles } from './hooks/useSpecialistProfiles'
 import { decodeResultShareState } from './logic/resultShareState'
 import StringDetail from './components/StringDetail'
+import ErrorBoundary from './components/ErrorBoundary'
 import StringKnowledge from './components/StringKnowledge'
 import TensionPicker from './components/TensionPicker'
 import { play, soundForElement } from './logic/sound'
@@ -194,9 +195,11 @@ function App() {
   // entirely inside AdminApp; this route split is just presentation.
   if (view === 'admin') {
     return (
-      <Suspense fallback={<p className="p-8 text-center text-ink-700/70 dark:text-shuttle-100/70">Loading admin…</p>}>
-        <AdminApp onExit={() => goTo('home')} />
-      </Suspense>
+      <ErrorBoundary area="The admin area">
+        <Suspense fallback={<p className="p-8 text-center text-ink-700/70 dark:text-shuttle-100/70">Loading admin…</p>}>
+          <AdminApp onExit={() => goTo('home')} />
+        </Suspense>
+      </ErrorBoundary>
     )
   }
 
