@@ -642,3 +642,30 @@ body {
 }
 .hero-drop { animation: hero-drop 500ms steps(5, end) both; }
 @media (prefers-reduced-motion: reduce) { .hero-drop { animation: none; transform: rotate(-1deg); } }
+
+/* Admin mascot (components/admin/AdminUmpire.tsx): whistles every 7 s, in stop-motion frames. */
+.ump-arm { transform-box: view-box; transform-origin: 64px 57px; animation: ump-arm 7s steps(1, end) infinite; }
+@keyframes ump-arm {
+  0%, 78% { transform: rotate(0deg); }
+  80% { transform: rotate(50deg); }
+  82% { transform: rotate(85deg); }
+  84%, 92% { transform: rotate(95deg); }
+  94% { transform: rotate(50deg); }
+  96%, 100% { transform: rotate(0deg); }
+}
+.ump-fore { transform-box: view-box; transform-origin: 65px 71px; animation: ump-fore 7s steps(1, end) infinite; }
+@keyframes ump-fore {
+  0%, 80% { transform: rotate(0deg); }
+  82% { transform: rotate(40deg); }
+  84%, 92% { transform: rotate(75deg); }
+  94% { transform: rotate(30deg); }
+  96%, 100% { transform: rotate(0deg); }
+}
+.ump-head { transform-box: view-box; transform-origin: 58px 52px; animation: ump-head 7s steps(1, end) infinite; }
+@keyframes ump-head { 0%, 83% { transform: rotate(0deg); } 84%, 92% { transform: rotate(-6deg); } 93%, 100% { transform: rotate(0deg); } }
+.ump-tweet { opacity: 0; animation: ump-tweet 7s steps(1, end) infinite; }
+@keyframes ump-tweet { 0%, 84% { opacity: 0; } 85%, 87% { opacity: 1; } 88% { opacity: 0; } 89%, 92% { opacity: 1; } 93%, 100% { opacity: 0; } }
+.ump-boil { animation: cut-boil 0.75s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ump-arm, .ump-fore, .ump-head, .ump-tweet, .ump-boil { animation: none; }
+}

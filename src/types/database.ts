@@ -230,6 +230,7 @@ export interface Database {
           rating_comfort: number | null
           rating_durability: number | null
           comment: string | null
+          applied_at: string | null
         }
         Insert: {
           id?: string
@@ -245,6 +246,7 @@ export interface Database {
           rating_comfort?: number | null
           rating_durability?: number | null
           comment?: string | null
+          applied_at?: string | null
         }
         Update: {
           id?: string
@@ -260,6 +262,7 @@ export interface Database {
           rating_comfort?: number | null
           rating_durability?: number | null
           comment?: string | null
+          applied_at?: string | null
         }
         Relationships: []
       }

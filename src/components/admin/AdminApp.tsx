@@ -10,6 +10,7 @@ import SpecialistAdminPage from './SpecialistAdminPage'
 import RetailerAdminPage from './RetailerAdminPage'
 import RetailerListingAdminPage from './RetailerListingAdminPage'
 import FeedbackAdminPage from './FeedbackAdminPage'
+import AdminUmpire from './AdminUmpire'
 import ImportsAdminPage from './ImportsAdminPage'
 
 interface AdminAppProps {
@@ -38,10 +39,10 @@ function sectionFromHash(): AdminSection {
 }
 
 const SECTION_LABEL: Record<AdminSection, string> = {
-  dashboard: 'Dashboard',
-  inventory: 'Inventory',
-  catalog: 'Catalog',
-  specialists: 'Specialists',
+  dashboard: 'Overview',
+  inventory: 'Stock',
+  catalog: 'Strings',
+  specialists: 'Ratings',
   retailers: 'Retailers',
   retailerListings: 'Retailer Listings',
   imports: 'Imports',
@@ -101,19 +102,22 @@ export default function AdminApp({ onExit }: AdminAppProps) {
 
   // authenticated-admin
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b-2 border-court-900/10 dark:border-white/10">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">Smash Lab Admin</p>
-          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-shuttle-50">{SECTION_LABEL[section]}</h1>
+    <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex items-center justify-between gap-3 pb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <AdminUmpire className="h-14 sm:h-20 w-auto shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-shuttle-700 dark:text-shuttle-400">Smash Lab Admin</p>
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-ink-900 dark:text-shuttle-50 truncate">{SECTION_LABEL[section]}</h1>
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-sm font-semibold">
+        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-semibold shrink-0">
           <button
             type="button"
             onClick={onExit}
             className="focus-ring text-ink-700/70 dark:text-shuttle-100/70 hover:text-ink-900 dark:hover:text-shuttle-50 cursor-pointer"
           >
-            ← Return to public site
+            ← Site
           </button>
           <button
             type="button"
@@ -125,14 +129,19 @@ export default function AdminApp({ onExit }: AdminAppProps) {
         </div>
       </div>
 
-      <nav className="flex items-center gap-2 mb-8 flex-wrap" aria-label="Admin sections">
-        {(['dashboard', 'inventory', 'catalog', 'specialists', 'retailers', 'retailerListings', 'imports', 'feedback'] as const).map((s) => (
+      {/* One swipeable row that stays at the top — easy with a thumb. Price sections (retailers) are
+          no longer in the menu; their old links still work. */}
+      <nav
+        className="sticky top-0 z-30 -mx-3 sm:mx-0 mb-5 sm:mb-8 px-3 sm:px-0 py-2 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-[#efe6d3]/95 dark:bg-[#1e201f]/95 border-y border-court-900/10 dark:border-white/10"
+        aria-label="Admin sections"
+      >
+        {(['dashboard', 'catalog', 'inventory', 'specialists', 'feedback', 'imports'] as const).map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => goToSection(s)}
             aria-current={section === s ? 'page' : undefined}
-            className={`focus-ring rounded-full px-4 py-1.5 text-sm font-semibold transition-colors cursor-pointer ${
+            className={`focus-ring shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
               section === s ? 'bg-shuttle-500 text-court-900' : 'border-2 border-court-900/15 dark:border-white/20 hover:bg-court-900/5 dark:hover:bg-white/10'
             }`}
           >
@@ -153,6 +162,6 @@ export default function AdminApp({ onExit }: AdminAppProps) {
       <footer className="mt-12 pt-4 border-t border-court-900/10 dark:border-white/10 text-center text-xs text-ink-700/70 dark:text-shuttle-100/60">
         Smash Lab Admin · {versionInfo.display} · {versionInfo.environment}
       </footer>
-    </div>
+    </main>
   )
 }

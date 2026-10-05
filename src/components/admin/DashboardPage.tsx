@@ -21,9 +21,9 @@ interface DashboardPageProps {
 type LoadState = 'loading' | 'ready' | 'full-error'
 
 const SOURCE_LABEL: Record<DashboardSourceId, string> = {
-  catalog: 'Catalog',
-  inventory: 'Inventory',
-  specialists: 'Specialists',
+  catalog: 'Strings',
+  inventory: 'Stock',
+  specialists: 'Ratings',
   retailers: 'Retailers',
   retailerListings: 'Retailer listings',
 }
@@ -153,46 +153,16 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             </ul>
           </SummaryCard>
 
-          <SummaryCard title="Specialists" unavailable={failedSources.has('specialists')} onNavigate={() => onNavigate('specialists')} linkLabel="View specialists">
+          <SummaryCard title="Ratings" unavailable={failedSources.has('specialists')} onNavigate={() => onNavigate('specialists')} linkLabel="View ratings">
             <p className="text-2xl font-bold text-ink-900 dark:text-shuttle-50">
               {data.summary.specialists.withProfile} <span className="text-base font-normal text-ink-700/70 dark:text-shuttle-100/50">of {data.summary.specialists.totalCatalogStrings}</span>
             </p>
             <p className="text-sm text-ink-700/70 dark:text-shuttle-100/60">{data.summary.specialists.coveragePercent}% coverage</p>
           </SummaryCard>
-
-          <SummaryCard title="Retailers" unavailable={failedSources.has('retailers')} onNavigate={() => onNavigate('retailers')} linkLabel="View retailers">
-            <ul className="text-sm space-y-0.5">
-              <li>
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">{data.summary.retailers.active}</span> active
-              </li>
-              <li>
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">{data.summary.retailers.inactive}</span> inactive
-              </li>
-            </ul>
-          </SummaryCard>
-
-          <SummaryCard
-            title="Retailer listings"
-            unavailable={failedSources.has('retailerListings')}
-            onNavigate={() => onNavigate('retailerListings')}
-            linkLabel="View retailer listings"
-          >
-            <ul className="text-sm space-y-0.5">
-              <li>
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">{data.summary.retailerListings.total}</span> total
-              </li>
-              <li>
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">{data.summary.retailerListings.missingPrice}</span> missing price
-              </li>
-              <li>
-                <span className="font-semibold text-ink-900 dark:text-shuttle-50">{data.summary.retailerListings.stale}</span> stale
-              </li>
-            </ul>
-          </SummaryCard>
         </div>
       </section>
 
-      <DataQualitySection issues={data.dataQuality} degraded={degraded} onNavigate={onNavigate} />
+      <DataQualitySection issues={data.dataQuality.filter((i) => i.section !== 'retailers' && i.section !== 'retailerListings')} degraded={degraded} onNavigate={onNavigate} />
 
       <InventoryAttentionSection attention={data.inventoryAttention} unavailable={failedSources.has('inventory')} onNavigate={onNavigate} />
 
