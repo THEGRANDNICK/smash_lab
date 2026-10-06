@@ -6,7 +6,6 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import type { Plugin, ResolvedConfig } from 'vite'
 import { strings } from './src/data/strings.js'
-import { STRING_SPECIALIST_PROFILES } from './src/data/stringSpecialistProfiles.js'
 import {
   SITE_URL,
   applyPageToTemplate,
@@ -47,7 +46,9 @@ function stringPagesPlugin(): Plugin {
       }
 
       for (const item of strings) {
-        const profile = STRING_SPECIALIST_PROFILES[item.id]
+        // No hands-on notes in the prebuilt pages: they come only LIVE from the database (rendered by
+        // the app), so deleting them there removes them everywhere — Google's copy included.
+        const profile = undefined
         const html = applyPageToTemplate(template, buildStringPageMeta(item, profile), renderStringPageBody(item, profile, strings, base))
         write(join(stringPagePath(item.id), 'index.html'), html)
       }
