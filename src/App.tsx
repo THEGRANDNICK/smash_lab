@@ -26,7 +26,6 @@ import { play, soundForElement } from './logic/sound'
 import { strings } from './data/strings'
 import { legacyStringIdFromHash, routeFromPath } from './logic/routes'
 import { buildStringPageMeta, buildStringsIndexMeta, stringPagePath } from './logic/stringPages'
-import { STRING_SPECIALIST_PROFILES } from './data/stringSpecialistProfiles'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -61,7 +60,7 @@ function getPageTitle(hash: string): string {
   if (route.kind === 'stringsIndex' && !clean) return buildStringsIndexMeta().title
   if (route.kind === 'string' && !clean) {
     const item = strings.find((s) => s.id === route.id)
-    return item ? buildStringPageMeta(item, STRING_SPECIALIST_PROFILES[item.id]).title : 'String not found — Smash Lab'
+    return item ? buildStringPageMeta(item, undefined).title : 'String not found — Smash Lab'
   }
   if (clean === 'finder') return 'Find Your String — Smash Lab'
   if (clean === 'compare') return 'Compare Strings — Smash Lab'

@@ -46,10 +46,18 @@ export function getLastSpecialistFetchStatus(): SpecialistFetchStatus | null {
   return lastFetchStatus
 }
 
-/** The complete local specialist profile set — used as the fallback whenever Supabase is unreachable or not configured. Never mutated. */
-export function getLocalFallbackSpecialistProfiles(): Record<string, StringSpecialistProfile> {
-  return STRING_SPECIALIST_PROFILES
+/**
+ * What the site uses while the live profiles load, or when they can't be read.
+ *
+ * With Supabase configured (the live site) this is EMPTY: deleting hands-on data in the database
+ * must really remove it from the recommendations — the built-in copy in the code never stands in
+ * silently. Without Supabase (local development without .env.local) the built-in copy is used so
+ * the site still works offline. Never mutated.
+ */
+export function getLocalFallbackSpecialistProfiles(configured: boolean = isSupabaseConfigured): Record<string, StringSpecialistProfile> {
+  return configured ? NO_PROFILES : STRING_SPECIALIST_PROFILES
 }
+const NO_PROFILES: Record<string, StringSpecialistProfile> = Object.freeze({}) as Record<string, StringSpecialistProfile>
 
 const VALID_FEEL: readonly SpecialistFeel[] = ['hard', 'medium', 'soft']
 const VALID_EXPERIENCE_SOURCE: readonly ExperienceSource[] = ['personal', 'club', 'stringing-observation', 'manufacturer', 'community', 'mixed']
